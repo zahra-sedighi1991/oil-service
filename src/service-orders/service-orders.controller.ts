@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Headers, Param, Patch, Post, Query } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../auth/auth.decorators';
-import { AuthUser } from '../auth/auth.types';
+import type { AuthUser } from '../auth/auth.types';
 import { CancelOrderDto, CompleteOrderDto, CreateOrderDto } from './dto';
 import { ServiceOrdersService } from './service-orders.service';
 

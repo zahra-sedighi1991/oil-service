@@ -111,7 +111,6 @@ export class ProductAttributeOption extends BaseEntity {
 }
 
 @Entity('products')
-@Index('idx_products_attributes_gin', ['attributes'], { synchronize: false })
 export class Product extends BaseEntity {
   @Column() productTypeId: string;
   @ManyToOne(() => ProductType) @JoinColumn({ name: 'productTypeId' }) productType: ProductType;

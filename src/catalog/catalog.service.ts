@@ -207,13 +207,18 @@ export class CatalogService {
 
   async configureProduct(shopId: string, actorId: string, productId: string, dto: ConfigureShopProductDto) {
     if (!await this.products.existsBy({ id: productId })) throw new NotFoundException('محصول یافت نشد.');
-    let setting = await this.shopProducts.findOneBy({ shopId, productId });
-    const before = setting ? { ...setting } : undefined;
-    setting = this.shopProducts.create({ ...setting, ...dto, shopId, productId });
+    const existingSetting = await this.shopProducts.findOneBy({ shopId, productId });
+    const before = existingSetting ? { ...existingSetting } : undefined;
+    const setting = existingSetting ?? this.shopProducts.create({ shopId, productId });
+    if (dto.salePrice !== undefined) setting.salePrice = String(dto.salePrice);
+    if (dto.isActive !== undefined) setting.isActive = dto.isActive;
+    if (dto.favorite !== undefined) setting.favorite = dto.favorite;
+    if (dto.sortOrder !== undefined) setting.sortOrder = dto.sortOrder;
+    if (dto.override !== undefined) setting.override = dto.override;
     const result = await this.shopProducts.save(setting);
     await this.audits.save(this.audits.create({
       actorId, shopId, action: 'shop_product.configured',
-      entityType: 'shop_product', entityId: result.id, before, after: dto,
+      entityType: 'shop_product', entityId: result.id, before, after: { ...dto },
     }));
     return result;
   }
@@ -241,13 +246,17 @@ export class CatalogService {
   }
   async configureService(shopId: string, actorId: string, serviceId: string, dto: ConfigureShopServiceDto) {
     if (!await this.services.existsBy({ id: serviceId })) throw new NotFoundException('خدمت یافت نشد.');
-    let setting = await this.shopServices.findOneBy({ shopId, serviceId });
-    const before = setting ? { ...setting } : undefined;
-    setting = this.shopServices.create({ ...setting, ...dto, shopId, serviceId });
+    const existingSetting = await this.shopServices.findOneBy({ shopId, serviceId });
+    const before = existingSetting ? { ...existingSetting } : undefined;
+    const setting = existingSetting ?? this.shopServices.create({ shopId, serviceId });
+    if (dto.fee !== undefined) setting.fee = String(dto.fee);
+    if (dto.isActive !== undefined) setting.isActive = dto.isActive;
+    if (dto.favorite !== undefined) setting.favorite = dto.favorite;
+    if (dto.sortOrder !== undefined) setting.sortOrder = dto.sortOrder;
     const result = await this.shopServices.save(setting);
     await this.audits.save(this.audits.create({
       actorId, shopId, action: 'shop_service.configured',
-      entityType: 'shop_service', entityId: result.id, before, after: dto,
+      entityType: 'shop_service', entityId: result.id, before, after: { ...dto },
     }));
     return result;
   }

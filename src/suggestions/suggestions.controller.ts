@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { CurrentUser, Roles } from '../auth/auth.decorators';
-import { AuthUser } from '../auth/auth.types';
+import type { AuthUser } from '../auth/auth.types';
 import { SuggestionStatus, UserRole } from '../common/enums';
 import { CreateSuggestionDto, DecideSuggestionDto } from './dto';
 import { SuggestionsService } from './suggestions.service';

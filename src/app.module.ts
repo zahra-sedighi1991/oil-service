@@ -33,15 +33,15 @@ import { AuditModule } from './audit/audit.module';
         return {
           type: 'postgres' as const,
           ...(databaseUrl ? { url: databaseUrl } : {
-            host: config.get('DB_HOST', 'localhost'),
-            port: Number(config.get('DB_PORT', 5432)),
-            username: config.get('DB_USER', 'postgres'),
-            password: config.get('DB_PASSWORD', 'postgres'),
-            database: config.get('DB_NAME', 'oil_service'),
+            host: config.get<string>('DB_HOST', 'localhost'),
+            port: Number(config.get<number | string>('DB_PORT', 5432)),
+            username: config.get<string>('DB_USER', 'postgres'),
+            password: config.get<string>('DB_PASSWORD', 'postgres'),
+            database: config.get<string>('DB_NAME', 'oil_service'),
           }),
           entities: ENTITIES,
           synchronize,
-          logging: config.get('DB_LOGGING', 'false') === 'true',
+          logging: config.get<string>('DB_LOGGING', 'false') === 'true',
         };
       },
     }),

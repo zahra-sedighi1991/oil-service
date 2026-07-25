@@ -3,7 +3,7 @@ import { ApiTags } from '@nestjs/swagger';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CurrentUser, Roles } from '../auth/auth.decorators';
-import { AuthUser } from '../auth/auth.types';
+import type { AuthUser } from '../auth/auth.types';
 import { UserRole } from '../common/enums';
 import { AuditLog, Shop } from '../database/entities';
 import { UpdateShopDto, UpdateShopStatusDto } from './dto';
@@ -37,7 +37,7 @@ export class ShopsController {
       entityType: 'shop',
       entityId: shop.id,
       before,
-      after: dto,
+      after: { ...dto },
     }));
     return result;
   }

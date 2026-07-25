@@ -10,7 +10,7 @@ import { JwtService } from '@nestjs/jwt';
 import { Request } from 'express';
 import { DataSource } from 'typeorm';
 import { IS_PUBLIC_KEY, ROLES_KEY } from './auth.decorators';
-import { AuthUser } from './auth.types';
+import type { AuthUser } from './auth.types';
 import { ShopStatus, UserRole } from '../common/enums';
 import { Shop } from '../database/entities';
 
