@@ -1,0 +1,118 @@
+import { GoneException, Injectable, NotFoundException } from '@nestjs/common';
+import { DataSource } from 'typeorm';
+import { createHash, randomBytes } from 'crypto';
+import {
+  AuditLog, Invoice, ServiceOrder, Shop, Vehicle, VehiclePublicLink,
+} from '../database/entities';
+import {
+  InvoiceStatus, PublicLinkStatus, ServiceOrderStatus,
+} from '../common/enums';
+
+@Injectable()
+export class PublicBookService {
+  constructor(private readonly dataSource: DataSource) {}
+
+  async view(token: string) {
+    const tokenHash = createHash('sha256').update(token).digest('hex');
+    const link = await this.dataSource.getRepository(VehiclePublicLink).findOneBy({ tokenHash });
+    if (!link) throw new NotFoundException('لینک دفترچه سرویس یافت نشد.');
+    if (link.status !== PublicLinkStatus.ACTIVE || link.revokedAt || (link.expiresAt && link.expiresAt < new Date())) {
+      throw new GoneException('این لینک دیگر معتبر نیست.');
+    }
+    const [vehicle, shop, orders] = await Promise.all([
+      this.dataSource.getRepository(Vehicle).findOne({
+        where: { id: link.vehicleId, shopId: link.shopId },
+        relations: { brand: true, model: true },
+      }),
+      this.dataSource.getRepository(Shop).findOneBy({ id: link.shopId }),
+      this.dataSource.getRepository(ServiceOrder).find({
+        where: { vehicleId: link.vehicleId, shopId: link.shopId, status: ServiceOrderStatus.COMPLETED },
+        relations: { productLines: true, laborLines: true },
+        order: { serviceDate: 'DESC' },
+      }),
+    ]);
+    if (!vehicle || !shop) throw new NotFoundException('اطلاعات دفترچه سرویس یافت نشد.');
+    const invoices = await this.dataSource.getRepository(Invoice).find({
+      where: { shopId: link.shopId, status: InvoiceStatus.ISSUED },
+      relations: { lines: true },
+    });
+    const invoiceByOrder = new Map(invoices.map((invoice) => [invoice.orderId, invoice]));
+    link.lastAccessAt = new Date();
+    await this.dataSource.getRepository(VehiclePublicLink).save(link);
+    const dueItems = orders.flatMap((order) => order.productLines)
+      .filter((line) => line.dueDate || line.dueOdometer);
+    const nextByDate = dueItems.filter((line) => line.dueDate)
+      .sort((a, b) => a.dueDate!.localeCompare(b.dueDate!))[0];
+    const nextByOdometer = dueItems.filter((line) => line.dueOdometer !== null && line.dueOdometer !== undefined)
+      .sort((a, b) => a.dueOdometer! - b.dueOdometer!)[0];
+    return {
+      shop: { name: shop.name, phone: shop.publicPhone, city: shop.city, address: shop.address },
+      vehicle: {
+        brand: vehicle.brand.nameFa, model: vehicle.model.nameFa,
+        plate: this.maskPlate(vehicle.plateDisplay), year: vehicle.year,
+        lastOdometer: vehicle.lastOdometer,
+      },
+      nextDue: nextByDate || nextByOdometer ? {
+        dueDate: nextByDate?.dueDate,
+        dueDateItem: nextByDate?.snapshot.displayName ?? nextByDate?.snapshot.description,
+        dueOdometer: nextByOdometer?.dueOdometer,
+        dueOdometerItem: nextByOdometer?.snapshot.displayName ?? nextByOdometer?.snapshot.description,
+      } : null,
+      services: orders.filter((order) => invoiceByOrder.has(order.id)).map((order) => {
+        const invoice = invoiceByOrder.get(order.id);
+        return {
+          id: order.id, serviceDate: order.serviceDate, odometer: order.odometer,
+          products: order.productLines.map((line) => ({
+            ...line.snapshot, quantity: Number(line.quantity), dueDate: line.dueDate, dueOdometer: line.dueOdometer,
+          })),
+          services: order.laborLines.map((line) => ({ ...line.snapshot, quantity: Number(line.quantity) })),
+          invoice: invoice ? {
+            invoiceNo: invoice.invoiceNo, totalAmount: Number(invoice.totalAmount),
+            currency: invoice.currency, issuedAt: invoice.issuedAt,
+          } : null,
+        };
+      }),
+    };
+  }
+
+  async regenerate(shopId: string, actorId: string, vehicleId: string) {
+    return this.dataSource.transaction(async (manager) => {
+      if (!await manager.existsBy(Vehicle, { id: vehicleId, shopId })) throw new NotFoundException('خودرو یافت نشد.');
+      const links = await manager.findBy(VehiclePublicLink, { vehicleId, shopId, status: PublicLinkStatus.ACTIVE });
+      for (const link of links) {
+        link.status = PublicLinkStatus.REVOKED;
+        link.revokedAt = new Date();
+      }
+      await manager.save(links);
+      const token = randomBytes(24).toString('base64url');
+      const link = await manager.save(VehiclePublicLink, manager.create(VehiclePublicLink, {
+        vehicleId, shopId, tokenHash: createHash('sha256').update(token).digest('hex'),
+      }));
+      await manager.save(AuditLog, manager.create(AuditLog, {
+        actorId, shopId, action: 'public_link.regenerated',
+        entityType: 'vehicle_public_link', entityId: link.id,
+      }));
+      return { token, path: `/public/v1/service-book/${token}` };
+    });
+  }
+
+  async revoke(shopId: string, actorId: string, vehicleId: string) {
+    const repo = this.dataSource.getRepository(VehiclePublicLink);
+    const links = await repo.findBy({ vehicleId, shopId, status: PublicLinkStatus.ACTIVE });
+    for (const link of links) {
+      link.status = PublicLinkStatus.REVOKED;
+      link.revokedAt = new Date();
+    }
+    await repo.save(links);
+    await this.dataSource.getRepository(AuditLog).save({
+      actorId, shopId, action: 'public_link.revoked',
+      entityType: 'vehicle', entityId: vehicleId,
+    });
+    return { revoked: links.length };
+  }
+
+  private maskPlate(plate?: string) {
+    if (!plate || plate.length < 4) return plate;
+    return `${plate.slice(0, 2)}***${plate.slice(-2)}`;
+  }
+}

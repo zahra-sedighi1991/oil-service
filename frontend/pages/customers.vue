@@ -1,0 +1,110 @@
+<script setup lang="ts">
+import type { Customer } from '~/types/api'
+
+definePageMeta({ middleware: 'auth' })
+useHead({ title: 'مشتریان و خودروها' })
+
+const api = useApi()
+const toast = useToast()
+const { number, errorMessage } = useFormat()
+const search = ref('')
+const showCustomer = ref(false)
+const saving = ref(false)
+const form = reactive({ name: '', mobile: '', note: '' })
+const searchQuery = computed(() => {
+  const value = search.value.trim()
+  if (!value) return undefined
+  return /^[\d۰-۹٠-٩+\-\s]+$/.test(value) ? { mobile: value } : { search: value }
+})
+
+const { data: customers, pending, refresh } = await useAsyncData(
+  'customers',
+  () => api.get<Customer[]>('/customers', searchQuery.value),
+  { watch: [search] }
+)
+
+async function createCustomer() {
+  saving.value = true
+  try {
+    await api.post('/customers', form)
+    Object.assign(form, { name: '', mobile: '', note: '' })
+    showCustomer.value = false
+    toast.success('مشتری جدید ثبت شد.')
+    await refresh()
+  } catch (error) {
+    toast.error(errorMessage(error))
+  } finally {
+    saving.value = false
+  }
+}
+</script>
+
+<template>
+  <div>
+    <header class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+      <div>
+        <p class="m-0 text-sm font-700 text-brand-700">دفتر مشتریان</p>
+        <h1 class="mb-0 mt-1 text-2xl font-950">مشتریان و خودروها</h1>
+        <p class="mb-0 mt-2 text-sm text-ink/45">جستجو، مشاهده سوابق و مدیریت خودروهای هر مشتری</p>
+      </div>
+      <button class="btn-primary" @click="showCustomer = true"><span class="i-lucide-user-plus h-5 w-5" />مشتری جدید</button>
+    </header>
+
+    <section class="card mb-5 p-3">
+      <div class="relative">
+        <span class="i-lucide-search absolute right-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-ink/35" />
+        <input v-model="search" class="field border-0 bg-transparent pr-11 focus:ring-0" placeholder="جستجو با نام، شماره موبایل یا پلاک...">
+      </div>
+    </section>
+
+    <div v-if="pending" class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <div v-for="i in 6" :key="i" class="card h-48 animate-pulse bg-white/60" />
+    </div>
+
+    <div v-else-if="customers?.length" class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <article v-for="customer in customers" :key="customer.id" class="card overflow-hidden">
+        <div class="flex items-start gap-3 p-5">
+          <span class="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-brand-50 font-900 text-brand-700">{{ customer.name.slice(0, 1) }}</span>
+          <div class="min-w-0 flex-1">
+            <h2 class="m-0 truncate text-base font-900">{{ customer.name }}</h2>
+            <a :href="`tel:${customer.mobileNormalized}`" class="mt-1 block text-sm text-ink/45 no-underline" dir="ltr">{{ customer.mobileDisplay }}</a>
+          </div>
+          <span class="badge bg-black/4 text-ink/55">{{ number(customer.vehicles?.length) }} خودرو</span>
+        </div>
+        <div class="border-t border-black/5 bg-black/[.015] px-5 py-4">
+          <div v-if="customer.vehicles?.length" class="space-y-2">
+            <div v-for="vehicle in customer.vehicles.slice(0, 2)" :key="vehicle.id" class="flex items-center justify-between rounded-xl border border-black/6 bg-white px-3 py-2.5">
+              <div class="flex items-center gap-2">
+                <span class="i-lucide-car-front h-4.5 w-4.5 text-brand-600" />
+                <span class="text-sm font-700">{{ vehicle.plateDisplay || vehicle.temporaryIdentifier }}</span>
+              </div>
+              <span class="text-xs text-ink/40">{{ number(vehicle.lastOdometer) }} کیلومتر</span>
+            </div>
+          </div>
+          <p v-else class="my-1 text-center text-xs text-ink/40">هنوز خودرویی برای این مشتری ثبت نشده است.</p>
+          <div class="mt-3 grid grid-cols-2 gap-2">
+            <NuxtLink :to="`/customers/${customer.id}`" class="btn-secondary py-2 no-underline">مشاهده پرونده</NuxtLink>
+            <NuxtLink :to="`/service-orders/new?customer=${customer.id}`" class="btn-ghost py-2 no-underline">ثبت سرویس</NuxtLink>
+          </div>
+        </div>
+      </article>
+    </div>
+    <section v-else class="card">
+      <AppEmptyState icon="i-lucide-users" title="مشتری‌ای پیدا نشد" description="مشتری جدید بسازید یا عبارت جستجو را تغییر دهید.">
+        <button class="btn-primary" @click="showCustomer = true">ثبت مشتری جدید</button>
+      </AppEmptyState>
+    </section>
+
+    <AppModal :open="showCustomer" title="مشتری جدید" description="اطلاعات پایه مشتری را وارد کنید." @close="showCustomer = false">
+      <form class="space-y-4" @submit.prevent="createCustomer">
+        <div><label class="label">نام و نام خانوادگی</label><input v-model="form.name" class="field" required></div>
+        <div><label class="label">شماره موبایل</label><input v-model="form.mobile" class="field text-left" dir="ltr" inputmode="tel" placeholder="09120000000" required></div>
+        <div><label class="label">یادداشت اختیاری</label><textarea v-model="form.note" class="field min-h-24 resize-y" /></div>
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" class="btn-ghost" @click="showCustomer = false">انصراف</button>
+          <button class="btn-primary" :disabled="saving"><span v-if="saving" class="i-lucide-loader-circle animate-spin" />ثبت مشتری</button>
+        </div>
+      </form>
+    </AppModal>
+  </div>
+</template>

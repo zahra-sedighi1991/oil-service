@@ -1,0 +1,11 @@
+import { IsEnum, IsNotEmpty, IsObject, IsOptional, IsString } from 'class-validator';
+import { SuggestionStatus } from '../common/enums';
+export class CreateSuggestionDto {
+  @IsString() @IsNotEmpty() entityType: string;
+  @IsObject() payload: Record<string, unknown>;
+}
+export class DecideSuggestionDto {
+  @IsEnum(SuggestionStatus) status: SuggestionStatus;
+  @IsString() @IsNotEmpty() decisionNote: string;
+  @IsString() @IsOptional() mappedEntityId?: string;
+}
