@@ -40,6 +40,7 @@ export class User extends BaseEntity {
   @ManyToOne(() => Shop, { nullable: true }) @JoinColumn({ name: 'shopId' }) shop?: Shop;
   @Column() name: string;
   @Column() mobile: string;
+  @Column({ nullable: true }) passwordHash?: string;
   @Column({ type: 'enum', enum: UserRole, default: UserRole.SHOP_OWNER }) role: UserRole;
   @Column({ type: 'enum', enum: RecordStatus, default: RecordStatus.ACTIVE }) status: RecordStatus;
 }

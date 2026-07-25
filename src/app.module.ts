@@ -25,6 +25,11 @@ import { AuditModule } from './audit/audit.module';
       inject: [ConfigService],
       useFactory: (config: ConfigService) => {
         const databaseUrl = config.get<string>('DATABASE_URL');
+        const isProduction = config.get<string>('NODE_ENV', 'development') === 'production';
+        const synchronize = config.get<string>(
+          'DB_SYNCHRONIZE',
+          isProduction ? 'false' : 'true',
+        ) === 'true';
         return {
           type: 'postgres' as const,
           ...(databaseUrl ? { url: databaseUrl } : {
@@ -35,7 +40,7 @@ import { AuditModule } from './audit/audit.module';
             database: config.get('DB_NAME', 'oil_service'),
           }),
           entities: ENTITIES,
-          synchronize: config.get('DB_SYNCHRONIZE', 'false') === 'true',
+          synchronize,
           logging: config.get('DB_LOGGING', 'false') === 'true',
         };
       },

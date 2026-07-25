@@ -10,7 +10,7 @@ book and super-admin pages.
 
 ## Implemented modules
 
-- OTP authentication, JWT, shop-owner and super-admin roles
+- Temporary password authentication, JWT, shop-owner and super-admin roles
 - Strict shop-level isolation for customers, vehicles, service orders and prices
 - Global vehicle, product and service catalogs
 - Versioned dynamic product attributes with server-side schema validation
@@ -29,7 +29,8 @@ book and super-admin pages.
 
 1. Copy `.env.example` to `.env` and replace `JWT_SECRET`.
 2. Start PostgreSQL with `docker compose up -d`.
-3. During local development, keep `DB_SYNCHRONIZE=true` to create the schema.
+3. During local development the schema is synchronized automatically unless
+   `DB_SYNCHRONIZE=false` is explicitly configured.
 4. Start the API with `pnpm start:dev`.
 
 The API listens on `http://localhost:3000`. Private endpoints are under
@@ -53,35 +54,41 @@ migration before the first production deployment.
 
 ## Authentication
 
-Request an OTP:
+OTP is temporarily disabled through `OTP_ENABLED=false`. Initial registration
+uses a mobile number and password:
 
 ```http
-POST /api/v1/auth/otp/request
+POST /api/v1/auth/password/register
 Content-Type: application/json
 
-{"mobile":"09120000000"}
+{
+  "name": "Shop Owner",
+  "mobile": "09120000000",
+  "password": "a-strong-password",
+  "shopName": "Example Oil Service",
+  "city": "Tehran"
+}
 ```
 
-In non-production environments the response contains `developmentCode`
-(`123456` by default). Verify it and optionally provide registration fields:
+Existing users can sign in with:
 
 ```http
-POST /api/v1/auth/otp/verify
+POST /api/v1/auth/password/login
 Content-Type: application/json
 
 {
   "mobile": "09120000000",
-  "code": "123456",
-  "name": "Shop Owner",
-  "shopName": "Example Oil Service",
-  "city": "Tehran"
+  "password": "a-strong-password"
 }
 ```
 
 Send the returned token as `Authorization: Bearer <token>`.
 
 If `ADMIN_MOBILE` is configured, a super-admin account is created on startup.
-Request and verify an OTP for that number to obtain its token.
+Set `ADMIN_PASSWORD` and use the password-login endpoint for that number.
+Passwords are salted and hashed with Node.js `scrypt`; plaintext passwords are
+never stored. The OTP implementation remains behind the `OTP_ENABLED` flag for
+later integration.
 
 ## Service completion
 
@@ -101,7 +108,7 @@ Temporary product or local-service lines can omit their catalog ID and provide
 
 ## Production notes
 
-- Replace the in-memory OTP challenge store with Redis and connect an SMS provider.
+- Before restoring OTP, replace its in-memory challenge store with Redis and connect an SMS provider.
 - Use reviewed TypeORM migrations instead of schema synchronization.
 - Terminate TLS at the reverse proxy and set a strong JWT secret.
 - Add encrypted backups, restore drills, structured logging and error tracking.

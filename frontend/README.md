@@ -11,7 +11,7 @@ Nuxt 4 + TypeScript + UnoCSS frontend for the Oil Service API.
 
 ## Main routes
 
-- `/login`: OTP login and initial shop registration
+- `/login`: password login and initial shop registration
 - `/`: shop dashboard
 - `/service-orders/new`: three-step service registration
 - `/customers`: customer and vehicle CRM
