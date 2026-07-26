@@ -37,6 +37,7 @@ const services = ref<LaborLine[]>([])
 const showProduct = ref(false)
 const showService = ref(false)
 const showVehicle = ref(false)
+const showShare = ref(false)
 const productSearch = ref('')
 const submitting = ref(false)
 const savingVehicle = ref(false)
@@ -230,10 +231,14 @@ async function completeOrder() {
   }
 }
 
-async function copyPublicLink() {
-  if (!success.value?.publicToken) return
-  await navigator.clipboard.writeText(`${window.location.origin}/public/service-book/${success.value.publicToken}`)
-  toast.success('لینک دفترچه خودرو کپی شد.')
+function shareUrl(channel: 'eitaa' | 'telegram') {
+  if (!success.value?.publicToken) return '#'
+  const publicUrl = `${window.location.origin}/public/service-book/${success.value.publicToken}`
+  const text = `دفترچه سرویس خودرو${selectedCustomer.value ? `ی ${selectedCustomer.value.name}` : ''}`
+  const shareBase = channel === 'telegram'
+    ? 'https://t.me/share/url'
+    : 'https://eitaa.com/share/url'
+  return `${shareBase}?url=${encodeURIComponent(publicUrl)}&text=${encodeURIComponent(text)}`
 }
 </script>
 
@@ -267,7 +272,10 @@ async function copyPublicLink() {
         </div>
         <div class="grid gap-2 sm:grid-cols-3">
           <NuxtLink to="/invoices" class="btn-primary no-underline">مشاهده فاکتور</NuxtLink>
-          <button class="btn-secondary" :disabled="!success.publicToken" @click="copyPublicLink">کپی لینک خودرو</button>
+          <button class="btn-secondary" :disabled="!success.publicToken" @click="showShare = true">
+            <span class="i-lucide-share-2 h-4.5 w-4.5" />
+            اشتراک‌گذاری
+          </button>
           <button class="btn-ghost" @click="navigateTo('/service-orders/new', { replace: true })">سرویس بعدی</button>
         </div>
       </div>
@@ -390,6 +398,40 @@ async function copyPublicLink() {
         </div>
       </div>
     </section>
+
+    <AppModal
+      :open="showShare"
+      title="ارسال دفترچه سرویس"
+      description="پیام‌رسان موردنظر را انتخاب کنید تا لینک دفترچه برای مشتری ارسال شود."
+      @close="showShare = false"
+    >
+      <div class="grid gap-3 sm:grid-cols-2">
+        <a
+          :href="shareUrl('eitaa')"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="flex items-center gap-3 rounded-2xl border border-black/7 bg-white p-4 text-right text-ink no-underline transition hover:border-amber-400 hover:bg-amber-50"
+          @click="showShare = false"
+        >
+          <span class="grid h-11 w-11 place-items-center rounded-xl bg-amber-500 text-white">
+            <span class="i-lucide-message-circle h-6 w-6" />
+          </span>
+          <span><strong class="block">ارسال در ایتا</strong><small class="mt-1 block text-ink/45">انتخاب مخاطب در ایتا</small></span>
+        </a>
+        <a
+          :href="shareUrl('telegram')"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="flex items-center gap-3 rounded-2xl border border-black/7 bg-white p-4 text-right text-ink no-underline transition hover:border-sky-400 hover:bg-sky-50"
+          @click="showShare = false"
+        >
+          <span class="grid h-11 w-11 place-items-center rounded-xl bg-sky-500 text-white">
+            <span class="i-lucide-send h-6 w-6" />
+          </span>
+          <span><strong class="block">ارسال در تلگرام</strong><small class="mt-1 block text-ink/45">انتخاب مخاطب در تلگرام</small></span>
+        </a>
+      </div>
+    </AppModal>
 
     <AppModal :open="showProduct" title="افزودن محصول" description="محصول کاتالوگی یا آیتم موقت انتخاب کنید." @close="showProduct = false">
       <div class="relative mb-3"><span class="i-lucide-search absolute right-3 top-1/2 -translate-y-1/2 text-ink/30" /><input v-model="productSearch" class="field pr-9" placeholder="نام محصول، برند یا ویژگی..."></div>
