@@ -16,6 +16,10 @@ export class PublicBookController {
   regenerate(@CurrentUser() user: AuthUser, @Param('vehicleId') vehicleId: string) {
     return this.book.regenerate(user.shopId!, user.sub, vehicleId);
   }
+  @Post('vehicles/:vehicleId/public-link/share')
+  issueForSharing(@CurrentUser() user: AuthUser, @Param('vehicleId') vehicleId: string) {
+    return this.book.issueForSharing(user.shopId!, user.sub, vehicleId);
+  }
   @Delete('vehicles/:vehicleId/public-link')
   revoke(@CurrentUser() user: AuthUser, @Param('vehicleId') vehicleId: string) {
     return this.book.revoke(user.shopId!, user.sub, vehicleId);

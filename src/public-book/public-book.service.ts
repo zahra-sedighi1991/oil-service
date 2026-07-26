@@ -96,6 +96,21 @@ export class PublicBookService {
     });
   }
 
+  async issueForSharing(shopId: string, actorId: string, vehicleId: string) {
+    return this.dataSource.transaction(async (manager) => {
+      if (!await manager.existsBy(Vehicle, { id: vehicleId, shopId })) throw new NotFoundException('خودرو یافت نشد.');
+      const token = randomBytes(24).toString('base64url');
+      const link = await manager.save(VehiclePublicLink, manager.create(VehiclePublicLink, {
+        vehicleId, shopId, tokenHash: createHash('sha256').update(token).digest('hex'),
+      }));
+      await manager.save(AuditLog, manager.create(AuditLog, {
+        actorId, shopId, action: 'public_link.issued_for_sharing',
+        entityType: 'vehicle_public_link', entityId: link.id,
+      }));
+      return { token, path: `/public/v1/service-book/${token}` };
+    });
+  }
+
   async revoke(shopId: string, actorId: string, vehicleId: string) {
     const repo = this.dataSource.getRepository(VehiclePublicLink);
     const links = await repo.findBy({ vehicleId, shopId, status: PublicLinkStatus.ACTIVE });

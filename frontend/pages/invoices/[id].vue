@@ -4,11 +4,36 @@ import type { Invoice } from '~/types/api'
 definePageMeta({ middleware: 'auth' })
 const route = useRoute()
 const api = useApi()
-const { money, number, dateTime } = useFormat()
+const toast = useToast()
+const { money, number, dateTime, errorMessage } = useFormat()
 const { data: invoice } = await useAsyncData(`invoice-${route.params.id}`, () => api.get<Invoice>(`/invoices/${route.params.id}`))
+const showShare = ref(false)
+const preparingShare = ref(false)
+const publicToken = ref('')
+const publicBookUrl = computed(() => publicToken.value && import.meta.client
+  ? `${window.location.origin}/public/service-book/${publicToken.value}`
+  : '')
+const shareMessage = computed(() => `دفترچه سرویس خودرو${invoice.value?.order?.customer?.name ? `ی ${invoice.value.order.customer.name}` : ''}`)
 useHead({ title: () => invoice.value ? `فاکتور ${invoice.value.invoiceNo}` : 'فاکتور' })
 function printInvoice() {
   window.print()
+}
+
+async function openShare() {
+  const vehicleId = invoice.value?.order?.vehicle?.id
+  if (!vehicleId) return toast.error('خودروی این فاکتور یافت نشد.')
+  preparingShare.value = true
+  try {
+    if (!publicToken.value) {
+      const result = await api.post<{ token: string }>(`/vehicles/${vehicleId}/public-link/share`)
+      publicToken.value = result.token
+    }
+    showShare.value = true
+  } catch (error) {
+    toast.error(errorMessage(error))
+  } finally {
+    preparingShare.value = false
+  }
 }
 </script>
 
@@ -16,7 +41,14 @@ function printInvoice() {
   <div v-if="invoice" class="mx-auto max-w-4xl">
     <div class="mb-5 flex items-center justify-between print:hidden">
       <NuxtLink to="/invoices" class="inline-flex items-center gap-1 text-sm text-ink/50 no-underline"><span class="i-lucide-arrow-right" />بازگشت</NuxtLink>
-      <button class="btn-secondary" @click="printInvoice"><span class="i-lucide-printer h-4 w-4" />چاپ فاکتور</button>
+      <div class="flex flex-wrap justify-end gap-2">
+        <button class="btn-secondary" :disabled="preparingShare" @click="openShare">
+          <span v-if="preparingShare" class="i-lucide-loader-circle h-4 w-4 animate-spin" />
+          <span v-else class="i-lucide-share-2 h-4 w-4" />
+          {{ preparingShare ? 'آماده‌سازی...' : 'ارسال لینک' }}
+        </button>
+        <button class="btn-secondary" @click="printInvoice"><span class="i-lucide-printer h-4 w-4" />چاپ فاکتور</button>
+      </div>
     </div>
     <article class="card overflow-hidden bg-white">
       <header class="flex flex-col justify-between gap-5 bg-ink p-6 text-white sm:flex-row sm:items-start sm:p-8">
@@ -40,6 +72,12 @@ function printInvoice() {
         </div>
       </div>
     </article>
+    <PublicBookShareModal
+      :open="showShare"
+      :url="publicBookUrl"
+      :message="shareMessage"
+      @close="showShare = false"
+    />
   </div>
 </template>
 
