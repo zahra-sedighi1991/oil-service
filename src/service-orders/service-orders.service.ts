@@ -104,12 +104,19 @@ export class ServiceOrdersService {
 
       const order = await manager.findOne(ServiceOrder, {
         where: { id, shopId },
-        relations: { productLines: true, laborLines: true },
         lock: { mode: 'pessimistic_write' },
       });
       if (!order) throw new NotFoundException('سرویس یافت نشد.');
       if (order.status !== ServiceOrderStatus.DRAFT) throw new ConflictException('این سرویس قبلاً نهایی یا لغو شده است.');
-      if (!order.productLines.length && !order.laborLines.length) throw new BadRequestException('سرویس بدون قلم قابل نهایی‌سازی نیست.');
+
+      // PostgreSQL cannot apply FOR UPDATE to the nullable side of the LEFT JOINs
+      // TypeORM creates when relations are loaded in the locking query. Keep the
+      // order row locked, then load its lines separately in the same transaction.
+      const [productLines, laborLines] = await Promise.all([
+        manager.findBy(ServiceProductLine, { orderId: order.id }),
+        manager.findBy(ServiceLaborLine, { orderId: order.id }),
+      ]);
+      if (!productLines.length && !laborLines.length) throw new BadRequestException('سرویس بدون قلم قابل نهایی‌سازی نیست.');
 
       const [vehicle, shop] = await Promise.all([
         manager.findOneByOrFail(Vehicle, { id: order.vehicleId, shopId }),
@@ -117,8 +124,8 @@ export class ServiceOrdersService {
       ]);
       if (!shop) throw new NotFoundException('فروشگاه یافت نشد.');
 
-      const productsTotal = order.productLines.reduce((sum, line) => sum + Number(line.total), 0);
-      const servicesTotal = order.laborLines.reduce((sum, line) => sum + Number(line.total), 0);
+      const productsTotal = productLines.reduce((sum, line) => sum + Number(line.total), 0);
+      const servicesTotal = laborLines.reduce((sum, line) => sum + Number(line.total), 0);
       const discount = dto.discountAmount ?? 0;
       if (discount > productsTotal + servicesTotal) throw new BadRequestException('تخفیف نمی‌تواند بیشتر از جمع فاکتور باشد.');
       const count = await manager.count(Invoice, { where: { shopId } });
@@ -132,13 +139,13 @@ export class ServiceOrdersService {
         currency: shop.currency, issuedAt: new Date(),
       });
       invoice.lines = [
-        ...order.productLines.map((line) => manager.create(InvoiceLine, {
+        ...productLines.map((line) => manager.create(InvoiceLine, {
           itemType: 'product' as const, sourceId: line.productId,
           descriptionSnapshot: String(line.snapshot.displayName ?? line.snapshot.description),
           attributesSnapshot: line.snapshot.attributes as Record<string, unknown> ?? {},
           quantity: line.quantity, unitPrice: line.unitPrice, total: line.total,
         })),
-        ...order.laborLines.map((line) => manager.create(InvoiceLine, {
+        ...laborLines.map((line) => manager.create(InvoiceLine, {
           itemType: 'service' as const, sourceId: line.serviceId,
           descriptionSnapshot: String(line.snapshot.name ?? line.snapshot.description),
           attributesSnapshot: {}, quantity: line.quantity, unitPrice: line.unitFee, total: line.total,
