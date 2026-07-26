@@ -36,9 +36,19 @@ const products = ref<ProductLine[]>([])
 const services = ref<LaborLine[]>([])
 const showProduct = ref(false)
 const showService = ref(false)
+const showVehicle = ref(false)
 const productSearch = ref('')
 const submitting = ref(false)
+const savingVehicle = ref(false)
 const success = ref<{ invoiceNo: string; totalAmount: number; publicToken?: string } | null>(null)
+const vehicleForm = reactive({
+  brandId: '',
+  modelId: '',
+  plate: '',
+  temporaryIdentifier: '',
+  year: undefined as number | undefined,
+  lastOdometer: undefined as number | undefined
+})
 const customerQuery = computed(() => {
   const value = customerSearch.value.trim()
   if (!value) return undefined
@@ -56,10 +66,27 @@ const { data: catalogProducts } = await useAsyncData(
   { watch: [productSearch] }
 )
 const { data: catalogServices } = await useAsyncData('service-catalog', () => api.get<CatalogService[]>('/catalog/services'))
+const { data: vehicleBrands } = await useAsyncData(
+  'service-vehicle-brands',
+  () => api.get<Array<{ id: string; nameFa: string }>>('/catalog/vehicle-brands')
+)
+const { data: vehicleModels } = await useAsyncData(
+  'service-vehicle-models',
+  () => vehicleForm.brandId
+    ? api.get<Array<{ id: string; nameFa: string }>>('/catalog/vehicle-models', { brandId: vehicleForm.brandId })
+    : Promise.resolve([]),
+  { watch: [() => vehicleForm.brandId] }
+)
 
 const productTotal = computed(() => products.value.reduce((sum, line) => sum + line.quantity * line.unitPrice, 0))
 const serviceTotal = computed(() => services.value.reduce((sum, line) => sum + line.quantity * line.unitFee, 0))
 const grandTotal = computed(() => productTotal.value + serviceTotal.value)
+const canCreateVehicle = computed(() => Boolean(
+  selectedCustomer.value
+  && vehicleForm.brandId
+  && vehicleForm.modelId
+  && (vehicleForm.plate.trim() || vehicleForm.temporaryIdentifier.trim())
+))
 
 watch(selectedVehicle, vehicle => {
   if (vehicle?.lastOdometer !== undefined) odometer.value = vehicle.lastOdometer
@@ -72,12 +99,52 @@ onMounted(async () => {
     selectedCustomer.value = await api.get<Customer>(`/customers/${customerId}`)
     const vehicleId = String(route.query.vehicle || '')
     if (vehicleId) selectedVehicle.value = selectedCustomer.value.vehicles.find(item => item.id === vehicleId) || null
-  } catch {}
+  } catch (error) {
+    toast.error(errorMessage(error))
+  }
 })
 
 function selectCustomer(customer: Customer) {
   selectedCustomer.value = customer
   selectedVehicle.value = customer.vehicles.length === 1 ? customer.vehicles[0] : null
+}
+
+function openVehicleModal() {
+  vehicleForm.brandId = ''
+  vehicleForm.modelId = ''
+  vehicleForm.plate = ''
+  vehicleForm.temporaryIdentifier = ''
+  vehicleForm.year = undefined
+  vehicleForm.lastOdometer = odometer.value
+  showVehicle.value = true
+}
+
+async function createVehicle() {
+  if (!selectedCustomer.value) return
+  savingVehicle.value = true
+  try {
+    const created = await api.post<Vehicle>('/vehicles', {
+      ownerCustomerId: selectedCustomer.value.id,
+      brandId: vehicleForm.brandId,
+      modelId: vehicleForm.modelId,
+      plate: vehicleForm.plate || undefined,
+      temporaryIdentifier: vehicleForm.temporaryIdentifier || undefined,
+      year: vehicleForm.year,
+      lastOdometer: vehicleForm.lastOdometer
+    })
+    const refreshedCustomer = await api.get<Customer>(`/customers/${selectedCustomer.value.id}`)
+    selectedCustomer.value = refreshedCustomer
+    selectedVehicle.value = refreshedCustomer.vehicles.find(vehicle => vehicle.id === created.id) || null
+    if (selectedVehicle.value?.lastOdometer !== undefined) {
+      odometer.value = selectedVehicle.value.lastOdometer
+    }
+    showVehicle.value = false
+    toast.success('خودرو ثبت و برای این سرویس انتخاب شد.')
+  } catch (error) {
+    toast.error(errorMessage(error))
+  } finally {
+    savingVehicle.value = false
+  }
 }
 
 function addProduct(product: Product) {
@@ -224,7 +291,17 @@ async function copyPublicLink() {
       </div>
 
       <div class="card p-5">
-        <h2 class="m-0 text-base font-900">۲. خودرو و کیلومتر</h2>
+        <div class="flex items-center justify-between gap-3">
+          <h2 class="m-0 text-base font-900">۲. خودرو و کیلومتر</h2>
+          <button
+            v-if="selectedCustomer"
+            class="btn-secondary px-3 py-2"
+            @click="openVehicleModal"
+          >
+            <span class="i-lucide-car-front h-4 w-4" />
+            افزودن خودرو
+          </button>
+        </div>
         <div v-if="selectedCustomer" class="mt-4">
           <div v-if="selectedCustomer.vehicles.length" class="grid gap-2 sm:grid-cols-2">
             <button v-for="vehicle in selectedCustomer.vehicles" :key="vehicle.id" class="rounded-xl border p-3 text-right transition" :class="selectedVehicle?.id === vehicle.id ? 'border-brand-500 bg-brand-50' : 'border-black/7 bg-white hover:border-brand-300'" @click="selectedVehicle = vehicle">
@@ -235,12 +312,14 @@ async function copyPublicLink() {
           </div>
           <div v-else class="rounded-xl border border-dashed border-black/10 p-5 text-center text-sm text-ink/45">
             این مشتری خودرو ندارد.
-            <NuxtLink :to="`/customers/${selectedCustomer.id}`" class="mt-2 block font-700 text-brand-700">افزودن خودرو</NuxtLink>
+            <button class="btn-ghost mx-auto mt-2 text-brand-700" @click="openVehicleModal">
+              همین‌جا خودرو را اضافه کنید
+            </button>
           </div>
           <div class="mt-5"><label class="label">کیلومتر فعلی</label><input v-model.number="odometer" type="number" min="0" class="field text-left" dir="ltr" placeholder="126500"></div>
         </div>
         <div v-else class="mt-4 grid min-h-52 place-items-center rounded-xl bg-black/[.025] text-center text-sm text-ink/35">ابتدا مشتری را از ستون مقابل انتخاب کنید.</div>
-        <button class="btn-primary mt-5 w-full" :disabled="!selectedCustomer" @click="goToItems">ادامه و افزودن اقلام<span class="i-lucide-arrow-left h-4 w-4" /></button>
+        <button class="btn-primary mt-5 w-full" :disabled="!selectedCustomer || !selectedVehicle" @click="goToItems">ادامه و افزودن اقلام<span class="i-lucide-arrow-left h-4 w-4" /></button>
       </div>
     </section>
 
@@ -331,6 +410,65 @@ async function copyPublicLink() {
         </button>
       </div>
       <button class="btn-ghost mt-3 w-full border border-dashed border-black/10" @click="addLocalService"><span class="i-lucide-file-plus" />ثبت خدمت محلی</button>
+    </AppModal>
+
+    <AppModal
+      :open="showVehicle"
+      title="افزودن خودرو"
+      description="بعد از ثبت، خودرو به‌صورت خودکار برای این سرویس انتخاب می‌شود."
+      @close="showVehicle = false"
+    >
+      <form class="grid gap-4 sm:grid-cols-2" @submit.prevent="createVehicle">
+        <div>
+          <label class="label">برند خودرو</label>
+          <select v-model="vehicleForm.brandId" class="field" required @change="vehicleForm.modelId = ''">
+            <option value="" disabled>انتخاب برند</option>
+            <option v-for="brand in vehicleBrands || []" :key="brand.id" :value="brand.id">
+              {{ brand.nameFa }}
+            </option>
+          </select>
+          <small v-if="!vehicleBrands?.length" class="mt-2 block text-amber-700">
+            مدیر سیستم باید ابتدا برند خودرو را در اطلاعات پایه ثبت کند.
+          </small>
+        </div>
+        <div>
+          <label class="label">مدل خودرو</label>
+          <select v-model="vehicleForm.modelId" class="field" :disabled="!vehicleForm.brandId" required>
+            <option value="" disabled>انتخاب مدل</option>
+            <option v-for="model in vehicleModels || []" :key="model.id" :value="model.id">
+              {{ model.nameFa }}
+            </option>
+          </select>
+          <small v-if="vehicleForm.brandId && !vehicleModels?.length" class="mt-2 block text-amber-700">
+            برای این برند هنوز مدلی ثبت نشده است.
+          </small>
+        </div>
+        <div>
+          <label class="label">پلاک</label>
+          <input v-model="vehicleForm.plate" class="field" placeholder="مثلاً ۱۲ب۳۴۵ایران۶۷">
+        </div>
+        <div>
+          <label class="label">شناسه موقت</label>
+          <input v-model="vehicleForm.temporaryIdentifier" class="field" placeholder="برای خودروی بدون پلاک">
+        </div>
+        <div>
+          <label class="label">سال ساخت</label>
+          <input v-model.number="vehicleForm.year" type="number" min="1300" max="2200" class="field">
+        </div>
+        <div>
+          <label class="label">کیلومتر فعلی</label>
+          <input v-model.number="vehicleForm.lastOdometer" type="number" min="0" class="field">
+        </div>
+        <p class="m-0 text-xs leading-5 text-ink/45 sm:col-span-2">
+          وارد کردن یکی از دو مقدار «پلاک» یا «شناسه موقت» الزامی است.
+        </p>
+        <div class="flex justify-end gap-2 pt-2 sm:col-span-2">
+          <button type="button" class="btn-ghost" @click="showVehicle = false">انصراف</button>
+          <button class="btn-primary" :disabled="savingVehicle || !canCreateVehicle">
+            {{ savingVehicle ? 'در حال ثبت...' : 'ثبت و انتخاب خودرو' }}
+          </button>
+        </div>
+      </form>
     </AppModal>
   </div>
 </template>

@@ -172,16 +172,18 @@ export class CatalogService {
     }));
   }
 
-  async listProducts(shopId: string, search?: string, productTypeId?: string, attributesJson?: string) {
-    const qb = this.products.createQueryBuilder('product')
-      .leftJoinAndMapOne(
+  async listProducts(shopId?: string, search?: string, productTypeId?: string, attributesJson?: string) {
+    const qb = this.products.createQueryBuilder('product');
+    if (shopId) {
+      qb.leftJoinAndMapOne(
         'product.shopConfiguration',
         ShopProduct,
         'shopConfiguration',
         'shopConfiguration.productId = product.id AND shopConfiguration.shopId = :shopId',
         { shopId },
-      )
-      .where('product.status = :status', { status: RecordStatus.ACTIVE });
+      );
+    }
+    qb.where('product.status = :status', { status: RecordStatus.ACTIVE });
     if (search) qb.andWhere('product.displayName ILIKE :search', { search: `%${search}%` });
     if (productTypeId) qb.andWhere('product.productTypeId = :productTypeId', { productTypeId });
     if (attributesJson) {
@@ -198,11 +200,11 @@ export class CatalogService {
         attributes: JSON.stringify(attributes),
       });
     }
-    return qb.orderBy('shopConfiguration.favorite', 'DESC', 'NULLS LAST')
-      .addOrderBy('shopConfiguration.sortOrder', 'ASC', 'NULLS LAST')
-      .addOrderBy('product.displayName', 'ASC')
-      .take(50)
-      .getMany();
+    if (shopId) {
+      qb.orderBy('shopConfiguration.favorite', 'DESC', 'NULLS LAST')
+        .addOrderBy('shopConfiguration.sortOrder', 'ASC', 'NULLS LAST');
+    }
+    return qb.addOrderBy('product.displayName', 'ASC').take(50).getMany();
   }
 
   async configureProduct(shopId: string, actorId: string, productId: string, dto: ConfigureShopProductDto) {

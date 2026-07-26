@@ -70,9 +70,19 @@ async function saveSetting() {
         <button class="rounded-lg border-0 px-4 py-2 text-sm font-700" :class="tab === 'products' ? 'bg-white text-ink shadow-sm' : 'bg-transparent text-ink/45'" @click="tab = 'products'">محصولات</button>
         <button class="rounded-lg border-0 px-4 py-2 text-sm font-700" :class="tab === 'services' ? 'bg-white text-ink shadow-sm' : 'bg-transparent text-ink/45'" @click="tab = 'services'">خدمات</button>
       </div>
-      <div v-if="tab === 'products'" class="relative w-full sm:w-80">
-        <span class="i-lucide-search absolute right-3 top-1/2 h-4.5 w-4.5 -translate-y-1/2 text-ink/30" />
-        <input v-model="search" class="field py-2.5 pr-10" placeholder="جستجوی محصول...">
+      <div class="flex w-full items-center gap-2 sm:w-auto">
+        <div v-if="tab === 'products'" class="relative min-w-0 flex-1 sm:w-80">
+          <span class="i-lucide-search absolute right-3 top-1/2 h-4.5 w-4.5 -translate-y-1/2 text-ink/30" />
+          <input v-model="search" class="field py-2.5 pr-10" placeholder="جستجوی محصول...">
+        </div>
+        <button
+          class="btn-secondary shrink-0 px-3 py-2.5"
+          title="دریافت آخرین اطلاعات کاتالوگ"
+          @click="tab === 'products' ? refreshProducts() : refreshServices()"
+        >
+          <span class="i-lucide-refresh-cw h-4 w-4" />
+          تازه‌سازی
+        </button>
       </div>
     </div>
 
@@ -93,7 +103,11 @@ async function saveSetting() {
             </div>
           </div>
         </div>
-        <AppEmptyState v-else title="محصولی پیدا نشد" />
+        <AppEmptyState
+          v-else
+          title="محصولی پیدا نشد"
+          description="مدیر سیستم باید علاوه بر دسته محصول، یک محصول قابل فروش ایجاد کند. سپس دکمه تازه‌سازی را بزنید."
+        />
       </div>
       <div v-else>
         <div v-if="services?.length" class="divide-y divide-black/5">

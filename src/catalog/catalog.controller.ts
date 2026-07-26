@@ -50,7 +50,12 @@ export class CatalogController {
     @Query('typeId') typeId?: string,
     @Query('attributes') attributes?: string,
   ) {
-    return this.catalog.listProducts(user.shopId!, search, typeId, attributes);
+    return this.catalog.listProducts(
+      user.role === UserRole.SUPER_ADMIN ? undefined : user.shopId,
+      search,
+      typeId,
+      attributes,
+    );
   }
   @Put('shop-products/:productId')
   configureProduct(@CurrentUser() user: AuthUser, @Param('productId') id: string, @Body() dto: ConfigureShopProductDto) {
