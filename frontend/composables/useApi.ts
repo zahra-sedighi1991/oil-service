@@ -1,3 +1,5 @@
+import { resolveApiBase } from '~/utils/api-base'
+
 export function useApi() {
   const config = useRuntimeConfig()
   const token = useCookie<string | null>('oil-service-token', {
@@ -8,7 +10,7 @@ export function useApi() {
   async function request<T>(path: string, options: Record<string, any> = {}) {
     try {
       return await $fetch<T>(path, {
-        baseURL: config.public.apiBase,
+        baseURL: resolveApiBase(config.public.apiBase),
         ...options,
         headers: {
           ...(token.value ? { Authorization: `Bearer ${token.value}` } : {}),

@@ -1,10 +1,14 @@
 <script setup lang="ts">
+import { resolveApiBase } from '~/utils/api-base'
+
 definePageMeta({ layout: false })
 const route = useRoute()
 const config = useRuntimeConfig()
 const { number, money, date } = useFormat()
 const { data: book, error } = await useAsyncData(`public-book-${route.params.token}`, () =>
-  $fetch<any>(`/public/v1/service-book/${route.params.token}`, { baseURL: config.public.publicApiBase })
+  $fetch<any>(`/public/v1/service-book/${route.params.token}`, {
+    baseURL: resolveApiBase(config.public.publicApiBase)
+  })
 )
 useHead({
   title: () => book.value ? `دفترچه سرویس ${book.value.vehicle.brand} ${book.value.vehicle.model}` : 'دفترچه سرویس',
