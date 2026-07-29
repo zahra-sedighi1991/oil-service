@@ -10,7 +10,7 @@ const { number, errorMessage } = useFormat()
 const search = ref('')
 const showCustomer = ref(false)
 const saving = ref(false)
-const form = reactive({ name: '', mobile: '', note: '' })
+const form = reactive({ name: '', mobile: '', gender: 'male' as 'male' | 'female', note: '' })
 const searchQuery = computed(() => {
   const value = search.value.trim()
   if (!value) return undefined
@@ -26,8 +26,13 @@ const { data: customers, pending, refresh } = await useAsyncData(
 async function createCustomer() {
   saving.value = true
   try {
-    await api.post('/customers', form)
-    Object.assign(form, { name: '', mobile: '', note: '' })
+    await api.post('/customers', {
+      mobile: form.mobile.trim(),
+      gender: form.gender,
+      name: form.name.trim() || undefined,
+      note: form.note.trim() || undefined
+    })
+    Object.assign(form, { name: '', mobile: '', gender: 'male', note: '' })
     showCustomer.value = false
     toast.success('مشتری جدید ثبت شد.')
     await refresh()
@@ -36,6 +41,11 @@ async function createCustomer() {
   } finally {
     saving.value = false
   }
+}
+
+function openCustomerModal() {
+  Object.assign(form, { name: '', mobile: '', gender: 'male', note: '' })
+  showCustomer.value = true
 }
 </script>
 
@@ -47,7 +57,7 @@ async function createCustomer() {
         <h1 class="mb-0 mt-1 text-2xl font-950">مشتریان و خودروها</h1>
         <p class="mb-0 mt-2 text-sm text-ink/45">جستجو، مشاهده سوابق و مدیریت خودروهای هر مشتری</p>
       </div>
-      <button class="btn-primary" @click="showCustomer = true"><span class="i-lucide-user-plus h-5 w-5" />مشتری جدید</button>
+      <button class="btn-primary" @click="openCustomerModal"><span class="i-lucide-user-plus h-5 w-5" />مشتری جدید</button>
     </header>
 
     <section class="card mb-5 p-3">
@@ -99,14 +109,21 @@ async function createCustomer() {
     </section>
     <section v-else class="card list-panel">
       <AppEmptyState icon="i-lucide-users" title="مشتری‌ای پیدا نشد" description="مشتری جدید بسازید یا عبارت جستجو را تغییر دهید.">
-        <button class="btn-primary" @click="showCustomer = true">ثبت مشتری جدید</button>
+        <button class="btn-primary" @click="openCustomerModal">ثبت مشتری جدید</button>
       </AppEmptyState>
     </section>
 
     <AppModal :open="showCustomer" title="مشتری جدید" description="اطلاعات پایه مشتری را وارد کنید." @close="showCustomer = false">
       <form class="space-y-4" @submit.prevent="createCustomer">
-        <div><label class="label">نام و نام خانوادگی</label><input v-model="form.name" class="field" required></div>
-        <div><label class="label">شماره موبایل</label><input v-model="form.mobile" class="field text-left" dir="ltr" inputmode="tel" placeholder="09120000000" required></div>
+        <div><label class="label">شماره موبایل</label><input v-model="form.mobile" class="field text-left" dir="ltr" inputmode="tel" placeholder="09120000000" required autofocus></div>
+        <div>
+          <label class="label">جنسیت</label>
+          <div class="grid grid-cols-2 gap-2">
+            <label class="flex cursor-pointer items-center justify-center gap-2 rounded-xl border p-3" :class="form.gender === 'male' ? 'border-brand-300 bg-brand-50 text-brand-800' : 'border-black/7'"><input v-model="form.gender" type="radio" value="male" class="accent-brand-600"> آقا</label>
+            <label class="flex cursor-pointer items-center justify-center gap-2 rounded-xl border p-3" :class="form.gender === 'female' ? 'border-brand-300 bg-brand-50 text-brand-800' : 'border-black/7'"><input v-model="form.gender" type="radio" value="female" class="accent-brand-600"> خانم</label>
+          </div>
+        </div>
+        <div><label class="label">نام و نام خانوادگی <span class="font-400 text-ink/40">(اختیاری)</span></label><input v-model="form.name" class="field" placeholder="در صورت تمایل وارد کنید"></div>
         <div><label class="label">یادداشت اختیاری</label><textarea v-model="form.note" class="field min-h-24 resize-y" /></div>
         <div class="flex justify-end gap-2 pt-2">
           <button type="button" class="btn-ghost" @click="showCustomer = false">انصراف</button>

@@ -1,9 +1,8 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { ILike, Repository } from 'typeorm';
+import { ILike, In, Repository } from 'typeorm';
 import {
   Product,
-  ProductManufacturer,
   AuditLog,
   ProductAttributeDefinition,
   ProductAttributeOption,
@@ -12,7 +11,9 @@ import {
   ShopProduct,
   ShopService,
   VehicleBrand,
+  Vehicle,
   VehicleModel,
+  ProductVehicleCompatibility,
 } from '../database/entities';
 import {
   ConfigureShopProductDto,
@@ -20,11 +21,11 @@ import {
   CreateAttributeDto,
   CreateAttributeOptionDto,
   CreateProductDto,
-  CreateManufacturerDto,
   CreateProductTypeDto,
   CreateServiceCatalogDto,
   CreateVehicleBrandDto,
   CreateVehicleModelDto,
+  UpdateProductDto,
 } from './dto';
 import { RecordStatus } from '../common/enums';
 
@@ -33,11 +34,12 @@ export class CatalogService {
   constructor(
     @InjectRepository(VehicleBrand) private readonly brands: Repository<VehicleBrand>,
     @InjectRepository(VehicleModel) private readonly models: Repository<VehicleModel>,
+    @InjectRepository(Vehicle) private readonly vehicles: Repository<Vehicle>,
     @InjectRepository(ProductType) private readonly types: Repository<ProductType>,
     @InjectRepository(ProductAttributeDefinition) private readonly attributes: Repository<ProductAttributeDefinition>,
     @InjectRepository(ProductAttributeOption) private readonly attributeOptions: Repository<ProductAttributeOption>,
     @InjectRepository(Product) private readonly products: Repository<Product>,
-    @InjectRepository(ProductManufacturer) private readonly manufacturers: Repository<ProductManufacturer>,
+    @InjectRepository(ProductVehicleCompatibility) private readonly compatibilities: Repository<ProductVehicleCompatibility>,
     @InjectRepository(ShopProduct) private readonly shopProducts: Repository<ShopProduct>,
     @InjectRepository(ServiceCatalog) private readonly services: Repository<ServiceCatalog>,
     @InjectRepository(ShopService) private readonly shopServices: Repository<ShopService>,
@@ -67,15 +69,6 @@ export class CatalogService {
   }
   createType(dto: CreateProductTypeDto) { return this.types.save(this.types.create(dto)); }
   listTypes() { return this.types.find({ where: { status: RecordStatus.ACTIVE }, order: { title: 'ASC' } }); }
-  createManufacturer(dto: CreateManufacturerDto) {
-    return this.manufacturers.save(this.manufacturers.create(dto));
-  }
-  listManufacturers() {
-    return this.manufacturers.find({
-      where: { status: RecordStatus.ACTIVE },
-      order: { name: 'ASC' },
-    });
-  }
 
   async setStatus(
     entity: 'vehicle-brand' | 'vehicle-model' | 'product-type' | 'product' | 'service',
@@ -175,14 +168,53 @@ export class CatalogService {
     });
     await this.validateAttributes(dto.attributes, definitions);
     const displayName = this.renderTitle(type, dto.name, dto.attributes, definitions);
-    return this.products.save(this.products.create({
-      ...dto,
+    const product = await this.products.save(this.products.create({
+      productTypeId: dto.productTypeId,
+      name: dto.name,
+      attributes: dto.attributes,
       displayName,
       schemaVersion: type.currentSchemaVersion,
     }));
+    if (dto.vehicleModelIds?.length) await this.setProductVehicleModels(product.id, dto.vehicleModelIds);
+    return product;
   }
 
-  async createSuggestedProduct(name: string) {
+  async updateProduct(id: string, dto: UpdateProductDto) {
+    const [product, type] = await Promise.all([
+      this.products.findOneBy({ id, status: RecordStatus.ACTIVE }),
+      this.types.findOneBy({ id: dto.productTypeId, status: RecordStatus.ACTIVE }),
+    ]);
+    if (!product) throw new NotFoundException('محصول یافت نشد.');
+    if (!type) throw new NotFoundException('نوع محصول یافت نشد.');
+    const definitions = await this.attributes.findBy({
+      productTypeId: type.id,
+      schemaVersion: type.currentSchemaVersion,
+      status: RecordStatus.ACTIVE,
+    });
+    await this.validateAttributes(dto.attributes, definitions);
+    product.productTypeId = type.id;
+    product.name = dto.name.trim();
+    product.attributes = dto.attributes;
+    product.schemaVersion = type.currentSchemaVersion;
+    product.displayName = this.renderTitle(type, product.name, dto.attributes, definitions);
+    const result = await this.products.save(product);
+    await this.setProductVehicleModels(result.id, dto.vehicleModelIds);
+    return result;
+  }
+
+  async createSuggestedProduct(name: string, details?: {
+    productTypeId?: string;
+    attributes?: Record<string, unknown>;
+    vehicleModelIds?: string[];
+  }) {
+    if (details?.productTypeId) {
+      return this.createProduct({
+        productTypeId: details.productTypeId,
+        name,
+        attributes: details.attributes ?? {},
+        vehicleModelIds: details.vehicleModelIds ?? [],
+      });
+    }
     const key = 'uncategorized';
     let type = await this.types.findOneBy({ key });
     if (!type) {
@@ -198,8 +230,16 @@ export class CatalogService {
     return this.createProduct({ productTypeId: type.id, name, attributes: {} });
   }
 
-  async listProducts(shopId?: string, search?: string, productTypeId?: string, attributesJson?: string) {
-    const qb = this.products.createQueryBuilder('product');
+  async listProducts(
+    shopId?: string,
+    search?: string,
+    productTypeId?: string,
+    attributesJson?: string,
+    activeOnly = false,
+    vehicleId?: string,
+  ) {
+    const qb = this.products.createQueryBuilder('product')
+      .leftJoinAndSelect('product.productType', 'productType');
     if (shopId) {
       qb.leftJoinAndMapOne(
         'product.shopConfiguration',
@@ -210,7 +250,14 @@ export class CatalogService {
       );
     }
     qb.where('product.status = :status', { status: RecordStatus.ACTIVE });
-    if (search) qb.andWhere('product.displayName ILIKE :search', { search: `%${search}%` });
+    if (shopId && activeOnly) qb.andWhere('shopConfiguration.isActive = true');
+    if (search) {
+      const searchValue = `%${search}%`;
+      qb.andWhere(`(
+        product.displayName ILIKE :search
+        OR CAST(product.attributes AS text) ILIKE :search
+      )`, { search: searchValue });
+    }
     if (productTypeId) qb.andWhere('product.productTypeId = :productTypeId', { productTypeId });
     if (attributesJson) {
       let attributes: unknown;
@@ -230,7 +277,58 @@ export class CatalogService {
       qb.orderBy('shopConfiguration.favorite', 'DESC', 'NULLS LAST')
         .addOrderBy('shopConfiguration.sortOrder', 'ASC', 'NULLS LAST');
     }
-    return qb.addOrderBy('product.displayName', 'ASC').take(50).getMany();
+    const rows = await qb.addOrderBy('product.displayName', 'ASC').take(100).getMany();
+    if (!vehicleId || !shopId || !rows.length) return rows;
+
+    const vehicle = await this.vehicles.findOneBy({ id: vehicleId, shopId });
+    if (!vehicle) throw new NotFoundException('خودرو در این فروشگاه یافت نشد.');
+    const rules = await this.compatibilities.find({
+      where: { productId: In(rows.map((row) => row.id)) },
+    });
+    const priority = { compatible: 0, universal: 1, incompatible: 2 } as const;
+    return rows.map((product) => {
+      const productRules = rules.filter((rule) => rule.productId === product.id);
+      const modelRules = productRules.filter((rule) => rule.vehicleModelId === vehicle.modelId);
+      const rule = modelRules[0];
+      const status = rule ? 'compatible' : productRules.length ? 'incompatible' : 'universal';
+      return {
+        ...product,
+        compatibility: {
+          status,
+          matchLevel: rule ? 'model' : undefined,
+        },
+      };
+    }).sort((a, b) => priority[a.compatibility.status] - priority[b.compatibility.status]);
+  }
+
+  listCompatibilities(productId?: string, modelId?: string) {
+    return this.compatibilities.find({
+      where: {
+        ...(productId ? { productId } : {}),
+        ...(modelId ? { vehicleModelId: modelId } : {}),
+      },
+      relations: { product: true, vehicleModel: { brand: true } },
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  async setProductVehicleModels(productId: string, vehicleModelIds: string[]) {
+    if (!await this.products.existsBy({ id: productId, status: RecordStatus.ACTIVE })) {
+      throw new NotFoundException('محصول یافت نشد.');
+    }
+    const ids = [...new Set(vehicleModelIds.filter(Boolean))];
+    if (ids.length) {
+      const count = await this.models.countBy({ id: In(ids), status: RecordStatus.ACTIVE });
+      if (count !== ids.length) throw new BadRequestException('یکی از مدل‌های خودرو معتبر نیست.');
+    }
+    await this.compatibilities.delete({ productId });
+    if (ids.length) {
+      await this.compatibilities.save(ids.map((vehicleModelId) => this.compatibilities.create({
+        productId,
+        vehicleModelId,
+      })));
+    }
+    return { productId, vehicleModelIds: ids, appliesToAllVehicles: ids.length === 0 };
   }
 
   async configureProduct(shopId: string, actorId: string, productId: string, dto: ConfigureShopProductDto) {
@@ -239,13 +337,12 @@ export class CatalogService {
     const before = existingSetting ? { ...existingSetting } : undefined;
     const setting = existingSetting ?? this.shopProducts.create({ shopId, productId });
     if (dto.salePrice !== undefined) setting.salePrice = String(dto.salePrice);
-    if (dto.defaultIntervalKm !== undefined) {
-      setting.override = { ...(setting.override ?? {}), intervalKm: dto.defaultIntervalKm };
-    }
+    const override = { ...(setting.override ?? {}), ...(dto.override ?? {}) };
+    if (dto.defaultIntervalKm !== undefined) override.intervalKm = dto.defaultIntervalKm;
+    setting.override = override;
     if (dto.isActive !== undefined) setting.isActive = dto.isActive;
     if (dto.favorite !== undefined) setting.favorite = dto.favorite;
     if (dto.sortOrder !== undefined) setting.sortOrder = dto.sortOrder;
-    if (dto.override !== undefined) setting.override = dto.override;
     const result = await this.shopProducts.save(setting);
     await this.audits.save(this.audits.create({
       actorId, shopId, action: 'shop_product.configured',
@@ -293,7 +390,10 @@ export class CatalogService {
   }
 
   private async validateAttributes(values: Record<string, unknown>, definitions: ProductAttributeDefinition[]) {
-    const allowed = new Set(definitions.map((item) => item.key));
+    const allowed = new Set([
+      ...definitions.map((item) => item.key),
+      'model', 'package_volume',
+    ]);
     const optionRows = definitions.length
       ? await this.attributeOptions.createQueryBuilder('option')
         .where('option.attributeDefinitionId IN (:...ids)', { ids: definitions.map((item) => item.id) })

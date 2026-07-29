@@ -11,7 +11,6 @@ interface ProductLine {
   quantity: number
   unitPrice: number
   intervalKm?: number
-  intervalMonths?: number
 }
 interface LaborLine {
   key: string
@@ -78,8 +77,12 @@ const { data: customers, refresh: refreshCustomers } = await useAsyncData(
 )
 const { data: catalogProducts } = await useAsyncData(
   'service-product-search',
-  () => api.get<Product[]>('/catalog/products', productSearch.value ? { search: productSearch.value } : undefined),
-  { watch: [productSearch] }
+  () => api.get<Product[]>('/catalog/products', {
+    ...(productSearch.value ? { search: productSearch.value } : {}),
+    activeOnly: true,
+    ...(selectedVehicle.value?.id ? { vehicleId: selectedVehicle.value.id } : {})
+  }),
+  { watch: [productSearch, () => selectedVehicle.value?.id] }
 )
 const { data: catalogServices } = await useAsyncData('service-catalog', () => api.get<CatalogService[]>('/catalog/services'))
 const { data: pendingSuggestions } = await useAsyncData(
@@ -103,7 +106,13 @@ const pendingProductSuggestions = computed(() => {
       && (!search || description!.toLocaleLowerCase('fa').includes(search))
   })
 })
-const customerForm = reactive({ name: '', mobile: '', note: '' })
+const selectableProducts = computed(() => (catalogProducts.value || []).filter(
+  product => product.compatibility?.status !== 'incompatible'
+))
+const compatibleProductCount = computed(() => selectableProducts.value.filter(
+  product => product.compatibility?.status === 'compatible'
+).length)
+const customerForm = reactive({ name: '', mobile: '', gender: 'male' as 'male' | 'female', note: '' })
 const pendingServiceSuggestions = computed(() => (pendingSuggestions.value || []).filter(
   item => item.entityType === 'service' && Boolean(item.payload.description?.trim())
 ))
@@ -184,7 +193,7 @@ function openCustomerModal() {
   const searchedMobile = /^[\d۰-۹٠-٩+\-\s]+$/.test(searchedValue)
     ? normalizeSearchedMobile(searchedValue)
     : ''
-  Object.assign(customerForm, { name: '', mobile: searchedMobile, note: '' })
+  Object.assign(customerForm, { name: '', mobile: searchedMobile, gender: 'male', note: '' })
   showCustomer.value = true
 }
 
@@ -192,8 +201,9 @@ async function createCustomer() {
   savingCustomer.value = true
   try {
     const created = await api.post<Customer>('/customers', {
-      name: customerForm.name.trim(),
       mobile: customerForm.mobile.trim(),
+      gender: customerForm.gender,
+      name: customerForm.name.trim() || undefined,
       note: customerForm.note.trim() || undefined
     })
     const customer = { ...created, vehicles: created.vehicles || [] }
@@ -260,8 +270,7 @@ function addProduct(product: Product) {
     description: product.displayName,
     quantity: 1,
     unitPrice: Number(product.shopConfiguration?.salePrice || 0),
-    intervalKm: productDefaultIntervalKm(product),
-    intervalMonths: Number(product.attributes?.interval_months || product.attributes?.suggested_months || 0) || undefined
+    intervalKm: productDefaultIntervalKm(product)
   })
   showProduct.value = false
 }
@@ -504,7 +513,7 @@ async function openShare() {
         <div v-if="products.length" class="divide-y divide-black/5">
           <div v-for="(line, index) in products" :key="line.key" class="p-4">
             <div class="mb-3 flex items-start justify-between gap-3"><input v-model="line.description" class="min-w-0 flex-1 border-0 bg-transparent text-sm font-800 outline-none" :readonly="Boolean(line.productId)"><button class="btn-ghost h-8 w-8 p-0 text-danger" @click="products.splice(index, 1)"><span class="i-lucide-trash-2 h-4 w-4" /></button></div>
-            <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <div class="grid grid-cols-2 gap-2 sm:grid-cols-3">
               <div><label class="label">تعداد</label><input v-model.number="line.quantity" type="number" min=".001" step=".001" class="field py-2"></div>
               <div><label class="label">قیمت واحد</label><input v-model.number="line.unitPrice" type="number" min="0" class="field py-2"></div>
               <div>
@@ -514,7 +523,6 @@ async function openShare() {
                   موعد بعدی: {{ number(odometer + line.intervalKm) }} کیلومتر
                 </small>
               </div>
-              <div><label class="label">دوره ماه</label><input v-model.number="line.intervalMonths" type="number" min="0" class="field py-2"></div>
             </div>
             <p class="mb-0 mt-3 text-left text-xs font-800 text-brand-700" dir="rtl">{{ money(line.quantity * line.unitPrice) }}</p>
           </div>
@@ -584,10 +592,6 @@ async function openShare() {
     >
       <form class="space-y-4" @submit.prevent="createCustomer">
         <div>
-          <label class="label">نام و نام خانوادگی</label>
-          <input v-model="customerForm.name" class="field" autocomplete="name" required autofocus>
-        </div>
-        <div>
           <label class="label">شماره موبایل</label>
           <input
             v-model="customerForm.mobile"
@@ -597,8 +601,24 @@ async function openShare() {
             autocomplete="tel"
             placeholder="09120000000"
             required
+            autofocus
           >
           <p v-if="customerForm.mobile" class="mb-0 mt-2 text-xs text-ink/40">شماره از جست‌وجوی شما وارد شده و قابل ویرایش است.</p>
+        </div>
+        <div>
+          <label class="label">جنسیت</label>
+          <div class="grid grid-cols-2 gap-2">
+            <label class="flex cursor-pointer items-center justify-center gap-2 rounded-xl border p-3" :class="customerForm.gender === 'male' ? 'border-brand-300 bg-brand-50 text-brand-800' : 'border-black/7'">
+              <input v-model="customerForm.gender" type="radio" value="male" class="accent-brand-600"> آقا
+            </label>
+            <label class="flex cursor-pointer items-center justify-center gap-2 rounded-xl border p-3" :class="customerForm.gender === 'female' ? 'border-brand-300 bg-brand-50 text-brand-800' : 'border-black/7'">
+              <input v-model="customerForm.gender" type="radio" value="female" class="accent-brand-600"> خانم
+            </label>
+          </div>
+        </div>
+        <div>
+          <label class="label">نام و نام خانوادگی <span class="font-400 text-ink/40">(اختیاری)</span></label>
+          <input v-model="customerForm.name" class="field" autocomplete="name" placeholder="در صورت تمایل وارد کنید">
         </div>
         <div>
           <label class="label">یادداشت <span class="font-400 text-ink/40">(اختیاری)</span></label>
@@ -614,15 +634,23 @@ async function openShare() {
       </form>
     </AppModal>
 
-    <AppModal :open="showProduct" title="افزودن محصول" description="محصول را در کاتالوگ جست‌وجو کنید؛ اگر وجود ندارد نام واقعی آن را ثبت کنید." @close="showProduct = false">
+    <AppModal :open="showProduct" title="افزودن محصول" description="فقط محصولات فعال فروشگاه نمایش داده می‌شوند و گزینه‌های سازگار با خودرو در ابتدای فهرست هستند." @close="showProduct = false">
       <div class="relative mb-3"><span class="i-lucide-search absolute right-3 top-1/2 -translate-y-1/2 text-ink/30" /><input v-model="productSearch" class="field pr-9" placeholder="نام واقعی محصول، برند یا ویژگی..."></div>
+      <div v-if="compatibleProductCount" class="mb-3 rounded-xl bg-emerald-50 px-3 py-2 text-xs text-emerald-800">
+        {{ number(compatibleProductCount) }} محصول مناسب این مدل خودرو پیدا شد.
+      </div>
       <div class="max-h-80 space-y-2 overflow-y-auto">
-        <button v-for="product in catalogProducts" :key="product.id" class="flex w-full items-center justify-between rounded-xl border border-black/7 p-3 text-right hover:border-brand-300 hover:bg-brand-50" @click="addProduct(product)">
+        <button v-for="product in selectableProducts" :key="product.id" class="flex w-full items-center justify-between rounded-xl border p-3 text-right hover:border-brand-300 hover:bg-brand-50" :class="product.compatibility?.status === 'compatible' ? 'border-emerald-200 bg-emerald-50/40' : 'border-black/7'" @click="addProduct(product)">
           <div>
-            <strong class="block text-sm">{{ product.displayName }}</strong>
+            <div class="flex flex-wrap items-center gap-2">
+              <strong class="block text-sm">{{ product.displayName }}</strong>
+              <span v-if="product.compatibility?.status === 'compatible'" class="badge bg-emerald-100 text-[10px] text-emerald-800">سازگار</span>
+            </div>
             <span class="mt-1 block text-xs text-ink/40">
               {{ product.shopConfiguration?.salePrice ? money(product.shopConfiguration.salePrice) : 'قیمت تعیین نشده' }}
               <template v-if="productDefaultIntervalKm(product)"> · تعویض هر {{ number(productDefaultIntervalKm(product)) }} کیلومتر</template>
+              <template v-if="product.attributes?.model"> · مدل {{ product.attributes.model }}</template>
+              <template v-if="product.attributes?.package_volume"> · حجم {{ product.attributes.package_volume }}</template>
             </span>
           </div>
           <span class="i-lucide-plus h-5 w-5 text-brand-600" />

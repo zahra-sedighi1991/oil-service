@@ -1,13 +1,15 @@
-import { IsInt, IsNotEmpty, IsOptional, IsString, Min } from 'class-validator';
+import { IsIn, IsInt, IsNotEmpty, IsOptional, IsString, Min } from 'class-validator';
 
 export class CreateCustomerDto {
-  @IsString() @IsNotEmpty() name: string;
+  @IsString() @IsOptional() name?: string;
   @IsString() @IsNotEmpty() mobile: string;
+  @IsIn(['male', 'female']) @IsOptional() gender?: 'male' | 'female';
   @IsString() @IsOptional() note?: string;
 }
 export class UpdateCustomerDto {
   @IsString() @IsOptional() name?: string;
   @IsString() @IsOptional() mobile?: string;
+  @IsIn(['male', 'female']) @IsOptional() gender?: 'male' | 'female';
   @IsString() @IsOptional() note?: string;
 }
 export class CreateVehicleDto {

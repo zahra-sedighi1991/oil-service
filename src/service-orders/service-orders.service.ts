@@ -206,8 +206,8 @@ export class ServiceOrdersService {
           shopId: order.shopId,
           productId: product.id,
         });
-        if (shopProduct && !shopProduct.isActive) {
-          throw new BadRequestException('محصول انتخاب‌شده در این فروشگاه غیرفعال است.');
+        if (!shopProduct?.isActive) {
+          throw new BadRequestException('محصول انتخاب‌شده در کاتالوگ این فروشگاه فعال نیست.');
         }
         if (intervalKm === undefined) {
           const configuredInterval = shopProduct?.override?.intervalKm

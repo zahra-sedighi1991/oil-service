@@ -65,12 +65,6 @@ export class VehicleModel extends BaseEntity {
   @Column({ type: 'enum', enum: RecordStatus, default: RecordStatus.ACTIVE }) status: RecordStatus;
 }
 
-@Entity('product_manufacturers')
-export class ProductManufacturer extends BaseEntity {
-  @Column({ unique: true }) name: string;
-  @Column({ type: 'enum', enum: RecordStatus, default: RecordStatus.ACTIVE }) status: RecordStatus;
-}
-
 @Entity('product_types')
 export class ProductType extends BaseEntity {
   @Column({ unique: true }) key: string;
@@ -115,14 +109,20 @@ export class ProductAttributeOption extends BaseEntity {
 export class Product extends BaseEntity {
   @Column() productTypeId: string;
   @ManyToOne(() => ProductType) @JoinColumn({ name: 'productTypeId' }) productType: ProductType;
-  @Column({ nullable: true }) manufacturerId?: string;
-  @ManyToOne(() => ProductManufacturer, { nullable: true }) @JoinColumn({ name: 'manufacturerId' })
-  manufacturer?: ProductManufacturer;
   @Column({ nullable: true }) name?: string;
   @Column() displayName: string;
   @Column({ type: 'jsonb', default: {} }) attributes: Record<string, unknown>;
   @Column() schemaVersion: number;
   @Column({ type: 'enum', enum: RecordStatus, default: RecordStatus.ACTIVE }) status: RecordStatus;
+}
+
+@Entity('product_vehicle_compatibilities')
+@Index(['productId', 'vehicleModelId'])
+export class ProductVehicleCompatibility extends BaseEntity {
+  @Column() productId: string;
+  @ManyToOne(() => Product, { onDelete: 'CASCADE' }) @JoinColumn({ name: 'productId' }) product: Product;
+  @Column() vehicleModelId: string;
+  @ManyToOne(() => VehicleModel, { onDelete: 'CASCADE' }) @JoinColumn({ name: 'vehicleModelId' }) vehicleModel: VehicleModel;
 }
 
 @Entity('shop_products')
@@ -163,6 +163,7 @@ export class ShopService extends BaseEntity {
 export class Customer extends BaseEntity {
   @Column() shopId: string;
   @Column() name: string;
+  @Column({ default: 'male' }) gender: 'male' | 'female';
   @Column() mobileNormalized: string;
   @Column() mobileDisplay: string;
   @Column({ nullable: true }) note?: string;
@@ -307,8 +308,8 @@ export class AuditLog extends BaseEntity {
 }
 
 export const ENTITIES = [
-  Shop, User, VehicleBrand, VehicleModel, ProductManufacturer, ProductType,
-  ProductAttributeDefinition, ProductAttributeOption, Product, ShopProduct,
+  Shop, User, VehicleBrand, VehicleModel, ProductType,
+  ProductAttributeDefinition, ProductAttributeOption, Product, ProductVehicleCompatibility, ShopProduct,
   ServiceCatalog, ShopService, Customer, Vehicle, ServiceOrder,
   ServiceProductLine, ServiceLaborLine, Invoice, InvoiceLine,
   VehiclePublicLink, Suggestion, AuditLog,

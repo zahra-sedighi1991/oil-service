@@ -7,8 +7,9 @@ import { CatalogService } from './catalog.service';
 import {
   ChangeStatusDto, ConfigureShopProductDto, ConfigureShopServiceDto, CreateAttributeDto,
   CreateAttributeOptionDto,
-  CreateManufacturerDto, CreateProductDto, CreateProductTypeDto, CreateServiceCatalogDto,
-  CreateVehicleBrandDto, CreateVehicleModelDto, UpdateVehicleModelPopularityDto,
+  CreateProductDto, CreateProductTypeDto, CreateServiceCatalogDto,
+  CreateVehicleBrandDto,
+  CreateVehicleModelDto, UpdateProductDto, UpdateProductVehicleModelsDto, UpdateVehicleModelPopularityDto,
 } from './dto';
 
 @ApiTags('catalog')
@@ -26,9 +27,6 @@ export class CatalogController {
     return this.catalog.setModelPopularity(id, dto.isPopular);
   }
   @Get('catalog/product-types') types() { return this.catalog.listTypes(); }
-  @Get('catalog/product-manufacturers') manufacturers() { return this.catalog.listManufacturers(); }
-  @Post('admin/catalog/product-manufacturers') @Roles(UserRole.SUPER_ADMIN)
-  createManufacturer(@Body() dto: CreateManufacturerDto) { return this.catalog.createManufacturer(dto); }
   @Post('admin/catalog/product-types') @Roles(UserRole.SUPER_ADMIN)
   createType(@Body() dto: CreateProductTypeDto) { return this.catalog.createType(dto); }
   @Post('admin/catalog/product-types/:id/attributes') @Roles(UserRole.SUPER_ADMIN)
@@ -47,19 +45,35 @@ export class CatalogController {
   }
   @Post('admin/catalog/products') @Roles(UserRole.SUPER_ADMIN)
   createProduct(@Body() dto: CreateProductDto) { return this.catalog.createProduct(dto); }
+  @Patch('admin/catalog/products/:id') @Roles(UserRole.SUPER_ADMIN)
+  updateProduct(@Param('id') id: string, @Body() dto: UpdateProductDto) {
+    return this.catalog.updateProduct(id, dto);
+  }
   @Get('catalog/products')
   products(
     @CurrentUser() user: AuthUser,
     @Query('search') search?: string,
     @Query('typeId') typeId?: string,
     @Query('attributes') attributes?: string,
+    @Query('activeOnly') activeOnly?: string,
+    @Query('vehicleId') vehicleId?: string,
   ) {
     return this.catalog.listProducts(
       user.role === UserRole.SUPER_ADMIN ? undefined : user.shopId,
       search,
       typeId,
       attributes,
+      activeOnly === 'true',
+      vehicleId,
     );
+  }
+  @Get('catalog/product-compatibilities')
+  compatibilities(@Query('productId') productId?: string, @Query('modelId') modelId?: string) {
+    return this.catalog.listCompatibilities(productId, modelId);
+  }
+  @Put('admin/catalog/products/:id/vehicle-models') @Roles(UserRole.SUPER_ADMIN)
+  setProductVehicleModels(@Param('id') id: string, @Body() dto: UpdateProductVehicleModelsDto) {
+    return this.catalog.setProductVehicleModels(id, dto.vehicleModelIds);
   }
   @Put('shop-products/:productId')
   configureProduct(@CurrentUser() user: AuthUser, @Param('productId') id: string, @Body() dto: ConfigureShopProductDto) {

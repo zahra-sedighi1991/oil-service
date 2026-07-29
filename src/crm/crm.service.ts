@@ -41,7 +41,12 @@ export class CrmService {
       throw new ConflictException('این شماره موبایل قبلاً در این فروشگاه ثبت شده است.');
     }
     return this.customers.save(this.customers.create({
-      ...dto, shopId, mobileDisplay: dto.mobile, mobileNormalized,
+      shopId,
+      name: dto.name?.trim() || 'مشتری بدون نام',
+      gender: dto.gender ?? 'male',
+      mobileDisplay: dto.mobile,
+      mobileNormalized,
+      note: dto.note,
     }));
   }
 
@@ -49,6 +54,7 @@ export class CrmService {
     const customer = await this.getCustomer(shopId, id);
     const before = {
       name: customer.name,
+      gender: customer.gender,
       mobileNormalized: customer.mobileNormalized,
       note: customer.note,
     };
@@ -62,7 +68,11 @@ export class CrmService {
       customer.mobileNormalized = mobile;
       customer.mobileDisplay = dto.mobile;
     }
-    Object.assign(customer, { name: dto.name ?? customer.name, note: dto.note ?? customer.note });
+    Object.assign(customer, {
+      name: dto.name !== undefined ? (dto.name.trim() || 'مشتری بدون نام') : customer.name,
+      gender: dto.gender ?? customer.gender,
+      note: dto.note ?? customer.note,
+    });
     const result = await this.customers.save(customer);
     await this.dataSource.getRepository(AuditLog).save({
       actorId,
@@ -73,6 +83,7 @@ export class CrmService {
       before,
       after: {
         name: customer.name,
+        gender: customer.gender,
         mobileNormalized: customer.mobileNormalized,
         note: customer.note,
       },

@@ -46,6 +46,7 @@ export interface VehicleModelOption {
 export interface Customer {
   id: string
   name: string
+  gender: 'male' | 'female'
   mobileNormalized: string
   mobileDisplay: string
   note?: string
@@ -54,9 +55,15 @@ export interface Customer {
 
 export interface Product {
   id: string
+  name?: string
   displayName: string
   attributes: Record<string, unknown>
   productTypeId: string
+  productType?: { id: string; key: string; title: string }
+  compatibility?: {
+    status: 'compatible' | 'universal' | 'incompatible'
+    matchLevel?: 'model'
+  }
   shopConfiguration?: {
     salePrice?: string
     isActive: boolean

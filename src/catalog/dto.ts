@@ -6,6 +6,7 @@ import {
   IsObject,
   IsOptional,
   IsPositive,
+  IsArray,
   IsString,
   Min,
 } from 'class-validator';
@@ -28,9 +29,6 @@ export class CreateProductTypeDto {
   @IsString() @IsNotEmpty() title: string;
   @IsString() @IsOptional() titleTemplate?: string;
 }
-export class CreateManufacturerDto {
-  @IsString() @IsNotEmpty() name: string;
-}
 export class CreateAttributeDto {
   @IsInt() @Min(1) schemaVersion: number;
   @IsString() @IsNotEmpty() key: string;
@@ -52,9 +50,18 @@ export class CreateAttributeOptionDto {
 }
 export class CreateProductDto {
   @IsString() productTypeId: string;
-  @IsString() @IsOptional() manufacturerId?: string;
   @IsString() @IsOptional() name?: string;
   @IsObject() attributes: Record<string, unknown>;
+  @IsArray() @IsString({ each: true }) @IsOptional() vehicleModelIds?: string[];
+}
+export class UpdateProductVehicleModelsDto {
+  @IsArray() @IsString({ each: true }) vehicleModelIds: string[];
+}
+export class UpdateProductDto {
+  @IsString() @IsNotEmpty() productTypeId: string;
+  @IsString() @IsNotEmpty() name: string;
+  @IsObject() attributes: Record<string, unknown>;
+  @IsArray() @IsString({ each: true }) vehicleModelIds: string[];
 }
 export class ConfigureShopProductDto {
   @IsInt() @Min(0) @IsOptional() salePrice?: number;

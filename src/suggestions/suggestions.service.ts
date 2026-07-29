@@ -38,7 +38,21 @@ export class SuggestionsService {
       const description = dto.catalogName?.trim() || originalDescription;
       if (!description) throw new BadRequestException('نام نهایی برای ایجاد مورد کاتالوگ الزامی است.');
       if (suggestion.entityType === 'product') {
-        const product = await this.catalog.createSuggestedProduct(description);
+        const productTypeId = dto.productTypeId ?? (typeof suggestion.payload.productTypeId === 'string'
+          ? suggestion.payload.productTypeId
+          : undefined);
+        const attributes = dto.attributes ?? (suggestion.payload.attributes && typeof suggestion.payload.attributes === 'object'
+          && !Array.isArray(suggestion.payload.attributes)
+          ? suggestion.payload.attributes as Record<string, unknown>
+          : undefined);
+        const vehicleModelIds = dto.vehicleModelIds ?? (Array.isArray(suggestion.payload.vehicleModelIds)
+          ? suggestion.payload.vehicleModelIds.filter((value): value is string => typeof value === 'string')
+          : undefined);
+        const product = await this.catalog.createSuggestedProduct(description, {
+          productTypeId,
+          attributes,
+          vehicleModelIds,
+        });
         await this.catalog.configureProduct(suggestion.shopId, actorId, product.id, { isActive: true });
         mappedEntityId = product.id;
       } else if (suggestion.entityType === 'service') {

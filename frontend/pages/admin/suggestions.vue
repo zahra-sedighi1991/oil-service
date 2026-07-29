@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { VehicleModelOption } from '~/types/api'
+
 definePageMeta({ middleware: ['auth', 'admin'] })
 useHead({ title: 'بررسی پیشنهادها' })
 
@@ -18,6 +20,13 @@ interface Suggestion {
   mappedEntityId?: string
 }
 interface CatalogOption { id: string; displayName?: string; name?: string }
+interface ProductTypeOption { id: string; title: string }
+interface ProductEditorValue {
+  productTypeId: string
+  name: string
+  attributes: Record<string, unknown>
+  vehicleModelIds: string[]
+}
 
 const statusFilter = ref<'all' | Suggestion['status']>('pending')
 const selected = ref<Suggestion | null>(null)
@@ -27,6 +36,8 @@ const mappedEntityId = ref('')
 const serviceCategory = ref('')
 const catalogName = ref('')
 const submitting = ref(false)
+const showProductApproval = ref(false)
+const productApprovalValue = ref<Partial<ProductEditorValue>>({})
 
 const { data: suggestions, pending, refresh } = await useAsyncData(
   'admin-suggestions',
@@ -39,6 +50,14 @@ const { data: catalogProducts, refresh: refreshProducts } = await useAsyncData(
 const { data: catalogServices, refresh: refreshServices } = await useAsyncData(
   'suggestion-catalog-services',
   () => api.get<CatalogOption[]>('/catalog/services'),
+)
+const { data: productTypes } = await useAsyncData(
+  'suggestion-product-types',
+  () => api.get<ProductTypeOption[]>('/catalog/product-types'),
+)
+const { data: vehicleModels } = await useAsyncData(
+  'suggestion-vehicle-models',
+  () => api.get<VehicleModelOption[]>('/catalog/vehicle-models'),
 )
 
 const filteredSuggestions = computed(() => {
@@ -88,6 +107,21 @@ function suggestionTitle(item: Suggestion) {
   return typeof value === 'string' && value.trim() ? value : `پیشنهاد ${entityLabel(item.entityType)}`
 }
 
+function productSuggestionMeta(item: Suggestion) {
+  if (item.entityType !== 'product') return []
+  const attributes = item.payload.attributes && typeof item.payload.attributes === 'object'
+    ? item.payload.attributes as Record<string, unknown>
+    : {}
+  const type = productTypes.value?.find(option => option.id === item.payload.productTypeId)
+  const vehicleModelIds = Array.isArray(item.payload.vehicleModelIds) ? item.payload.vehicleModelIds : []
+  return [
+    type?.title,
+    attributes.model ? `مدل ${attributes.model}` : undefined,
+    attributes.package_volume ? `حجم ${attributes.package_volume}` : undefined,
+    vehicleModelIds.length ? `مناسب ${vehicleModelIds.length} مدل خودرو` : 'مناسب همه خودروها',
+  ].filter(Boolean)
+}
+
 function openDecision(item: Suggestion, value: Decision) {
   selected.value = item
   decision.value = value
@@ -95,11 +129,49 @@ function openDecision(item: Suggestion, value: Decision) {
   serviceCategory.value = ''
   catalogName.value = suggestionTitle(item)
   decisionNote.value = value === 'approved' ? 'پیشنهاد بررسی و تأیید شد.' : ''
+  showProductApproval.value = value === 'approved' && item.entityType === 'product'
+  if (showProductApproval.value) {
+    const attributes = item.payload.attributes && typeof item.payload.attributes === 'object' && !Array.isArray(item.payload.attributes)
+      ? item.payload.attributes as Record<string, unknown>
+      : {}
+    productApprovalValue.value = {
+      productTypeId: typeof item.payload.productTypeId === 'string' ? item.payload.productTypeId : '',
+      name: suggestionTitle(item),
+      attributes,
+      vehicleModelIds: Array.isArray(item.payload.vehicleModelIds)
+        ? item.payload.vehicleModelIds.filter((id): id is string => typeof id === 'string')
+        : [],
+    }
+  }
 }
 
 function closeDecision() {
   if (submitting.value) return
   selected.value = null
+  showProductApproval.value = false
+}
+
+async function approveProduct(value: ProductEditorValue) {
+  if (!selected.value) return
+  submitting.value = true
+  try {
+    await api.patch(`/admin/suggestions/${selected.value.id}`, {
+      status: 'approved',
+      decisionNote: 'پیشنهاد بررسی، تکمیل و تأیید شد.',
+      catalogName: value.name,
+      productTypeId: value.productTypeId,
+      attributes: value.attributes,
+      vehicleModelIds: value.vehicleModelIds,
+    })
+    toast.success('پیشنهاد تأیید و محصول به کاتالوگ اضافه شد.')
+    selected.value = null
+    showProductApproval.value = false
+    await Promise.all([refresh(), refreshProducts()])
+  } catch (error) {
+    toast.error(errorMessage(error))
+  } finally {
+    submitting.value = false
+  }
 }
 
 async function submitDecision() {
@@ -184,6 +256,9 @@ async function submitDecision() {
               <span class="mt-2 block text-xs text-ink/45">
                 {{ entityLabel(item.entityType) }} · ثبت‌شده در {{ dateTime(item.createdAt) }}
               </span>
+              <div v-if="productSuggestionMeta(item).length" class="mt-2 flex flex-wrap gap-1.5">
+                <span v-for="meta in productSuggestionMeta(item)" :key="String(meta)" class="badge bg-black/4 text-[10px] text-ink/55">{{ meta }}</span>
+              </div>
               <div v-if="item.decisionNote" class="mt-3 rounded-xl bg-black/[.025] px-3 py-2 text-xs leading-6 text-ink/60">
                 <strong>یادداشت تصمیم:</strong> {{ item.decisionNote }}
                 <span v-if="item.mappedEntityId" class="mr-2">· شناسه مقصد: {{ item.mappedEntityId }}</span>
@@ -212,7 +287,7 @@ async function submitDecision() {
     </section>
 
     <AppModal
-      :open="Boolean(selected)"
+      :open="Boolean(selected) && !showProductApproval"
       :title="decisionMeta[decision].title"
       :description="decisionMeta[decision].description"
       @close="closeDecision"
@@ -272,5 +347,18 @@ async function submitDecision() {
         </div>
       </form>
     </AppModal>
+
+    <ProductEditorModal
+      :open="Boolean(selected) && showProductApproval"
+      title="تأیید پیشنهاد محصول"
+      description="اطلاعات پیشنهادی را بررسی و در صورت نیاز اصلاح کنید؛ با تأیید، محصول با همین مشخصات وارد کاتالوگ می‌شود."
+      submit-label="تأیید و ایجاد محصول"
+      :saving="submitting"
+      :value="productApprovalValue"
+      :product-types="productTypes || []"
+      :vehicle-models="vehicleModels || []"
+      @close="closeDecision"
+      @submit="approveProduct"
+    />
   </div>
 </template>
