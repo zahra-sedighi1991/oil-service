@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { CatalogService, Customer, Product, Vehicle } from '~/types/api'
+import type { CatalogService, Customer, Product, Vehicle, VehicleModelOption } from '~/types/api'
 
 definePageMeta({ middleware: 'auth' })
 useHead({ title: 'ثبت سرویس جدید' })
@@ -20,6 +20,17 @@ interface LaborLine {
   quantity: number
   unitFee: number
 }
+interface PendingSuggestion {
+  id: string
+  entityType: 'product' | 'service'
+  payload: { description?: string }
+  status: 'pending'
+}
+interface PreviousOrder {
+  status: 'draft' | 'completed' | 'canceled'
+  odometer: number
+  productLines: Array<{ productId?: string; intervalKm?: number; dueOdometer?: number }>
+}
 
 const route = useRoute()
 const api = useApi()
@@ -31,24 +42,27 @@ const customerSearch = ref('')
 const selectedCustomer = ref<Customer | null>(null)
 const selectedVehicle = ref<Vehicle | null>(null)
 const odometer = ref<number | undefined>()
+const suggestedOdometer = ref<number | undefined>()
+const loadingSuggestedOdometer = ref(false)
 const note = ref('')
 const products = ref<ProductLine[]>([])
 const services = ref<LaborLine[]>([])
 const showProduct = ref(false)
 const showService = ref(false)
 const showVehicle = ref(false)
+const showCustomer = ref(false)
 const showShare = ref(false)
 const productSearch = ref('')
+const localServiceName = ref('')
 const submitting = ref(false)
 const savingVehicle = ref(false)
+const savingCustomer = ref(false)
 const preparingShare = ref(false)
+const plateIncomplete = ref(false)
 const success = ref<{ invoiceNo: string; totalAmount: number; publicToken?: string } | null>(null)
 const vehicleForm = reactive({
-  brandId: '',
   modelId: '',
   plate: '',
-  temporaryIdentifier: '',
-  year: undefined as number | undefined,
   lastOdometer: undefined as number | undefined
 })
 const customerQuery = computed(() => {
@@ -57,7 +71,7 @@ const customerQuery = computed(() => {
   return /^[\d۰-۹٠-٩+\-\s]+$/.test(value) ? { mobile: value } : { search: value }
 })
 
-const { data: customers } = await useAsyncData(
+const { data: customers, refresh: refreshCustomers } = await useAsyncData(
   'service-customer-search',
   () => api.get<Customer[]>('/customers', customerQuery.value),
   { watch: [customerSearch] }
@@ -68,30 +82,72 @@ const { data: catalogProducts } = await useAsyncData(
   { watch: [productSearch] }
 )
 const { data: catalogServices } = await useAsyncData('service-catalog', () => api.get<CatalogService[]>('/catalog/services'))
-const { data: vehicleBrands } = await useAsyncData(
-  'service-vehicle-brands',
-  () => api.get<Array<{ id: string; nameFa: string }>>('/catalog/vehicle-brands')
+const { data: pendingSuggestions } = await useAsyncData(
+  'service-pending-suggestions',
+  () => api.get<PendingSuggestion[]>('/suggestions', { status: 'pending' })
 )
 const { data: vehicleModels } = await useAsyncData(
   'service-vehicle-models',
-  () => vehicleForm.brandId
-    ? api.get<Array<{ id: string; nameFa: string }>>('/catalog/vehicle-models', { brandId: vehicleForm.brandId })
-    : Promise.resolve([]),
-  { watch: [() => vehicleForm.brandId] }
+  () => api.get<VehicleModelOption[]>('/catalog/vehicle-models')
 )
 
 const productTotal = computed(() => products.value.reduce((sum, line) => sum + line.quantity * line.unitPrice, 0))
 const serviceTotal = computed(() => services.value.reduce((sum, line) => sum + line.quantity * line.unitFee, 0))
 const grandTotal = computed(() => productTotal.value + serviceTotal.value)
+const pendingProductSuggestions = computed(() => {
+  const search = productSearch.value.trim().toLocaleLowerCase('fa')
+  return (pendingSuggestions.value || []).filter((item) => {
+    const description = item.payload.description?.trim()
+    return item.entityType === 'product'
+      && Boolean(description)
+      && (!search || description!.toLocaleLowerCase('fa').includes(search))
+  })
+})
+const customerForm = reactive({ name: '', mobile: '', note: '' })
+const pendingServiceSuggestions = computed(() => (pendingSuggestions.value || []).filter(
+  item => item.entityType === 'service' && Boolean(item.payload.description?.trim())
+))
 const canCreateVehicle = computed(() => Boolean(
   selectedCustomer.value
-  && vehicleForm.brandId
   && vehicleForm.modelId
-  && (vehicleForm.plate.trim() || vehicleForm.temporaryIdentifier.trim())
+  && !plateIncomplete.value
 ))
 
-watch(selectedVehicle, vehicle => {
-  if (vehicle?.lastOdometer !== undefined) odometer.value = vehicle.lastOdometer
+let odometerRequest = 0
+watch(selectedVehicle, async (vehicle) => {
+  const request = ++odometerRequest
+  suggestedOdometer.value = undefined
+  odometer.value = vehicle?.lastOdometer
+  if (!vehicle) return
+
+  const initialOdometer = vehicle.lastOdometer
+  loadingSuggestedOdometer.value = true
+  try {
+    const orders = await api.get<PreviousOrder[]>('/service-orders', { vehicleId: vehicle.id })
+    if (request !== odometerRequest) return
+    let dueValues: number[] = []
+    for (const order of orders) {
+      if (order.status !== 'completed') continue
+      dueValues = order.productLines.map((line) => {
+        if (line.dueOdometer !== undefined && line.dueOdometer !== null) return Number(line.dueOdometer)
+        const product = catalogProducts.value?.find(item => item.id === line.productId)
+        const interval = Number(line.intervalKm ?? (product ? productDefaultIntervalKm(product) : 0))
+        return interval > 0 ? order.odometer + interval : 0
+      }).filter(value => Number.isFinite(value) && value > 0)
+      if (dueValues.length) break
+    }
+    if (!dueValues.length) return
+    const nextOdometer = Math.min(...dueValues)
+    suggestedOdometer.value = nextOdometer
+    if (
+      odometer.value === initialOdometer
+      && (initialOdometer === undefined || nextOdometer >= initialOdometer)
+    ) odometer.value = nextOdometer
+  } catch (error) {
+    toast.error(errorMessage(error))
+  } finally {
+    if (request === odometerRequest) loadingSuggestedOdometer.value = false
+  }
 })
 
 onMounted(async () => {
@@ -111,12 +167,53 @@ function selectCustomer(customer: Customer) {
   selectedVehicle.value = customer.vehicles.length === 1 ? customer.vehicles[0] : null
 }
 
+function normalizeSearchedMobile(value: string) {
+  const persian = '۰۱۲۳۴۵۶۷۸۹'
+  const arabic = '٠١٢٣٤٥٦٧٨٩'
+  const digits = value
+    .replace(/[۰-۹]/g, digit => String(persian.indexOf(digit)))
+    .replace(/[٠-٩]/g, digit => String(arabic.indexOf(digit)))
+    .replace(/\D/g, '')
+  if (digits.startsWith('98') && digits.length === 12) return `0${digits.slice(2)}`
+  if (digits.startsWith('9') && digits.length === 10) return `0${digits}`
+  return digits
+}
+
+function openCustomerModal() {
+  const searchedValue = customerSearch.value.trim()
+  const searchedMobile = /^[\d۰-۹٠-٩+\-\s]+$/.test(searchedValue)
+    ? normalizeSearchedMobile(searchedValue)
+    : ''
+  Object.assign(customerForm, { name: '', mobile: searchedMobile, note: '' })
+  showCustomer.value = true
+}
+
+async function createCustomer() {
+  savingCustomer.value = true
+  try {
+    const created = await api.post<Customer>('/customers', {
+      name: customerForm.name.trim(),
+      mobile: customerForm.mobile.trim(),
+      note: customerForm.note.trim() || undefined
+    })
+    const customer = { ...created, vehicles: created.vehicles || [] }
+    selectedCustomer.value = customer
+    selectedVehicle.value = null
+    customerSearch.value = ''
+    await refreshCustomers()
+    showCustomer.value = false
+    toast.success('مشتری ثبت و برای این سفارش انتخاب شد.')
+  } catch (error) {
+    toast.error(errorMessage(error))
+  } finally {
+    savingCustomer.value = false
+  }
+}
+
 function openVehicleModal() {
-  vehicleForm.brandId = ''
   vehicleForm.modelId = ''
   vehicleForm.plate = ''
-  vehicleForm.temporaryIdentifier = ''
-  vehicleForm.year = undefined
+  plateIncomplete.value = false
   vehicleForm.lastOdometer = odometer.value
   showVehicle.value = true
 }
@@ -127,11 +224,8 @@ async function createVehicle() {
   try {
     const created = await api.post<Vehicle>('/vehicles', {
       ownerCustomerId: selectedCustomer.value.id,
-      brandId: vehicleForm.brandId,
       modelId: vehicleForm.modelId,
       plate: vehicleForm.plate || undefined,
-      temporaryIdentifier: vehicleForm.temporaryIdentifier || undefined,
-      year: vehicleForm.year,
       lastOdometer: vehicleForm.lastOdometer
     })
     const refreshedCustomer = await api.get<Customer>(`/customers/${selectedCustomer.value.id}`)
@@ -149,6 +243,16 @@ async function createVehicle() {
   }
 }
 
+function productDefaultIntervalKm(product: Product) {
+  const value = Number(
+    product.shopConfiguration?.override?.intervalKm
+    ?? product.attributes?.interval_km
+    ?? product.attributes?.suggested_km
+    ?? 0
+  )
+  return Number.isFinite(value) && value > 0 ? value : undefined
+}
+
 function addProduct(product: Product) {
   products.value.push({
     key: crypto.randomUUID(),
@@ -156,14 +260,25 @@ function addProduct(product: Product) {
     description: product.displayName,
     quantity: 1,
     unitPrice: Number(product.shopConfiguration?.salePrice || 0),
-    intervalKm: Number(product.attributes?.interval_km || product.attributes?.suggested_km || 0) || undefined,
+    intervalKm: productDefaultIntervalKm(product),
     intervalMonths: Number(product.attributes?.interval_months || product.attributes?.suggested_months || 0) || undefined
   })
   showProduct.value = false
 }
 
 function addTemporaryProduct() {
-  products.value.push({ key: crypto.randomUUID(), description: 'آیتم موقت', quantity: 1, unitPrice: 0 })
+  const name = productSearch.value.trim()
+  if (!name) return toast.error('نام محصول خارج از کاتالوگ را وارد کنید.')
+  products.value.push({ key: crypto.randomUUID(), description: name, quantity: 1, unitPrice: 0 })
+  productSearch.value = ''
+  showProduct.value = false
+}
+
+function addPendingProduct(item: PendingSuggestion) {
+  const name = item.payload.description?.trim()
+  if (!name) return
+  products.value.push({ key: crypto.randomUUID(), description: name, quantity: 1, unitPrice: 0 })
+  productSearch.value = ''
   showProduct.value = false
 }
 
@@ -179,7 +294,17 @@ function addService(service: CatalogService) {
 }
 
 function addLocalService() {
-  services.value.push({ key: crypto.randomUUID(), description: 'خدمت محلی', quantity: 1, unitFee: 0 })
+  const name = localServiceName.value.trim()
+  if (!name) return toast.error('نام خدمت خارج از کاتالوگ را وارد کنید.')
+  services.value.push({ key: crypto.randomUUID(), description: name, quantity: 1, unitFee: 0 })
+  localServiceName.value = ''
+  showService.value = false
+}
+
+function addPendingService(item: PendingSuggestion) {
+  const name = item.payload.description?.trim()
+  if (!name) return
+  services.value.push({ key: crypto.randomUUID(), description: name, quantity: 1, unitFee: 0 })
   showService.value = false
 }
 
@@ -194,6 +319,7 @@ function goToItems() {
 
 function goToReview() {
   if (!products.value.length && !services.value.length) return toast.error('حداقل یک محصول یا خدمت اضافه کنید.')
+  if ([...products.value, ...services.value].some(line => !line.description.trim())) return toast.error('نام همه محصولات و خدمات الزامی است.')
   if ([...products.value, ...services.value].some(line => line.quantity <= 0)) return toast.error('تعداد اقلام باید بیشتر از صفر باشد.')
   step.value = 3
 }
@@ -257,8 +383,7 @@ async function openShare() {
 <template>
   <div>
     <header class="mb-6">
-      <p class="m-0 text-sm font-700 text-brand-700">عملیات سریع</p>
-      <h1 class="mb-0 mt-1 text-2xl font-950">ثبت سرویس جدید</h1>
+      <h1 class="mb-0 text-2xl font-950">ثبت سرویس جدید</h1>
     </header>
 
     <div v-if="!success" class="mb-6 flex items-center">
@@ -299,7 +424,17 @@ async function openShare() {
         <h2 class="m-0 text-base font-900">۱. مشتری را پیدا کنید</h2>
         <div class="relative mt-4">
           <span class="i-lucide-search absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-ink/30" />
-          <input v-model="customerSearch" class="field pr-10" placeholder="نام یا شماره موبایل">
+          <input v-model="customerSearch" class="field px-10" placeholder="نام یا شماره موبایل">
+          <button
+            v-if="customerSearch"
+            type="button"
+            class="absolute left-2 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-lg border-0 bg-black/5 text-ink/45 transition hover:bg-black/10 hover:text-ink"
+            aria-label="پاک کردن جست‌وجو"
+            title="پاک کردن جست‌وجو"
+            @click="customerSearch = ''"
+          >
+            <span class="i-lucide-x h-4 w-4" />
+          </button>
         </div>
         <div class="mt-3 max-h-80 space-y-2 overflow-y-auto">
           <button v-for="customer in customers" :key="customer.id" class="flex w-full items-center gap-3 rounded-xl border p-3 text-right transition" :class="selectedCustomer?.id === customer.id ? 'border-brand-500 bg-brand-50' : 'border-black/6 bg-white hover:border-brand-300'" @click="selectCustomer(customer)">
@@ -308,7 +443,14 @@ async function openShare() {
             <span class="text-xs text-ink/35">{{ number(customer.vehicles.length) }} خودرو</span>
           </button>
         </div>
-        <NuxtLink to="/customers" class="btn-ghost mt-3 w-full no-underline"><span class="i-lucide-user-plus" />مشتری در فهرست نیست؟</NuxtLink>
+        <button
+          type="button"
+          class="btn-secondary mt-3 w-full border border-dashed border-brand-300 bg-brand-50/60 py-3 text-brand-800"
+          @click="openCustomerModal"
+        >
+          <span class="i-lucide-user-plus h-5 w-5" />
+          اضافه کردن مشتری جدید
+        </button>
       </div>
 
       <div class="card p-5">
@@ -328,7 +470,7 @@ async function openShare() {
             <button v-for="vehicle in selectedCustomer.vehicles" :key="vehicle.id" class="rounded-xl border p-3 text-right transition" :class="selectedVehicle?.id === vehicle.id ? 'border-brand-500 bg-brand-50' : 'border-black/7 bg-white hover:border-brand-300'" @click="selectedVehicle = vehicle">
               <span class="i-lucide-car-front mb-2 block h-5 w-5 text-brand-600" />
               <strong class="block text-sm">{{ vehicle.brand?.nameFa }} {{ vehicle.model?.nameFa }}</strong>
-              <span class="mt-1 block text-xs text-ink/45">{{ vehicle.plateDisplay || vehicle.temporaryIdentifier }}</span>
+              <span class="mt-1 block text-xs text-ink/45">{{ vehicle.plateDisplay || vehicle.temporaryIdentifier || 'بدون پلاک' }}</span>
             </button>
           </div>
           <div v-else class="rounded-xl border border-dashed border-black/10 p-5 text-center text-sm text-ink/45">
@@ -337,7 +479,16 @@ async function openShare() {
               همین‌جا خودرو را اضافه کنید
             </button>
           </div>
-          <div class="mt-5"><label class="label">کیلومتر فعلی</label><input v-model.number="odometer" type="number" min="0" class="field text-left" dir="ltr" placeholder="126500"></div>
+          <div class="mt-5">
+            <label class="label">کیلومتر فعلی</label>
+            <input v-model.number="odometer" type="number" min="0" class="field text-left" dir="ltr" placeholder="126500">
+            <p v-if="loadingSuggestedOdometer" class="mb-0 mt-2 text-xs text-ink/40">در حال دریافت موعد سرویس قبلی…</p>
+            <div v-else-if="suggestedOdometer" class="mt-2 rounded-xl bg-emerald-50 px-3 py-2 text-xs leading-6 text-emerald-800">
+              موعد محاسبه‌شده از سرویس قبلی: <strong>{{ number(suggestedOdometer) }} کیلومتر</strong>
+              <span class="block text-emerald-700/70">این مقدار پیشنهادی است؛ در صورت مراجعه زودتر یا دیرتر، کیلومتر واقعی خودرو را وارد کنید.</span>
+            </div>
+            <p v-else-if="selectedVehicle" class="mb-0 mt-2 text-xs text-ink/40">برای این خودرو هنوز موعد کیلومتری ثبت نشده است.</p>
+          </div>
         </div>
         <div v-else class="mt-4 grid min-h-52 place-items-center rounded-xl bg-black/[.025] text-center text-sm text-ink/35">ابتدا مشتری را از ستون مقابل انتخاب کنید.</div>
         <button class="btn-primary mt-5 w-full" :disabled="!selectedCustomer || !selectedVehicle" @click="goToItems">ادامه و افزودن اقلام<span class="i-lucide-arrow-left h-4 w-4" /></button>
@@ -356,7 +507,13 @@ async function openShare() {
             <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
               <div><label class="label">تعداد</label><input v-model.number="line.quantity" type="number" min=".001" step=".001" class="field py-2"></div>
               <div><label class="label">قیمت واحد</label><input v-model.number="line.unitPrice" type="number" min="0" class="field py-2"></div>
-              <div><label class="label">دوره کیلومتر</label><input v-model.number="line.intervalKm" type="number" min="0" class="field py-2"></div>
+              <div>
+                <label class="label">تعویض بعد از (کیلومتر)</label>
+                <input v-model.number="line.intervalKm" type="number" min="0" step="500" class="field py-2">
+                <small v-if="line.intervalKm && odometer !== undefined" class="mt-1 block text-emerald-700">
+                  موعد بعدی: {{ number(odometer + line.intervalKm) }} کیلومتر
+                </small>
+              </div>
               <div><label class="label">دوره ماه</label><input v-model.number="line.intervalMonths" type="number" min="0" class="field py-2"></div>
             </div>
             <p class="mb-0 mt-3 text-left text-xs font-800 text-brand-700" dir="rtl">{{ money(line.quantity * line.unitPrice) }}</p>
@@ -393,7 +550,7 @@ async function openShare() {
       <div class="card overflow-hidden">
         <header class="bg-ink p-5 text-white sm:p-6">
           <p class="m-0 text-xs text-white/45">مرور نهایی سرویس</p>
-          <div class="mt-2 flex items-end justify-between gap-4"><h2 class="m-0 text-xl font-950">{{ selectedCustomer?.name }}</h2><strong class="text-brand-300">{{ selectedVehicle?.plateDisplay || selectedVehicle?.temporaryIdentifier }}</strong></div>
+          <div class="mt-2 flex items-end justify-between gap-4"><h2 class="m-0 text-xl font-950">{{ selectedCustomer?.name }}</h2><strong class="text-brand-300">{{ selectedVehicle?.plateDisplay || selectedVehicle?.temporaryIdentifier || 'بدون پلاک' }}</strong></div>
           <p class="mb-0 mt-2 text-sm text-white/50">{{ number(odometer) }} کیلومتر</p>
         </header>
         <div class="p-5 sm:p-6">
@@ -419,77 +576,128 @@ async function openShare() {
       @close="showShare = false"
     />
 
-    <AppModal :open="showProduct" title="افزودن محصول" description="محصول کاتالوگی یا آیتم موقت انتخاب کنید." @close="showProduct = false">
-      <div class="relative mb-3"><span class="i-lucide-search absolute right-3 top-1/2 -translate-y-1/2 text-ink/30" /><input v-model="productSearch" class="field pr-9" placeholder="نام محصول، برند یا ویژگی..."></div>
+    <AppModal
+      :open="showCustomer"
+      title="افزودن مشتری جدید"
+      description="مشتری پس از ثبت به‌صورت خودکار برای این سفارش انتخاب می‌شود."
+      @close="showCustomer = false"
+    >
+      <form class="space-y-4" @submit.prevent="createCustomer">
+        <div>
+          <label class="label">نام و نام خانوادگی</label>
+          <input v-model="customerForm.name" class="field" autocomplete="name" required autofocus>
+        </div>
+        <div>
+          <label class="label">شماره موبایل</label>
+          <input
+            v-model="customerForm.mobile"
+            class="field text-left"
+            dir="ltr"
+            inputmode="tel"
+            autocomplete="tel"
+            placeholder="09120000000"
+            required
+          >
+          <p v-if="customerForm.mobile" class="mb-0 mt-2 text-xs text-ink/40">شماره از جست‌وجوی شما وارد شده و قابل ویرایش است.</p>
+        </div>
+        <div>
+          <label class="label">یادداشت <span class="font-400 text-ink/40">(اختیاری)</span></label>
+          <textarea v-model="customerForm.note" class="field min-h-20 resize-y" />
+        </div>
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" class="btn-ghost" :disabled="savingCustomer" @click="showCustomer = false">انصراف</button>
+          <button class="btn-primary" :disabled="savingCustomer">
+            <span v-if="savingCustomer" class="i-lucide-loader-circle h-4 w-4 animate-spin" />
+            {{ savingCustomer ? 'در حال ثبت…' : 'ثبت و انتخاب مشتری' }}
+          </button>
+        </div>
+      </form>
+    </AppModal>
+
+    <AppModal :open="showProduct" title="افزودن محصول" description="محصول را در کاتالوگ جست‌وجو کنید؛ اگر وجود ندارد نام واقعی آن را ثبت کنید." @close="showProduct = false">
+      <div class="relative mb-3"><span class="i-lucide-search absolute right-3 top-1/2 -translate-y-1/2 text-ink/30" /><input v-model="productSearch" class="field pr-9" placeholder="نام واقعی محصول، برند یا ویژگی..."></div>
       <div class="max-h-80 space-y-2 overflow-y-auto">
         <button v-for="product in catalogProducts" :key="product.id" class="flex w-full items-center justify-between rounded-xl border border-black/7 p-3 text-right hover:border-brand-300 hover:bg-brand-50" @click="addProduct(product)">
-          <div><strong class="block text-sm">{{ product.displayName }}</strong><span class="mt-1 block text-xs text-ink/40">{{ product.shopConfiguration?.salePrice ? money(product.shopConfiguration.salePrice) : 'قیمت تعیین نشده' }}</span></div>
+          <div>
+            <strong class="block text-sm">{{ product.displayName }}</strong>
+            <span class="mt-1 block text-xs text-ink/40">
+              {{ product.shopConfiguration?.salePrice ? money(product.shopConfiguration.salePrice) : 'قیمت تعیین نشده' }}
+              <template v-if="productDefaultIntervalKm(product)"> · تعویض هر {{ number(productDefaultIntervalKm(product)) }} کیلومتر</template>
+            </span>
+          </div>
           <span class="i-lucide-plus h-5 w-5 text-brand-600" />
         </button>
       </div>
-      <button class="btn-ghost mt-3 w-full border border-dashed border-black/10" @click="addTemporaryProduct"><span class="i-lucide-file-plus" />ثبت آیتم موقت خارج از کاتالوگ</button>
+      <div v-if="pendingProductSuggestions.length" class="mt-3 border-t border-black/7 pt-3">
+        <p class="mb-2 mt-0 text-xs font-800 text-amber-700">محصولات خارج از کاتالوگ در انتظار بررسی</p>
+        <div class="space-y-2">
+          <button
+            v-for="item in pendingProductSuggestions"
+            :key="item.id"
+            class="flex w-full items-center justify-between rounded-xl border border-amber-200 bg-amber-50/60 p-3 text-right hover:bg-amber-50"
+            @click="addPendingProduct(item)"
+          >
+            <div><strong class="block text-sm">{{ item.payload.description }}</strong><span class="mt-1 block text-xs text-amber-700/70">قابل استفاده تا زمان بررسی مدیر</span></div>
+            <span class="i-lucide-plus h-5 w-5 text-amber-700" />
+          </button>
+        </div>
+      </div>
+      <div class="mt-3 rounded-xl border border-dashed border-black/10 bg-black/[.02] p-3">
+        <p class="m-0 text-xs leading-6 text-ink/50">محصول پیدا نشد؟ همین نام جست‌وجوشده به سفارش اضافه و برای تکمیل کاتالوگ به مدیر پیشنهاد می‌شود.</p>
+        <button class="btn-ghost mt-2 w-full" :disabled="!productSearch.trim()" @click="addTemporaryProduct">
+          <span class="i-lucide-file-plus" />
+          {{ productSearch.trim() ? `ثبت «${productSearch.trim()}» خارج از کاتالوگ` : 'ابتدا نام محصول را وارد کنید' }}
+        </button>
+      </div>
     </AppModal>
 
-    <AppModal :open="showService" title="افزودن خدمت" description="خدمت استاندارد یا خدمت محلی انتخاب کنید." @close="showService = false">
+    <AppModal :open="showService" title="افزودن خدمت" description="خدمت استاندارد را انتخاب کنید یا نام خدمت خارج از کاتالوگ را بنویسید." @close="showService = false">
       <div class="max-h-80 space-y-2 overflow-y-auto">
         <button v-for="service in catalogServices" :key="service.id" class="flex w-full items-center justify-between rounded-xl border border-black/7 p-3 text-right hover:border-brand-300 hover:bg-brand-50" @click="addService(service)">
           <div><strong class="block text-sm">{{ service.name }}</strong><span class="mt-1 block text-xs text-ink/40">{{ service.category || 'خدمت عمومی' }}</span></div>
           <span class="i-lucide-plus h-5 w-5 text-brand-600" />
         </button>
       </div>
-      <button class="btn-ghost mt-3 w-full border border-dashed border-black/10" @click="addLocalService"><span class="i-lucide-file-plus" />ثبت خدمت محلی</button>
+      <div v-if="pendingServiceSuggestions.length" class="mt-3 border-t border-black/7 pt-3">
+        <p class="mb-2 mt-0 text-xs font-800 text-amber-700">خدمات خارج از کاتالوگ در انتظار بررسی</p>
+        <div class="space-y-2">
+          <button
+            v-for="item in pendingServiceSuggestions"
+            :key="item.id"
+            class="flex w-full items-center justify-between rounded-xl border border-amber-200 bg-amber-50/60 p-3 text-right hover:bg-amber-50"
+            @click="addPendingService(item)"
+          >
+            <div><strong class="block text-sm">{{ item.payload.description }}</strong><span class="mt-1 block text-xs text-amber-700/70">قابل استفاده تا زمان بررسی مدیر</span></div>
+            <span class="i-lucide-plus h-5 w-5 text-amber-700" />
+          </button>
+        </div>
+      </div>
+      <div class="mt-3 rounded-xl border border-dashed border-black/10 bg-black/[.02] p-3">
+        <label class="label" for="local-service-name">نام خدمت خارج از کاتالوگ</label>
+        <div class="flex gap-2">
+          <input id="local-service-name" v-model="localServiceName" class="field" placeholder="مثلاً شست‌وشوی انژکتور" @keyup.enter="addLocalService">
+          <button class="btn-ghost shrink-0" :disabled="!localServiceName.trim()" @click="addLocalService"><span class="i-lucide-file-plus" />افزودن</button>
+        </div>
+        <p class="mb-0 mt-2 text-xs leading-5 text-ink/45">این نام در سفارش ثبت و برای تکمیل کاتالوگ به مدیر پیشنهاد می‌شود.</p>
+      </div>
     </AppModal>
 
     <AppModal
       :open="showVehicle"
       title="افزودن خودرو"
-      description="بعد از ثبت، خودرو به‌صورت خودکار برای این سرویس انتخاب می‌شود."
+      description="مدل خودرو را جستجو کنید؛ برند آن خودکار تشخیص داده می‌شود و خودرو بعد از ثبت انتخاب خواهد شد."
       @close="showVehicle = false"
     >
       <form class="grid gap-4 sm:grid-cols-2" @submit.prevent="createVehicle">
-        <div>
-          <label class="label">برند خودرو</label>
-          <select v-model="vehicleForm.brandId" class="field" required @change="vehicleForm.modelId = ''">
-            <option value="" disabled>انتخاب برند</option>
-            <option v-for="brand in vehicleBrands || []" :key="brand.id" :value="brand.id">
-              {{ brand.nameFa }}
-            </option>
-          </select>
-          <small v-if="!vehicleBrands?.length" class="mt-2 block text-amber-700">
-            مدیر سیستم باید ابتدا برند خودرو را در اطلاعات پایه ثبت کند.
-          </small>
+        <VehicleModelPicker v-model="vehicleForm.modelId" :models="vehicleModels || []" class="sm:col-span-2" />
+        <div class="sm:col-span-2">
+          <label class="label">پلاک خودرو <span class="font-400 text-ink/40">(اختیاری)</span></label>
+          <IranianPlateInput v-model="vehicleForm.plate" @incomplete-change="plateIncomplete = $event" />
         </div>
-        <div>
-          <label class="label">مدل خودرو</label>
-          <select v-model="vehicleForm.modelId" class="field" :disabled="!vehicleForm.brandId" required>
-            <option value="" disabled>انتخاب مدل</option>
-            <option v-for="model in vehicleModels || []" :key="model.id" :value="model.id">
-              {{ model.nameFa }}
-            </option>
-          </select>
-          <small v-if="vehicleForm.brandId && !vehicleModels?.length" class="mt-2 block text-amber-700">
-            برای این برند هنوز مدلی ثبت نشده است.
-          </small>
-        </div>
-        <div>
-          <label class="label">پلاک</label>
-          <input v-model="vehicleForm.plate" class="field" placeholder="مثلاً ۱۲ب۳۴۵ایران۶۷">
-        </div>
-        <div>
-          <label class="label">شناسه موقت</label>
-          <input v-model="vehicleForm.temporaryIdentifier" class="field" placeholder="برای خودروی بدون پلاک">
-        </div>
-        <div>
-          <label class="label">سال ساخت</label>
-          <input v-model.number="vehicleForm.year" type="number" min="1300" max="2200" class="field">
-        </div>
-        <div>
+        <div class="sm:col-span-2">
           <label class="label">کیلومتر فعلی</label>
           <input v-model.number="vehicleForm.lastOdometer" type="number" min="0" class="field">
         </div>
-        <p class="m-0 text-xs leading-5 text-ink/45 sm:col-span-2">
-          وارد کردن یکی از دو مقدار «پلاک» یا «شناسه موقت» الزامی است.
-        </p>
         <div class="flex justify-end gap-2 pt-2 sm:col-span-2">
           <button type="button" class="btn-ghost" @click="showVehicle = false">انصراف</button>
           <button class="btn-primary" :disabled="savingVehicle || !canCreateVehicle">

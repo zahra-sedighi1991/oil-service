@@ -1,4 +1,4 @@
-import { IsInt, IsNotEmpty, IsOptional, IsString, Max, Min } from 'class-validator';
+import { IsInt, IsNotEmpty, IsOptional, IsString, Min } from 'class-validator';
 
 export class CreateCustomerDto {
   @IsString() @IsNotEmpty() name: string;
@@ -12,10 +12,8 @@ export class UpdateCustomerDto {
 }
 export class CreateVehicleDto {
   @IsString() ownerCustomerId: string;
-  @IsString() brandId: string;
+  @IsString() @IsOptional() brandId?: string;
   @IsString() modelId: string;
   @IsString() @IsOptional() plate?: string;
-  @IsString() @IsOptional() temporaryIdentifier?: string;
-  @IsInt() @Min(1300) @Max(2200) @IsOptional() year?: number;
   @IsInt() @Min(0) @IsOptional() lastOdometer?: number;
 }

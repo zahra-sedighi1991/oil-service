@@ -195,6 +195,7 @@ export class ServiceOrdersService {
   private async replaceLines(manager: EntityManager, order: ServiceOrder, dto: CreateOrderDto) {
     for (const input of dto.products ?? []) {
       let snapshot: Record<string, unknown>;
+      let intervalKm = input.intervalKm;
       if (input.productId) {
         const product = await manager.findOneBy(Product, {
           id: input.productId,
@@ -207,6 +208,13 @@ export class ServiceOrdersService {
         });
         if (shopProduct && !shopProduct.isActive) {
           throw new BadRequestException('محصول انتخاب‌شده در این فروشگاه غیرفعال است.');
+        }
+        if (intervalKm === undefined) {
+          const configuredInterval = shopProduct?.override?.intervalKm
+            ?? product.attributes?.interval_km
+            ?? product.attributes?.suggested_km;
+          const parsedInterval = Number(configuredInterval);
+          if (Number.isInteger(parsedInterval) && parsedInterval >= 0) intervalKm = parsedInterval;
         }
         const definitions = await manager.findBy(ProductAttributeDefinition, {
           productTypeId: product.productTypeId,
@@ -224,20 +232,17 @@ export class ServiceOrdersService {
           schemaVersion: product.schemaVersion,
         };
       } else {
-        if (!input.description) throw new BadRequestException('شرح آیتم موقت الزامی است.');
+        if (!input.description?.trim()) throw new BadRequestException('نام محصول خارج از کاتالوگ الزامی است.');
         snapshot = { description: input.description };
-        await manager.save(Suggestion, manager.create(Suggestion, {
-          shopId: order.shopId, entityType: 'product', payload: { description: input.description },
-          status: SuggestionStatus.PENDING,
-        }));
+        await this.ensurePendingSuggestion(manager, order.shopId, 'product', input.description);
       }
       const dueDate = input.intervalMonths ? this.addMonths(order.serviceDate, input.intervalMonths) : undefined;
       await manager.save(ServiceProductLine, manager.create(ServiceProductLine, {
         orderId: order.id, productId: input.productId, snapshot,
         quantity: String(input.quantity), unitPrice: String(input.unitPrice),
         total: String(Math.round(input.quantity * input.unitPrice)),
-        intervalKm: input.intervalKm, intervalMonths: input.intervalMonths,
-        dueOdometer: input.intervalKm ? order.odometer + input.intervalKm : undefined,
+        intervalKm, intervalMonths: input.intervalMonths,
+        dueOdometer: intervalKm ? order.odometer + intervalKm : undefined,
         dueDate, temporary: !input.productId,
       }));
     }
@@ -258,14 +263,9 @@ export class ServiceOrdersService {
         }
         snapshot = { name: service.name, category: service.category };
       } else {
-        if (!input.description) throw new BadRequestException('شرح خدمت محلی الزامی است.');
+        if (!input.description?.trim()) throw new BadRequestException('نام خدمت خارج از کاتالوگ الزامی است.');
         snapshot = { description: input.description };
-        await manager.save(Suggestion, manager.create(Suggestion, {
-          shopId: order.shopId,
-          entityType: 'service',
-          payload: { description: input.description },
-          status: SuggestionStatus.PENDING,
-        }));
+        await this.ensurePendingSuggestion(manager, order.shopId, 'service', input.description);
       }
       await manager.save(ServiceLaborLine, manager.create(ServiceLaborLine, {
         orderId: order.id, serviceId: input.serviceId, snapshot,
@@ -273,6 +273,28 @@ export class ServiceOrdersService {
         total: String(Math.round(input.quantity * input.unitFee)),
       }));
     }
+  }
+
+  private async ensurePendingSuggestion(
+    manager: EntityManager,
+    shopId: string,
+    entityType: 'product' | 'service',
+    rawDescription: string,
+  ) {
+    const description = rawDescription.trim();
+    const existing = await manager.createQueryBuilder(Suggestion, 'suggestion')
+      .where('suggestion.shopId = :shopId', { shopId })
+      .andWhere('suggestion.entityType = :entityType', { entityType })
+      .andWhere('suggestion.status = :status', { status: SuggestionStatus.PENDING })
+      .andWhere("LOWER(TRIM(suggestion.payload->>'description')) = LOWER(TRIM(:description))", { description })
+      .getOne();
+    if (existing) return existing;
+    return manager.save(Suggestion, manager.create(Suggestion, {
+      shopId,
+      entityType,
+      payload: { description },
+      status: SuggestionStatus.PENDING,
+    }));
   }
 
   private addMonths(date: Date, months: number): string {

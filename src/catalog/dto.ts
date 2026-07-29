@@ -18,6 +18,10 @@ export class CreateVehicleBrandDto {
 }
 export class CreateVehicleModelDto extends CreateVehicleBrandDto {
   @IsString() @IsNotEmpty() brandId: string;
+  @IsBoolean() @IsOptional() isPopular?: boolean;
+}
+export class UpdateVehicleModelPopularityDto {
+  @IsBoolean() isPopular: boolean;
 }
 export class CreateProductTypeDto {
   @IsString() @IsNotEmpty() key: string;
@@ -53,7 +57,8 @@ export class CreateProductDto {
   @IsObject() attributes: Record<string, unknown>;
 }
 export class ConfigureShopProductDto {
-  @IsInt() @IsPositive() @IsOptional() salePrice?: number;
+  @IsInt() @Min(0) @IsOptional() salePrice?: number;
+  @IsInt() @Min(0) @IsOptional() defaultIntervalKm?: number;
   @IsBoolean() @IsOptional() isActive?: boolean;
   @IsBoolean() @IsOptional() favorite?: boolean;
   @IsInt() @IsOptional() sortOrder?: number;

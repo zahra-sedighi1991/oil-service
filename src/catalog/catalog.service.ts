@@ -52,9 +52,19 @@ export class CatalogService {
   }
   createBrand(dto: CreateVehicleBrandDto) { return this.brands.save(this.brands.create(dto)); }
   listModels(brandId?: string) {
-    return this.models.find({ where: { status: RecordStatus.ACTIVE, ...(brandId ? { brandId } : {}) }, order: { nameFa: 'ASC' } });
+    return this.models.find({
+      where: { status: RecordStatus.ACTIVE, ...(brandId ? { brandId } : {}) },
+      relations: { brand: true },
+      order: { nameFa: 'ASC' },
+    });
   }
   createModel(dto: CreateVehicleModelDto) { return this.models.save(this.models.create(dto)); }
+  async setModelPopularity(id: string, isPopular: boolean) {
+    const model = await this.models.findOneBy({ id });
+    if (!model) throw new NotFoundException('مدل خودرو یافت نشد.');
+    model.isPopular = isPopular;
+    return this.models.save(model);
+  }
   createType(dto: CreateProductTypeDto) { return this.types.save(this.types.create(dto)); }
   listTypes() { return this.types.find({ where: { status: RecordStatus.ACTIVE }, order: { title: 'ASC' } }); }
   createManufacturer(dto: CreateManufacturerDto) {
@@ -172,6 +182,22 @@ export class CatalogService {
     }));
   }
 
+  async createSuggestedProduct(name: string) {
+    const key = 'uncategorized';
+    let type = await this.types.findOneBy({ key });
+    if (!type) {
+      await this.types.upsert({
+        key,
+        title: 'سایر محصولات',
+        currentSchemaVersion: 1,
+        status: RecordStatus.ACTIVE,
+      }, ['key']);
+      type = await this.types.findOneBy({ key });
+    }
+    if (!type) throw new BadRequestException('امکان ایجاد دسته پیش‌فرض محصولات وجود ندارد.');
+    return this.createProduct({ productTypeId: type.id, name, attributes: {} });
+  }
+
   async listProducts(shopId?: string, search?: string, productTypeId?: string, attributesJson?: string) {
     const qb = this.products.createQueryBuilder('product');
     if (shopId) {
@@ -213,6 +239,9 @@ export class CatalogService {
     const before = existingSetting ? { ...existingSetting } : undefined;
     const setting = existingSetting ?? this.shopProducts.create({ shopId, productId });
     if (dto.salePrice !== undefined) setting.salePrice = String(dto.salePrice);
+    if (dto.defaultIntervalKm !== undefined) {
+      setting.override = { ...(setting.override ?? {}), intervalKm: dto.defaultIntervalKm };
+    }
     if (dto.isActive !== undefined) setting.isActive = dto.isActive;
     if (dto.favorite !== undefined) setting.favorite = dto.favorite;
     if (dto.sortOrder !== undefined) setting.sortOrder = dto.sortOrder;

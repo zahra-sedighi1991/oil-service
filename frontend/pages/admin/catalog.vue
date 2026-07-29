@@ -18,6 +18,7 @@ interface CatalogRow {
   brandId?: string
   manufacturerId?: string
   productTypeId?: string
+  isPopular?: boolean
 }
 
 const api = useApi()
@@ -26,6 +27,7 @@ const { errorMessage } = useFormat()
 const tab = ref<TabKey>('brands')
 const modal = ref(false)
 const saving = ref(false)
+const updatingPopularity = ref<string | null>(null)
 
 const tabs: Array<{ key: TabKey; label: string }> = [
   { key: 'brands', label: 'برند خودرو' },
@@ -48,7 +50,8 @@ const form = reactive({
   category: '',
   description: '',
   productTypeId: '',
-  manufacturerId: ''
+  manufacturerId: '',
+  isPopular: false
 })
 
 const { data: brands, refresh: refreshBrands } = await useAsyncData(
@@ -120,6 +123,7 @@ function resetForm() {
   form.description = ''
   form.productTypeId = ''
   form.manufacturerId = ''
+  form.isPopular = false
 }
 
 function openCreateModal() {
@@ -142,7 +146,8 @@ async function createItem() {
         brandId: form.brandId,
         nameFa: form.nameFa,
         nameEn: form.nameEn || undefined,
-        slug: form.slug
+        slug: form.slug,
+        isPopular: form.isPopular
       })
       await refreshModels()
     } else if (tab.value === 'manufacturers') {
@@ -182,10 +187,25 @@ async function createItem() {
     saving.value = false
   }
 }
+
+async function toggleModelPopularity(item: CatalogRow) {
+  updatingPopularity.value = item.id
+  try {
+    await api.patch(`/admin/catalog/vehicle-models/${item.id}/popularity`, {
+      isPopular: !item.isPopular
+    })
+    await refreshModels()
+    toast.success(item.isPopular ? 'مدل از فهرست پرکاربردها خارج شد.' : 'مدل به فهرست پرکاربردها اضافه شد.')
+  } catch (error) {
+    toast.error(errorMessage(error))
+  } finally {
+    updatingPopularity.value = null
+  }
+}
 </script>
 
 <template>
-  <div>
+  <div class="list-page">
     <header class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
       <div>
         <p class="m-0 text-sm font-700 text-brand-700">اطلاعات پایه</p>
@@ -217,14 +237,25 @@ async function createItem() {
       «فیلتر هوا سرکان مناسب پژو ۴۰۵» را ایجاد کنید.
     </div>
 
-    <section class="card overflow-hidden">
-      <div v-if="items.length" class="divide-y divide-black/5">
+    <section class="card list-panel">
+      <div v-if="items.length" class="scroll-container list-scroll divide-y divide-black/5">
         <div v-for="item in items" :key="item.id" class="flex items-center justify-between gap-4 px-5 py-4">
           <div class="min-w-0">
             <strong class="block truncate text-sm">{{ itemTitle(item) }}</strong>
             <span class="mt-1 block truncate text-xs text-ink/40">{{ itemSubtitle(item) }}</span>
           </div>
-          <span class="badge shrink-0 bg-brand-50 text-brand-700">فعال</span>
+          <button
+            v-if="tab === 'models'"
+            type="button"
+            class="flex shrink-0 items-center gap-2 rounded-xl border px-3 py-2 text-xs font-700 transition"
+            :class="item.isPopular ? 'border-brand-300 bg-brand-50 text-brand-700' : 'border-black/8 bg-white text-ink/45 hover:border-brand-200'"
+            :disabled="updatingPopularity === item.id"
+            @click="toggleModelPopularity(item)"
+          >
+            <span class="i-lucide-star h-4 w-4" :class="item.isPopular ? 'fill-current' : ''" />
+            {{ item.isPopular ? 'پراستفاده' : 'عادی' }}
+          </button>
+          <span v-else class="badge shrink-0 bg-brand-50 text-brand-700">فعال</span>
         </div>
       </div>
       <AppEmptyState
@@ -276,6 +307,13 @@ async function createItem() {
             <label class="label">کلید فنی</label>
             <input v-model="form.slug" class="field text-left" dir="ltr" placeholder="peugeot-405" required>
           </div>
+          <label class="flex items-center justify-between rounded-xl border border-black/7 p-3">
+            <span>
+              <strong class="block text-sm">مدل پراستفاده</strong>
+              <small class="text-ink/40">به‌صورت چیپ در فرم افزودن خودرو نمایش داده شود</small>
+            </span>
+            <input v-model="form.isPopular" type="checkbox" class="h-5 w-5 accent-brand-600">
+          </label>
         </template>
 
         <template v-else-if="tab === 'manufacturers'">

@@ -4,7 +4,7 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
   devServer: { port: 3001 },
   modules: ['@unocss/nuxt', '@nuxtjs/color-mode'],
-  css: ['~/assets/css/main.css'],
+  css: ['~/assets/css/main.css', '~/assets/css/scroll-container.css'],
   app: {
     head: {
       htmlAttrs: { lang: 'fa', dir: 'rtl' },

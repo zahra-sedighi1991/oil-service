@@ -24,7 +24,7 @@ watch(() => route.fullPath, () => { mobileMenu.value = false })
 </script>
 
 <template>
-  <div class="min-h-screen">
+  <div class="h-dvh overflow-hidden">
     <aside class="fixed inset-y-0 right-0 z-50 hidden w-66 border-l border-white/8 bg-ink px-4 py-5 text-white lg:flex lg:flex-col">
       <NuxtLink to="/" class="mb-8 flex items-center gap-3 px-2 text-white no-underline">
         <span class="grid h-11 w-11 place-items-center rounded-2xl bg-brand-500 text-xl shadow-lg">
@@ -78,8 +78,8 @@ watch(() => route.fullPath, () => { mobileMenu.value = false })
       </NuxtLink>
     </header>
 
-    <main class="min-h-screen px-4 pb-24 pt-6 sm:px-6 lg:mr-66 lg:px-8 lg:pb-10 lg:pt-8 xl:px-10">
-      <div class="mx-auto max-w-7xl">
+    <main class="scroll-container h-[calc(100dvh-4rem)] overflow-y-auto overscroll-contain px-4 pb-24 pt-6 sm:px-6 lg:mr-66 lg:h-dvh lg:px-8 lg:pb-10 lg:pt-8 xl:px-10">
+      <div class="mx-auto min-h-full max-w-7xl">
         <slot />
       </div>
     </main>

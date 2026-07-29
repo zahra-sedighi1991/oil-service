@@ -49,7 +49,7 @@ export class PublicBookService {
       shop: { name: shop.name, phone: shop.publicPhone, city: shop.city, address: shop.address },
       vehicle: {
         brand: vehicle.brand.nameFa, model: vehicle.model.nameFa,
-        plate: this.maskPlate(vehicle.plateDisplay), year: vehicle.year,
+        plate: this.maskPlate(vehicle.plateDisplay) || 'بدون پلاک', year: vehicle.year,
         lastOdometer: vehicle.lastOdometer,
       },
       nextDue: nextByDate || nextByOdometer ? {

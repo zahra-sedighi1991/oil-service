@@ -1,8 +1,8 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, ILike, Repository } from 'typeorm';
-import { AuditLog, Customer, Vehicle, VehiclePublicLink } from '../database/entities';
-import { PublicLinkStatus } from '../common/enums';
+import { AuditLog, Customer, Vehicle, VehicleModel, VehiclePublicLink } from '../database/entities';
+import { PublicLinkStatus, RecordStatus } from '../common/enums';
 import { normalizeMobile, normalizePlate } from '../common/normalizers';
 import { CreateCustomerDto, CreateVehicleDto, UpdateCustomerDto } from './dto';
 
@@ -93,21 +93,29 @@ export class CrmService {
   }
 
   async createVehicle(shopId: string, dto: CreateVehicleDto) {
-    if (!dto.plate && !dto.temporaryIdentifier) {
-      throw new BadRequestException('پلاک یا شناسه موقت خودرو الزامی است.');
-    }
     if (!await this.customers.existsBy({ id: dto.ownerCustomerId, shopId })) {
       throw new NotFoundException('مالک خودرو در این فروشگاه یافت نشد.');
     }
-    const plateNormalized = dto.plate ? normalizePlate(dto.plate) : undefined;
+    const model = await this.dataSource.getRepository(VehicleModel).findOneBy({
+      id: dto.modelId,
+      status: RecordStatus.ACTIVE,
+    });
+    if (!model) throw new NotFoundException('مدل خودرو یافت نشد.');
+    const plateNormalized = dto.plate?.trim() ? normalizePlate(dto.plate) : undefined;
+    if (plateNormalized && !/^\d{2}(?:الف|[آ-ی])\d{3}ایران\d{2}$/.test(plateNormalized)) {
+      throw new BadRequestException('پلاک خودرو را کامل و با قالب صحیح وارد کنید.');
+    }
     if (plateNormalized && await this.vehicles.existsBy({ shopId, plateNormalized })) {
       throw new ConflictException('این خودرو قبلاً در این فروشگاه ثبت شده است؛ سابقه آن را باز کنید.');
     }
     return this.vehicles.save(this.vehicles.create({
-      ...dto,
+      ownerCustomerId: dto.ownerCustomerId,
+      modelId: model.id,
+      brandId: model.brandId,
       shopId,
-      plateDisplay: dto.plate,
+      plateDisplay: dto.plate?.trim() || undefined,
       plateNormalized,
+      lastOdometer: dto.lastOdometer,
     }));
   }
 

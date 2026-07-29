@@ -9,16 +9,35 @@ const toast = useToast()
 const { money, errorMessage } = useFormat()
 const tab = ref<'products' | 'services'>('products')
 const search = ref('')
-const editing = ref<{ type: 'product' | 'service'; id: string; title: string; value?: number; active: boolean; favorite: boolean } | null>(null)
+const editing = ref<{
+  type: 'product' | 'service'
+  id: string
+  title: string
+  value?: number
+  defaultIntervalKm?: number
+  active: boolean
+  favorite: boolean
+} | null>(null)
 const saving = ref(false)
 
 const { data: products, refresh: refreshProducts } = await useAsyncData('catalog-products', () => api.get<Product[]>('/catalog/products', search.value ? { search: search.value } : undefined), { watch: [search] })
 const { data: services, refresh: refreshServices } = await useAsyncData('catalog-services', () => api.get<CatalogService[]>('/catalog/services'))
 
+function productDefaultIntervalKm(product: Product) {
+  const value = Number(
+    product.shopConfiguration?.override?.intervalKm
+    ?? product.attributes?.interval_km
+    ?? product.attributes?.suggested_km
+    ?? 0
+  )
+  return Number.isFinite(value) && value > 0 ? value : undefined
+}
+
 function editProduct(product: Product) {
   editing.value = {
     type: 'product', id: product.id, title: product.displayName,
     value: Number(product.shopConfiguration?.salePrice || 0),
+    defaultIntervalKm: productDefaultIntervalKm(product),
     active: product.shopConfiguration?.isActive ?? true,
     favorite: product.shopConfiguration?.favorite ?? false
   }
@@ -41,7 +60,12 @@ async function saveSetting() {
   try {
     const item = editing.value
     if (item.type === 'product') {
-      await api.put(`/shop-products/${item.id}`, { salePrice: item.value, isActive: item.active, favorite: item.favorite })
+      await api.put(`/shop-products/${item.id}`, {
+        salePrice: item.value,
+        defaultIntervalKm: item.defaultIntervalKm || 0,
+        isActive: item.active,
+        favorite: item.favorite
+      })
       await refreshProducts()
     } else {
       await api.put(`/shop-services/${item.id}`, { fee: item.value, isActive: item.active, favorite: item.favorite })
@@ -58,7 +82,7 @@ async function saveSetting() {
 </script>
 
 <template>
-  <div>
+  <div class="list-page">
     <header class="mb-6">
       <p class="m-0 text-sm font-700 text-brand-700">کاتالوگ فروشگاه</p>
       <h1 class="mb-0 mt-1 text-2xl font-950">محصولات، خدمات و قیمت‌ها</h1>
@@ -86,14 +110,16 @@ async function saveSetting() {
       </div>
     </div>
 
-    <section class="card overflow-hidden">
-      <div v-if="tab === 'products'">
-        <div v-if="products?.length" class="divide-y divide-black/5">
+    <section class="card list-panel">
+      <div v-if="tab === 'products'" class="flex min-h-0 flex-1 flex-col">
+        <div v-if="products?.length" class="scroll-container list-scroll divide-y divide-black/5">
           <div v-for="product in products" :key="product.id" class="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:px-5">
             <span class="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-700"><span class="i-lucide-package h-5 w-5" /></span>
             <div class="min-w-0 flex-1">
               <strong class="block truncate text-sm">{{ product.displayName }}</strong>
-              <span class="mt-1 block truncate text-xs text-ink/40">{{ Object.values(product.attributes || {}).join(' • ') || 'بدون ویژگی نمایشی' }}</span>
+              <span class="mt-1 block truncate text-xs text-ink/40">
+                دوره تعویض: {{ productDefaultIntervalKm(product) ? `${productDefaultIntervalKm(product)?.toLocaleString('fa-IR')} کیلومتر` : 'تعیین نشده' }}
+              </span>
             </div>
             <div class="flex items-center justify-between gap-3 sm:justify-end">
               <strong :class="product.shopConfiguration?.salePrice ? 'text-ink' : 'text-amber-600'">
@@ -109,8 +135,8 @@ async function saveSetting() {
           description="مدیر سیستم باید علاوه بر دسته محصول، یک محصول قابل فروش ایجاد کند. سپس دکمه تازه‌سازی را بزنید."
         />
       </div>
-      <div v-else>
-        <div v-if="services?.length" class="divide-y divide-black/5">
+      <div v-else class="flex min-h-0 flex-1 flex-col">
+        <div v-if="services?.length" class="scroll-container list-scroll divide-y divide-black/5">
           <div v-for="service in services" :key="service.id" class="flex items-center gap-4 px-5 py-4">
             <span class="grid h-11 w-11 place-items-center rounded-xl bg-blue-50 text-blue-700"><span class="i-lucide-wrench h-5 w-5" /></span>
             <div class="flex-1"><strong class="text-sm">{{ service.name }}</strong><span class="mt-1 block text-xs text-ink/40">{{ service.category || 'خدمت عمومی' }}</span></div>
@@ -121,9 +147,14 @@ async function saveSetting() {
       </div>
     </section>
 
-    <AppModal :open="Boolean(editing)" :title="editing?.title || ''" description="قیمت و وضعیت این قلم فقط برای فروشگاه شما اعمال می‌شود." @close="editing = null">
+    <AppModal :open="Boolean(editing)" :title="editing?.title || ''" description="قیمت، دوره تعویض و وضعیت این قلم فقط برای فروشگاه شما اعمال می‌شود." @close="editing = null">
       <form v-if="editing" class="space-y-5" @submit.prevent="saveSetting">
         <div><label class="label">{{ editing.type === 'product' ? 'قیمت فروش' : 'اجرت پیش‌فرض' }} (تومان)</label><input v-model.number="editing.value" type="number" min="0" class="field text-left" dir="ltr" required></div>
+        <div v-if="editing.type === 'product'">
+          <label class="label">دوره تعویض پیش‌فرض (کیلومتر)</label>
+          <input v-model.number="editing.defaultIntervalKm" type="number" min="0" step="500" class="field text-left" dir="ltr" placeholder="مثلاً 5000">
+          <p class="mb-0 mt-2 text-xs leading-5 text-ink/45">هنگام ثبت سفارش خودکار وارد می‌شود و همان‌جا قابل تغییر است.</p>
+        </div>
         <label class="flex items-center justify-between rounded-xl border border-black/7 p-3"><span><strong class="block text-sm">فعال در فروشگاه</strong><small class="text-ink/40">برای ثبت سرویس قابل انتخاب باشد</small></span><input v-model="editing.active" type="checkbox" class="h-5 w-5 accent-brand-600"></label>
         <label class="flex items-center justify-between rounded-xl border border-black/7 p-3"><span><strong class="block text-sm">افزودن به محبوب‌ها</strong><small class="text-ink/40">در ابتدای فهرست نمایش داده شود</small></span><input v-model="editing.favorite" type="checkbox" class="h-5 w-5 accent-brand-600"></label>
         <button class="btn-primary w-full" :disabled="saving">ذخیره تنظیمات</button>

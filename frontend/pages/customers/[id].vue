@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Customer } from '~/types/api'
+import type { Customer, VehicleModelOption } from '~/types/api'
 
 definePageMeta({ middleware: 'auth' })
 const route = useRoute()
@@ -8,29 +8,41 @@ const toast = useToast()
 const { number, errorMessage } = useFormat()
 const showVehicle = ref(false)
 const saving = ref(false)
+const plateIncomplete = ref(false)
 const vehicleForm = reactive({
-  brandId: '',
   modelId: '',
   plate: '',
-  temporaryIdentifier: '',
-  year: undefined as number | undefined,
   lastOdometer: undefined as number | undefined
 })
+const canCreateVehicle = computed(() => Boolean(
+  vehicleForm.modelId && !plateIncomplete.value
+))
 
 const { data: customer, refresh } = await useAsyncData(`customer-${route.params.id}`, () => api.get<Customer>(`/customers/${route.params.id}`))
-const { data: brands } = await useAsyncData('vehicle-brands', () => api.get<Array<{ id: string; nameFa: string }>>('/catalog/vehicle-brands'))
 const { data: models } = await useAsyncData(
   `vehicle-models-${route.params.id}`,
-  () => vehicleForm.brandId ? api.get<Array<{ id: string; nameFa: string }>>('/catalog/vehicle-models', { brandId: vehicleForm.brandId }) : Promise.resolve([]),
-  { watch: [() => vehicleForm.brandId] }
+  () => api.get<VehicleModelOption[]>('/catalog/vehicle-models')
 )
 
 useHead({ title: () => customer.value?.name || 'پرونده مشتری' })
 
+function openVehicleModal() {
+  vehicleForm.modelId = ''
+  vehicleForm.plate = ''
+  plateIncomplete.value = false
+  vehicleForm.lastOdometer = undefined
+  showVehicle.value = true
+}
+
 async function createVehicle() {
   saving.value = true
   try {
-    await api.post('/vehicles', { ...vehicleForm, ownerCustomerId: route.params.id })
+    await api.post('/vehicles', {
+      ownerCustomerId: route.params.id,
+      modelId: vehicleForm.modelId,
+      plate: vehicleForm.plate || undefined,
+      lastOdometer: vehicleForm.lastOdometer
+    })
     showVehicle.value = false
     toast.success('خودرو به پرونده مشتری اضافه شد.')
     await refresh()
@@ -53,7 +65,7 @@ async function createVehicle() {
           <h1 class="m-0 text-2xl font-950">{{ customer.name }}</h1>
           <p class="m-0 mt-1 text-sm text-ink/45" dir="ltr">{{ customer.mobileDisplay }}</p>
         </div>
-        <button class="btn-primary" @click="showVehicle = true"><span class="i-lucide-car-front h-5 w-5" />افزودن خودرو</button>
+        <button class="btn-primary" @click="openVehicleModal"><span class="i-lucide-car-front h-5 w-5" />افزودن خودرو</button>
       </div>
     </section>
 
@@ -61,33 +73,30 @@ async function createVehicle() {
       <article v-for="vehicle in customer.vehicles" :key="vehicle.id" class="card p-5">
         <div class="mb-5 flex items-start justify-between">
           <span class="grid h-12 w-12 place-items-center rounded-2xl bg-brand-50 text-brand-700"><span class="i-lucide-car h-6 w-6" /></span>
-          <span class="badge bg-black/4 text-ink/55">{{ vehicle.year || 'سال نامشخص' }}</span>
+          <span v-if="vehicle.year" class="badge bg-black/4 text-ink/55">{{ vehicle.year }}</span>
         </div>
         <h2 class="m-0 text-lg font-900">{{ vehicle.brand?.nameFa }} {{ vehicle.model?.nameFa }}</h2>
-        <p class="mb-0 mt-2 font-800 tracking-wider">{{ vehicle.plateDisplay || vehicle.temporaryIdentifier }}</p>
+        <p class="mb-0 mt-2 font-800 tracking-wider">{{ vehicle.plateDisplay || vehicle.temporaryIdentifier || 'بدون پلاک' }}</p>
         <div class="mt-5 flex items-center justify-between border-t border-black/6 pt-4 text-sm">
           <span class="text-ink/45">آخرین کیلومتر</span>
           <strong>{{ number(vehicle.lastOdometer) }}</strong>
         </div>
         <NuxtLink :to="`/service-orders/new?customer=${customer.id}&vehicle=${vehicle.id}`" class="btn-secondary mt-4 w-full no-underline"><span class="i-lucide-wrench h-4.5 w-4.5" />ثبت سرویس</NuxtLink>
       </article>
-      <button class="min-h-60 rounded-2xl border-2 border-dashed border-black/10 bg-transparent text-ink/40 transition hover:border-brand-400 hover:bg-brand-50 hover:text-brand-700" @click="showVehicle = true">
+      <button class="min-h-60 rounded-2xl border-2 border-dashed border-black/10 bg-transparent text-ink/40 transition hover:border-brand-400 hover:bg-brand-50 hover:text-brand-700" @click="openVehicleModal">
         <span class="i-lucide-circle-plus mx-auto mb-3 block h-8 w-8" />
         <strong>افزودن خودروی جدید</strong>
       </button>
     </div>
 
-    <AppModal :open="showVehicle" title="افزودن خودرو" description="پلاک یا شناسه موقت خودرو الزامی است." @close="showVehicle = false">
+    <AppModal :open="showVehicle" title="افزودن خودرو" description="مدل خودرو را جستجو کنید؛ برند آن به‌صورت خودکار تشخیص داده می‌شود." @close="showVehicle = false">
       <form class="grid gap-4 sm:grid-cols-2" @submit.prevent="createVehicle">
-        <div><label class="label">برند</label><select v-model="vehicleForm.brandId" class="field" required><option value="">انتخاب کنید</option><option v-for="brand in brands" :key="brand.id" :value="brand.id">{{ brand.nameFa }}</option></select></div>
-        <div><label class="label">مدل</label><select v-model="vehicleForm.modelId" class="field" required><option value="">انتخاب کنید</option><option v-for="model in models" :key="model.id" :value="model.id">{{ model.nameFa }}</option></select></div>
-        <div><label class="label">پلاک</label><input v-model="vehicleForm.plate" class="field" placeholder="مثلاً ۱۲ب۳۴۵ایران۶۷"></div>
-        <div><label class="label">شناسه موقت</label><input v-model="vehicleForm.temporaryIdentifier" class="field" placeholder="برای خودروی بدون پلاک"></div>
-        <div><label class="label">سال ساخت</label><input v-model.number="vehicleForm.year" type="number" class="field"></div>
-        <div><label class="label">کیلومتر فعلی</label><input v-model.number="vehicleForm.lastOdometer" type="number" min="0" class="field"></div>
+        <VehicleModelPicker v-model="vehicleForm.modelId" :models="models || []" class="sm:col-span-2" />
+        <div class="sm:col-span-2"><label class="label">پلاک خودرو <span class="font-400 text-ink/40">(اختیاری)</span></label><IranianPlateInput v-model="vehicleForm.plate" @incomplete-change="plateIncomplete = $event" /></div>
+        <div class="sm:col-span-2"><label class="label">کیلومتر فعلی</label><input v-model.number="vehicleForm.lastOdometer" type="number" min="0" class="field"></div>
         <div class="flex justify-end gap-2 pt-2 sm:col-span-2">
           <button type="button" class="btn-ghost" @click="showVehicle = false">انصراف</button>
-          <button class="btn-primary" :disabled="saving">ثبت خودرو</button>
+          <button class="btn-primary" :disabled="saving || !canCreateVehicle">ثبت خودرو</button>
         </div>
       </form>
     </AppModal>

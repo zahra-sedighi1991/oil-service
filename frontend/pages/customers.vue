@@ -40,7 +40,7 @@ async function createCustomer() {
 </script>
 
 <template>
-  <div>
+  <div class="list-page">
     <header class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
       <div>
         <p class="m-0 text-sm font-700 text-brand-700">دفتر مشتریان</p>
@@ -57,39 +57,47 @@ async function createCustomer() {
       </div>
     </section>
 
-    <div v-if="pending" class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-      <div v-for="i in 6" :key="i" class="card h-48 animate-pulse bg-white/60" />
-    </div>
+    <section v-if="pending" class="list-panel">
+      <div class="scroll-container list-scroll">
+        <div class="grid content-start gap-4 p-1 pb-4 md:grid-cols-2 xl:grid-cols-3">
+          <div v-for="i in 6" :key="i" class="card h-48 animate-pulse bg-white/60" />
+        </div>
+      </div>
+    </section>
 
-    <div v-else-if="customers?.length" class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-      <article v-for="customer in customers" :key="customer.id" class="card overflow-hidden">
-        <div class="flex items-start gap-3 p-5">
-          <span class="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-brand-50 font-900 text-brand-700">{{ customer.name.slice(0, 1) }}</span>
-          <div class="min-w-0 flex-1">
-            <h2 class="m-0 truncate text-base font-900">{{ customer.name }}</h2>
-            <a :href="`tel:${customer.mobileNormalized}`" class="mt-1 block text-sm text-ink/45 no-underline" dir="ltr">{{ customer.mobileDisplay }}</a>
-          </div>
-          <span class="badge bg-black/4 text-ink/55">{{ number(customer.vehicles?.length) }} خودرو</span>
-        </div>
-        <div class="border-t border-black/5 bg-black/[.015] px-5 py-4">
-          <div v-if="customer.vehicles?.length" class="space-y-2">
-            <div v-for="vehicle in customer.vehicles.slice(0, 2)" :key="vehicle.id" class="flex items-center justify-between rounded-xl border border-black/6 bg-white px-3 py-2.5">
-              <div class="flex items-center gap-2">
-                <span class="i-lucide-car-front h-4.5 w-4.5 text-brand-600" />
-                <span class="text-sm font-700">{{ vehicle.plateDisplay || vehicle.temporaryIdentifier }}</span>
+    <section v-else-if="customers?.length" class="list-panel">
+      <div class="scroll-container list-scroll">
+        <div class="grid content-start items-start gap-4 p-1 pb-4 md:grid-cols-2 xl:grid-cols-3">
+          <article v-for="customer in customers" :key="customer.id" class="card w-full overflow-hidden">
+            <div class="flex items-start gap-3 p-5">
+              <span class="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-brand-50 font-900 text-brand-700">{{ customer.name.slice(0, 1) }}</span>
+              <div class="min-w-0 flex-1">
+                <h2 class="m-0 truncate text-base font-900">{{ customer.name }}</h2>
+                <a :href="`tel:${customer.mobileNormalized}`" class="mt-1 block text-sm text-ink/45 no-underline" dir="ltr">{{ customer.mobileDisplay }}</a>
               </div>
-              <span class="text-xs text-ink/40">{{ number(vehicle.lastOdometer) }} کیلومتر</span>
+              <span class="badge bg-black/4 text-ink/55">{{ number(customer.vehicles?.length) }} خودرو</span>
             </div>
-          </div>
-          <p v-else class="my-1 text-center text-xs text-ink/40">هنوز خودرویی برای این مشتری ثبت نشده است.</p>
-          <div class="mt-3 grid grid-cols-2 gap-2">
-            <NuxtLink :to="`/customers/${customer.id}`" class="btn-secondary py-2 no-underline">مشاهده پرونده</NuxtLink>
-            <NuxtLink :to="`/service-orders/new?customer=${customer.id}`" class="btn-ghost py-2 no-underline">ثبت سرویس</NuxtLink>
-          </div>
+            <div class="border-t border-black/5 bg-black/[.015] px-5 py-4">
+              <div v-if="customer.vehicles?.length" class="space-y-2">
+                <div v-for="vehicle in customer.vehicles.slice(0, 2)" :key="vehicle.id" class="flex items-center justify-between rounded-xl border border-black/6 bg-white px-3 py-2.5">
+                  <div class="flex items-center gap-2">
+                    <span class="i-lucide-car-front h-4.5 w-4.5 text-brand-600" />
+                    <span class="text-sm font-700">{{ vehicle.plateDisplay || vehicle.temporaryIdentifier || 'بدون پلاک' }}</span>
+                  </div>
+                  <span class="text-xs text-ink/40">{{ number(vehicle.lastOdometer) }} کیلومتر</span>
+                </div>
+              </div>
+              <p v-else class="my-1 text-center text-xs text-ink/40">هنوز خودرویی برای این مشتری ثبت نشده است.</p>
+              <div class="mt-3 grid grid-cols-2 gap-2">
+                <NuxtLink :to="`/customers/${customer.id}`" class="btn-secondary py-2 no-underline">مشاهده پرونده</NuxtLink>
+                <NuxtLink :to="`/service-orders/new?customer=${customer.id}`" class="btn-ghost py-2 no-underline">ثبت سرویس</NuxtLink>
+              </div>
+            </div>
+          </article>
         </div>
-      </article>
-    </div>
-    <section v-else class="card">
+      </div>
+    </section>
+    <section v-else class="card list-panel">
       <AppEmptyState icon="i-lucide-users" title="مشتری‌ای پیدا نشد" description="مشتری جدید بسازید یا عبارت جستجو را تغییر دهید.">
         <button class="btn-primary" @click="showCustomer = true">ثبت مشتری جدید</button>
       </AppEmptyState>

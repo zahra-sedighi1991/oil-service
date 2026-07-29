@@ -8,4 +8,6 @@ export class DecideSuggestionDto {
   @IsEnum(SuggestionStatus) status: SuggestionStatus;
   @IsString() @IsNotEmpty() decisionNote: string;
   @IsString() @IsOptional() mappedEntityId?: string;
+  @IsString() @IsOptional() category?: string;
+  @IsString() @IsOptional() catalogName?: string;
 }

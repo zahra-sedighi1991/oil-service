@@ -33,6 +33,16 @@ export interface Vehicle {
   model?: { id: string; nameFa: string }
 }
 
+export interface VehicleModelOption {
+  id: string
+  brandId: string
+  nameFa: string
+  nameEn?: string
+  slug?: string
+  isPopular: boolean
+  brand?: { id: string; nameFa: string }
+}
+
 export interface Customer {
   id: string
   name: string
@@ -51,6 +61,10 @@ export interface Product {
     salePrice?: string
     isActive: boolean
     favorite: boolean
+    override?: {
+      intervalKm?: number
+      [key: string]: unknown
+    }
   }
 }
 

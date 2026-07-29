@@ -27,14 +27,14 @@ function onStatusChange(shop: AdminShop, event: Event) {
 </script>
 
 <template>
-  <div>
+  <div class="list-page">
     <header class="mb-6"><p class="m-0 text-sm font-700 text-brand-700">کنترل سراسری</p><h1 class="mb-0 mt-1 text-2xl font-950">مدیریت سامانه</h1><p class="mb-0 mt-2 text-sm text-ink/45">وضعیت فروشگاه‌ها و عملیات مدیریتی</p></header>
     <div class="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
       <div v-for="item in [{ label: 'همه فروشگاه‌ها', value: counts.all }, { label: 'فعال', value: counts.active }, { label: 'در انتظار', value: counts.pending }, { label: 'تعلیق‌شده', value: counts.suspended }]" :key="item.label" class="card p-4"><strong class="text-2xl font-950">{{ number(item.value) }}</strong><span class="mt-1 block text-xs text-ink/45">{{ item.label }}</span></div>
     </div>
-    <section class="card overflow-hidden">
+    <section class="card list-panel">
       <header class="border-b border-black/6 px-5 py-4"><h2 class="m-0 text-base font-900">فروشگاه‌ها</h2></header>
-      <div v-if="shops?.length" class="divide-y divide-black/5">
+      <div v-if="shops?.length" class="scroll-container list-scroll divide-y divide-black/5">
         <div v-for="shop in shops" :key="shop.id" class="grid gap-3 px-5 py-4 sm:grid-cols-[1fr_1fr_auto] sm:items-center">
           <div><strong class="block text-sm">{{ shop.name }}</strong><span class="mt-1 block text-xs text-ink/40">{{ shop.ownerName }} • {{ shop.city }}</span></div>
           <div class="text-xs text-ink/45"><span dir="ltr">{{ shop.publicPhone }}</span><span class="mt-1 block">{{ dateTime(shop.createdAt) }}</span></div>

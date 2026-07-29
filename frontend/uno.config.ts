@@ -29,8 +29,8 @@ export default defineConfig({
       amber: '#e9a93d',
       danger: '#c54b45'
     },
-    fontFamily: {
-      sans: '"Vazirmatn", "IRANSansX", Tahoma, Arial, sans-serif'
+    font: {
+      sans: '"IRANYekan", Tahoma, Arial, sans-serif'
     }
   },
   shortcuts: {

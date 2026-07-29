@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Put, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Put, Query } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { CurrentUser, Roles } from '../auth/auth.decorators';
 import type { AuthUser } from '../auth/auth.types';
@@ -8,7 +8,7 @@ import {
   ChangeStatusDto, ConfigureShopProductDto, ConfigureShopServiceDto, CreateAttributeDto,
   CreateAttributeOptionDto,
   CreateManufacturerDto, CreateProductDto, CreateProductTypeDto, CreateServiceCatalogDto,
-  CreateVehicleBrandDto, CreateVehicleModelDto,
+  CreateVehicleBrandDto, CreateVehicleModelDto, UpdateVehicleModelPopularityDto,
 } from './dto';
 
 @ApiTags('catalog')
@@ -21,6 +21,10 @@ export class CatalogController {
   @Get('catalog/vehicle-models') models(@Query('brandId') brandId?: string) { return this.catalog.listModels(brandId); }
   @Post('admin/catalog/vehicle-models') @Roles(UserRole.SUPER_ADMIN)
   createModel(@Body() dto: CreateVehicleModelDto) { return this.catalog.createModel(dto); }
+  @Patch('admin/catalog/vehicle-models/:id/popularity') @Roles(UserRole.SUPER_ADMIN)
+  setModelPopularity(@Param('id') id: string, @Body() dto: UpdateVehicleModelPopularityDto) {
+    return this.catalog.setModelPopularity(id, dto.isPopular);
+  }
   @Get('catalog/product-types') types() { return this.catalog.listTypes(); }
   @Get('catalog/product-manufacturers') manufacturers() { return this.catalog.listManufacturers(); }
   @Post('admin/catalog/product-manufacturers') @Roles(UserRole.SUPER_ADMIN)

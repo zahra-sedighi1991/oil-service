@@ -20,11 +20,7 @@ const stats = computed(() => [
 <template>
   <div>
     <header class="mb-7 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-      <div>
-        <p class="m-0 text-sm font-700 text-brand-700">مرکز عملیات فروشگاه</p>
-        <h1 class="mb-0 mt-1 text-2xl font-950 sm:text-3xl">امروز چه خبر است؟</h1>
         <p class="mb-0 mt-2 text-sm text-ink/45">وضعیت سرویس‌ها و مشتری‌ها در یک نگاه</p>
-      </div>
       <NuxtLink to="/service-orders/new" class="btn-primary no-underline">
         <span class="i-lucide-plus h-5 w-5" />ثبت سرویس جدید
       </NuxtLink>

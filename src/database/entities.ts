@@ -61,6 +61,7 @@ export class VehicleModel extends BaseEntity {
   @Column() nameFa: string;
   @Column({ nullable: true }) nameEn?: string;
   @Column() slug: string;
+  @Column({ default: false }) isPopular: boolean;
   @Column({ type: 'enum', enum: RecordStatus, default: RecordStatus.ACTIVE }) status: RecordStatus;
 }
 
