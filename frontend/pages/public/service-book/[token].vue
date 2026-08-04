@@ -20,14 +20,14 @@ useHead({
   <main class="min-h-screen px-4 py-6 sm:py-10">
     <div v-if="error" class="card mx-auto max-w-lg p-8 text-center">
       <span class="i-lucide-link-2-off mx-auto block h-12 w-12 text-danger" />
-      <h1 class="mb-0 mt-5 text-xl font-950">این لینک معتبر نیست</h1>
+      <h1 class="mb-0 mt-5 text-xl font-800">این لینک معتبر نیست</h1>
       <p class="mb-0 mt-2 text-sm leading-6 text-ink/50">برای دریافت لینک جدید با تعویض روغنی تماس بگیرید.</p>
     </div>
     <div v-else-if="book" class="mx-auto max-w-3xl">
       <header class="card overflow-hidden">
         <div class="bg-ink p-6 text-white sm:p-8">
           <div class="flex items-center justify-between"><span class="badge bg-white/10 text-white">دفترچه سرویس دیجیتال</span><span class="i-lucide-droplets h-6 w-6 text-brand-300" /></div>
-          <h1 class="mb-0 mt-7 text-2xl font-950">{{ book.vehicle.brand }} {{ book.vehicle.model }}</h1>
+          <h1 class="mb-0 mt-7 text-2xl font-800">{{ book.vehicle.brand }} {{ book.vehicle.model }}</h1>
           <div class="mt-3 flex flex-wrap gap-2 text-sm text-white/55"><span>{{ book.vehicle.plate }}</span><span>•</span><span>{{ number(book.vehicle.lastOdometer) }} کیلومتر</span></div>
         </div>
         <div v-if="book.nextDue" class="grid gap-3 p-5 sm:grid-cols-2">
@@ -37,7 +37,7 @@ useHead({
       </header>
 
       <section class="mt-5">
-        <h2 class="mb-4 text-lg font-950">تاریخچه سرویس‌ها</h2>
+        <h2 class="mb-4 text-lg font-800">تاریخچه سرویس‌ها</h2>
         <div v-if="book.services?.length" class="space-y-4">
           <article v-for="service in book.services" :key="service.id" class="card p-5">
             <div class="mb-5 flex items-start justify-between gap-3"><div><strong class="block">{{ date(service.serviceDate) }}</strong><span class="mt-1 block text-xs text-ink/40">{{ number(service.odometer) }} کیلومتر</span></div><span class="badge bg-brand-50 text-brand-700">{{ service.invoice?.invoiceNo }}</span></div>

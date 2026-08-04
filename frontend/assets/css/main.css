@@ -1,90 +1,105 @@
 @font-face {
-  font-family: "IRANYekan";
-  src: url("../fonts/iranyekan/farsi-digits/woff/iranyekanwebthinfanum.woff") format("woff"),
-       url("../fonts/iranyekan/farsi-digits/ttf/iranyekanwebthinfanum.ttf") format("truetype");
-  font-style: normal;
-  font-weight: 100;
+  font-family: IRANYekan;
+  src: url('../fonts/iranyekan/IranYekan-FD-Thin.woff2') format('woff2');
+  font-weight: 100 200;
   font-display: swap;
 }
 
 @font-face {
-  font-family: "IRANYekan";
-  src: url("../fonts/iranyekan/farsi-digits/woff/iranyekanweblightfanum.woff") format("woff"),
-       url("../fonts/iranyekan/farsi-digits/ttf/iranyekanweblightfanum.ttf") format("truetype");
-  font-style: normal;
+  font-family: IRANYekan;
+  src: url('../fonts/iranyekan/IranYekan-FD-Light.woff2') format('woff2');
   font-weight: 300;
   font-display: swap;
 }
 
 @font-face {
-  font-family: "IRANYekan";
-  src: url("../fonts/iranyekan/farsi-digits/woff/iranyekanwebregularfanum.woff") format("woff"),
-       url("../fonts/iranyekan/farsi-digits/ttf/iranyekanwebregularfanum.ttf") format("truetype");
-  font-style: normal;
+  font-family: IRANYekan;
+  src: url('../fonts/iranyekan/IranYekan-FD.woff2') format('woff2');
   font-weight: 400;
   font-display: swap;
 }
 
 @font-face {
-  font-family: "IRANYekan";
-  src: url("../fonts/iranyekan/farsi-digits/woff/iranyekanwebmediumfanum.woff") format("woff"),
-       url("../fonts/iranyekan/farsi-digits/ttf/iranyekanwebmediumfanum.ttf") format("truetype");
-  font-style: normal;
-  font-weight: 500;
+  font-family: IRANYekan;
+  src: url('../fonts/iranyekan/IranYekan-FD-Medium.woff2') format('woff2');
+  font-weight: 500 600;
   font-display: swap;
 }
 
 @font-face {
-  font-family: "IRANYekan";
-  src: url("../fonts/iranyekan/farsi-digits/woff/iranyekanwebmediumfanum.woff") format("woff"),
-       url("../fonts/iranyekan/farsi-digits/ttf/iranyekanwebmediumfanum.ttf") format("truetype");
-  font-style: normal;
-  font-weight: 600;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "IRANYekan";
-  src: url("../fonts/iranyekan/farsi-digits/woff/iranyekanwebboldfanum.woff") format("woff"),
-       url("../fonts/iranyekan/farsi-digits/ttf/iranyekanwebboldfanum.ttf") format("truetype");
-  font-style: normal;
-  font-weight: 650;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "IRANYekan";
-  src: url("../fonts/iranyekan/farsi-digits/woff/iranyekanwebboldfanum.woff") format("woff"),
-       url("../fonts/iranyekan/farsi-digits/ttf/iranyekanwebboldfanum.ttf") format("truetype");
-  font-style: normal;
+  font-family: IRANYekan;
+  src: url('../fonts/iranyekan/IranYekan-FD-Bold.woff2') format('woff2');
   font-weight: 700;
   font-display: swap;
 }
 
 @font-face {
-  font-family: "IRANYekan";
-  src: url("../fonts/iranyekan/farsi-digits/woff/iranyekanwebextraboldfanum.woff") format("woff"),
-       url("../fonts/iranyekan/farsi-digits/ttf/iranyekanwebextraboldfanum.ttf") format("truetype");
-  font-style: normal;
+  font-family: IRANYekan;
+  src: url('../fonts/iranyekan/IranYekan-FD-ExtraBold.woff2') format('woff2');
   font-weight: 800;
   font-display: swap;
 }
 
 @font-face {
-  font-family: "IRANYekan";
-  src: url("../fonts/iranyekan/farsi-digits/woff/iranyekanwebblackfanum.woff") format("woff"),
-       url("../fonts/iranyekan/farsi-digits/ttf/iranyekanwebblackfanum.ttf") format("truetype");
-  font-style: normal;
+  font-family: IRANYekan;
+  src: url('../fonts/iranyekan/IranYekan-FD-Black.woff2') format('woff2');
   font-weight: 900;
   font-display: swap;
 }
 
 @font-face {
-  font-family: "IRANYekan";
-  src: url("../fonts/iranyekan/farsi-digits/woff/iranyekanwebextrablackfanum.woff") format("woff"),
-       url("../fonts/iranyekan/farsi-digits/ttf/iranyekanwebextrablackfanum.ttf") format("truetype");
-  font-style: normal;
-  font-weight: 950;
+  font-family: iranYekan-en-number;
+  src: url('../fonts/iranyekan/IranYekan-Thin.woff2') format('woff2');
+  font-weight: 100 200;
+  unicode-range: U+0030-0039;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: iranYekan-en-number;
+  src: url('../fonts/iranyekan/IranYekan-Light.woff2') format('woff2');
+  font-weight: 300;
+  unicode-range: U+0030-0039;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: iranYekan-en-number;
+  src: url('../fonts/iranyekan/IranYekan.woff2') format('woff2');
+  font-weight: 400;
+  unicode-range: U+0030-0039;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: iranYekan-en-number;
+  src: url('../fonts/iranyekan/IranYekan-Medium.woff2') format('woff2');
+  font-weight: 500 600;
+  unicode-range: U+0030-0039;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: iranYekan-en-number;
+  src: url('../fonts/iranyekan/IranYekan-Bold.woff2') format('woff2');
+  font-weight: 700;
+  unicode-range: U+0030-0039;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: iranYekan-en-number;
+  src: url('../fonts/iranyekan/IranYekan-ExtraBold.woff2') format('woff2');
+  font-weight: 800;
+  unicode-range: U+0030-0039;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: iranYekan-en-number;
+  src: url('../fonts/iranyekan/IranYekan-Black.woff2') format('woff2');
+  font-weight: 900;
+  unicode-range: U+0030-0039;
   font-display: swap;
 }
 

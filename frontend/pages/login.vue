@@ -63,10 +63,7 @@ function switchMode(nextMode: 'login' | 'register') {
 <template>
   <section class="card p-5 sm:p-7">
     <div class="mb-6">
-      <span class="badge mb-3 bg-brand-50 text-brand-700">
-        {{ mode === 'login' ? 'ورود با رمز عبور' : 'راه‌اندازی فروشگاه' }}
-      </span>
-      <h1 class="m-0 text-2xl font-950">
+      <h1 class="m-0 text-2xl font-800">
         {{ mode === 'login' ? 'به روغن‌یار خوش آمدید' : 'فروشگاه خود را بسازید' }}
       </h1>
       <p class="mb-0 mt-2 text-sm leading-6 text-ink/50">
@@ -209,8 +206,8 @@ function switchMode(nextMode: 'login' | 'register') {
       </button>
     </form>
 
-    <div class="mt-6 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs leading-5 text-amber-800">
+    <!-- <div class="mt-6 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs leading-5 text-amber-800">
       ورود با OTP فعلاً غیرفعال است و در نسخه بعد دوباره به این صفحه اضافه می‌شود.
-    </div>
+    </div> -->
   </section>
 </template>

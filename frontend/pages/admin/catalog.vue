@@ -272,8 +272,7 @@ async function saveProductEdit(value: ProductEditorValue) {
   <div class="list-page">
     <header class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
       <div>
-        <p class="m-0 text-sm font-700 text-brand-700">اطلاعات پایه</p>
-        <h1 class="mb-0 mt-1 text-2xl font-950">کاتالوگ سراسری</h1>
+        <h1 class="mb-0 mt-1 text-2xl font-800">کاتالوگ سراسری</h1>
         <p class="mb-0 mt-2 text-sm text-ink/45">
           ابتدا دسته‌بندی و سپس محصول واقعی را بسازید تا در پنل فروشنده نمایش داده شود.
         </p>

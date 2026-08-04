@@ -111,7 +111,7 @@ function handlePaste(event: ClipboardEvent) {
           inputmode="numeric"
           maxlength="2"
           aria-label="دو رقم سمت چپ پلاک"
-          class="min-w-0 border-0 bg-transparent px-2 py-3 text-center text-lg font-900 outline-none"
+          class="min-w-0 border-0 bg-transparent px-2 py-3 text-center text-lg font-700 outline-none"
           placeholder="۱۲"
           @input="digitsFromEvent($event, 'first')"
         >
@@ -121,7 +121,7 @@ function handlePaste(event: ClipboardEvent) {
           list="iranian-plate-letters"
           maxlength="3"
           aria-label="حرف پلاک"
-          class="min-w-0 border-0 bg-transparent px-1 py-3 text-center text-lg font-900 outline-none"
+          class="min-w-0 border-0 bg-transparent px-1 py-3 text-center text-lg font-700 outline-none"
           placeholder="حرف"
           @input="typeLetter"
         >
@@ -134,7 +134,7 @@ function handlePaste(event: ClipboardEvent) {
           inputmode="numeric"
           maxlength="3"
           aria-label="سه رقم میانی پلاک"
-          class="min-w-0 border-0 bg-transparent px-2 py-3 text-center text-lg font-900 outline-none"
+          class="min-w-0 border-0 bg-transparent px-2 py-3 text-center text-lg font-700 outline-none"
           placeholder="۳۴۵"
           @input="digitsFromEvent($event, 'middle')"
         >
@@ -145,7 +145,7 @@ function handlePaste(event: ClipboardEvent) {
           inputmode="numeric"
           maxlength="2"
           aria-label="کد شهر پلاک"
-          class="min-w-0 border-0 bg-transparent px-2 py-3 text-center text-lg font-900 outline-none"
+          class="min-w-0 border-0 bg-transparent px-2 py-3 text-center text-lg font-700 outline-none"
           placeholder="۶۷"
           @input="digitsFromEvent($event, 'region')"
         >

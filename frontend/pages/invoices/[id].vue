@@ -52,7 +52,7 @@ async function openShare() {
     </div>
     <article class="card overflow-hidden bg-white">
       <header class="flex flex-col justify-between gap-5 bg-ink p-6 text-white sm:flex-row sm:items-start sm:p-8">
-        <div><span class="text-xs text-brand-300">فاکتور سرویس خودرو</span><h1 class="mb-0 mt-2 text-2xl font-950">{{ invoice.invoiceNo }}</h1><p class="mb-0 mt-2 text-sm text-white/45">{{ dateTime(invoice.issuedAt) }}</p></div>
+        <div><span class="text-xs text-brand-300">فاکتور سرویس خودرو</span><h1 class="mb-0 mt-2 text-2xl font-800">{{ invoice.invoiceNo }}</h1><p class="mb-0 mt-2 text-sm text-white/45">{{ dateTime(invoice.issuedAt) }}</p></div>
         <span class="badge w-fit bg-white/10 text-white">{{ invoice.status === 'issued' ? 'صادرشده' : 'باطل‌شده' }}</span>
       </header>
       <div class="p-6 sm:p-8">
@@ -68,7 +68,7 @@ async function openShare() {
           </table>
         </div>
         <div class="mr-auto mt-7 max-w-sm rounded-2xl bg-brand-50 p-5">
-          <div class="flex items-center justify-between"><span class="font-800 text-brand-900">جمع نهایی</span><strong class="text-xl font-950 text-brand-800">{{ money(invoice.totalAmount, invoice.currency) }}</strong></div>
+          <div class="flex items-center justify-between"><span class="font-800 text-brand-900">جمع نهایی</span><strong class="text-xl font-800 text-brand-800">{{ money(invoice.totalAmount, invoice.currency) }}</strong></div>
         </div>
       </div>
     </article>

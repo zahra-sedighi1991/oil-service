@@ -9,7 +9,7 @@ const { data: suggestions } = await useAsyncData('suggestions', () => api.get<Su
 
 <template>
   <div class="list-page">
-    <header class="mb-6"><p class="m-0 text-sm font-700 text-brand-700">تکمیل اطلاعات پایه</p><h1 class="mb-0 mt-1 text-2xl font-950">پیشنهادهای کاتالوگ</h1><p class="mb-0 mt-2 text-sm text-ink/45">وضعیت محصولات و خدماتی که هنگام ثبت سفارش خارج از کاتالوگ بوده‌اند و برای بررسی مدیر ارسال شده‌اند.</p></header>
+      <h1 class="mb-3 mt-1 text-xl font-800">پیشنهادهای کاتالوگ</h1>
     <section class="card list-panel">
       <div v-if="suggestions?.length" class="scroll-container list-scroll divide-y divide-black/5">
         <div v-for="item in suggestions" :key="item.id" class="flex flex-col gap-3 p-5 sm:flex-row sm:items-center">

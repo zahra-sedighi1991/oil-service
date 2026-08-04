@@ -8,7 +8,7 @@
           <span class="i-lucide-droplets h-6 w-6" />
         </span>
         <div>
-          <strong class="block text-xl font-900">روغن‌یار</strong>
+          <strong class="block text-xl font-700">روغن‌یار</strong>
           <span class="text-xs text-ink/45">دفترچه سرویس دیجیتال</span>
         </div>
       </NuxtLink>

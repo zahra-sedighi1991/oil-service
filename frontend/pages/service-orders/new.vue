@@ -392,13 +392,13 @@ async function openShare() {
 <template>
   <div>
     <header class="mb-6">
-      <h1 class="mb-0 text-2xl font-950">ثبت سرویس جدید</h1>
+      <h1 class="mb-0 mt-1 text-xl font-800">ثبت سرویس جدید</h1>
     </header>
 
     <div v-if="!success" class="mb-6 flex items-center">
       <template v-for="item in 3" :key="item">
         <div class="flex items-center gap-2">
-          <span class="grid h-9 w-9 place-items-center rounded-full text-sm font-900" :class="step >= item ? 'bg-brand-700 text-white' : 'bg-black/6 text-ink/35'">{{ number(item) }}</span>
+          <span class="grid h-9 w-9 place-items-center rounded-full text-sm font-700" :class="step >= item ? 'bg-brand-700 text-white' : 'bg-black/6 text-ink/35'">{{ number(item) }}</span>
           <span class="hidden text-sm font-700 sm:block" :class="step >= item ? 'text-ink' : 'text-ink/35'">{{ ['مشتری و خودرو', 'اقلام سرویس', 'مرور و ثبت'][item - 1] }}</span>
         </div>
         <div v-if="item < 3" class="mx-3 h-px flex-1" :class="step > item ? 'bg-brand-500' : 'bg-black/10'" />
@@ -408,7 +408,7 @@ async function openShare() {
     <section v-if="success" class="card mx-auto max-w-2xl overflow-hidden text-center">
       <div class="bg-brand-800 px-6 py-10 text-white">
         <span class="i-lucide-circle-check-big mx-auto block h-16 w-16 text-brand-300" />
-        <h2 class="mb-0 mt-5 text-2xl font-950">سرویس با موفقیت ثبت شد</h2>
+        <h2 class="mb-0 mt-5 text-2xl font-800">سرویس با موفقیت ثبت شد</h2>
         <p class="mb-0 mt-2 text-sm text-white/55">فاکتور و سوابق خودرو اکنون به‌روز هستند.</p>
       </div>
       <div class="p-6">
@@ -430,7 +430,7 @@ async function openShare() {
 
     <section v-else-if="step === 1" class="grid gap-5 lg:grid-cols-[1fr_1.1fr]">
       <div class="card p-5">
-        <h2 class="m-0 text-base font-900">۱. مشتری را پیدا کنید</h2>
+        <h2 class="m-0 text-base font-700">۱. مشتری را پیدا کنید</h2>
         <div class="relative mt-4">
           <span class="i-lucide-search absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-ink/30" />
           <input v-model="customerSearch" class="field px-10" placeholder="نام یا شماره موبایل">
@@ -447,7 +447,7 @@ async function openShare() {
         </div>
         <div class="mt-3 max-h-80 space-y-2 overflow-y-auto">
           <button v-for="customer in customers" :key="customer.id" class="flex w-full items-center gap-3 rounded-xl border p-3 text-right transition" :class="selectedCustomer?.id === customer.id ? 'border-brand-500 bg-brand-50' : 'border-black/6 bg-white hover:border-brand-300'" @click="selectCustomer(customer)">
-            <span class="grid h-9 w-9 place-items-center rounded-xl bg-black/4 text-sm font-900">{{ customer.name.slice(0, 1) }}</span>
+            <span class="grid h-9 w-9 place-items-center rounded-xl bg-black/4 text-sm font-700">{{ customer.name.slice(0, 1) }}</span>
             <div class="flex-1"><strong class="block text-sm">{{ customer.name }}</strong><span class="mt-0.5 block text-xs text-ink/40" dir="ltr">{{ customer.mobileDisplay }}</span></div>
             <span class="text-xs text-ink/35">{{ number(customer.vehicles.length) }} خودرو</span>
           </button>
@@ -464,7 +464,7 @@ async function openShare() {
 
       <div class="card p-5">
         <div class="flex items-center justify-between gap-3">
-          <h2 class="m-0 text-base font-900">۲. خودرو و کیلومتر</h2>
+          <h2 class="m-0 text-base font-700">۲. خودرو و کیلومتر</h2>
           <button
             v-if="selectedCustomer"
             class="btn-secondary px-3 py-2"
@@ -507,7 +507,7 @@ async function openShare() {
     <section v-else-if="step === 2" class="grid gap-5 xl:grid-cols-[1fr_1fr]">
       <div class="card overflow-hidden">
         <header class="flex items-center justify-between border-b border-black/6 px-5 py-4">
-          <div><h2 class="m-0 text-base font-900">محصولات مصرفی</h2><p class="m-0 mt-1 text-xs text-ink/40">{{ number(products.length) }} قلم</p></div>
+          <div><h2 class="m-0 text-base font-700">محصولات مصرفی</h2><p class="m-0 mt-1 text-xs text-ink/40">{{ number(products.length) }} قلم</p></div>
           <button class="btn-secondary px-3 py-2" @click="showProduct = true"><span class="i-lucide-plus h-4 w-4" />افزودن</button>
         </header>
         <div v-if="products.length" class="divide-y divide-black/5">
@@ -532,7 +532,7 @@ async function openShare() {
 
       <div class="card overflow-hidden">
         <header class="flex items-center justify-between border-b border-black/6 px-5 py-4">
-          <div><h2 class="m-0 text-base font-900">خدمات و اجرت</h2><p class="m-0 mt-1 text-xs text-ink/40">{{ number(services.length) }} خدمت</p></div>
+          <div><h2 class="m-0 text-base font-700">خدمات و اجرت</h2><p class="m-0 mt-1 text-xs text-ink/40">{{ number(services.length) }} خدمت</p></div>
           <button class="btn-secondary px-3 py-2" @click="showService = true"><span class="i-lucide-plus h-4 w-4" />افزودن</button>
         </header>
         <div v-if="services.length" class="divide-y divide-black/5">
@@ -558,7 +558,7 @@ async function openShare() {
       <div class="card overflow-hidden">
         <header class="bg-ink p-5 text-white sm:p-6">
           <p class="m-0 text-xs text-white/45">مرور نهایی سرویس</p>
-          <div class="mt-2 flex items-end justify-between gap-4"><h2 class="m-0 text-xl font-950">{{ selectedCustomer?.name }}</h2><strong class="text-brand-300">{{ selectedVehicle?.plateDisplay || selectedVehicle?.temporaryIdentifier || 'بدون پلاک' }}</strong></div>
+          <div class="mt-2 flex items-end justify-between gap-4"><h2 class="m-0 text-xl font-800">{{ selectedCustomer?.name }}</h2><strong class="text-brand-300">{{ selectedVehicle?.plateDisplay || selectedVehicle?.temporaryIdentifier || 'بدون پلاک' }}</strong></div>
           <p class="mb-0 mt-2 text-sm text-white/50">{{ number(odometer) }} کیلومتر</p>
         </header>
         <div class="p-5 sm:p-6">
@@ -567,7 +567,7 @@ async function openShare() {
             <div v-for="line in services" :key="line.key" class="flex items-center justify-between gap-3 text-sm"><span class="text-ink/65">{{ line.description }} × {{ number(line.quantity) }}</span><strong>{{ money(line.quantity * line.unitFee) }}</strong></div>
           </div>
           <div class="my-5 border-t border-dashed border-black/10" />
-          <div class="flex items-center justify-between"><span class="font-800">مبلغ نهایی</span><strong class="text-xl font-950 text-brand-700">{{ money(grandTotal) }}</strong></div>
+          <div class="flex items-center justify-between"><span class="font-800">مبلغ نهایی</span><strong class="text-xl font-800 text-brand-700">{{ money(grandTotal) }}</strong></div>
           <div class="mt-5"><label class="label">یادداشت سرویس</label><textarea v-model="note" class="field min-h-24" placeholder="مثلاً بررسی سطح ضدیخ در مراجعه بعد..." /></div>
           <div class="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <button class="btn-ghost" @click="step = 2">بازگشت و ویرایش</button>

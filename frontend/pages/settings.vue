@@ -27,7 +27,7 @@ async function save() {
 
 <template>
   <div class="mx-auto max-w-3xl">
-    <header class="mb-6"><p class="m-0 text-sm font-700 text-brand-700">فضای کاری</p><h1 class="mb-0 mt-1 text-2xl font-950">تنظیمات فروشگاه</h1><p class="mb-0 mt-2 text-sm text-ink/45">اطلاعاتی که در فاکتور و دفترچه عمومی نمایش داده می‌شود.</p></header>
+  <h1 class="mb-3 mt-1 text-xl font-800">تنظیمات فروشگاه</h1>
     <form class="card p-5 sm:p-7" @submit.prevent="save">
       <div class="grid gap-5 sm:grid-cols-2">
         <div><label class="label">نام فروشگاه</label><input v-model="form.name" class="field" required></div>

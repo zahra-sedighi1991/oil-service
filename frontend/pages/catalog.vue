@@ -154,11 +154,7 @@ async function submitProductSuggestion() {
 
 <template>
   <div class="list-page">
-    <header class="mb-6">
-      <p class="m-0 text-sm font-700 text-brand-700">کاتالوگ فروشگاه</p>
-      <h1 class="mb-0 mt-1 text-2xl font-950">محصولات، خدمات و قیمت‌ها</h1>
-      <p class="mb-0 mt-2 text-sm text-ink/45">اقلام فعال فروشگاه و قیمت پیش‌فرض هرکدام را مدیریت کنید.</p>
-    </header>
+      <h1 class="mb-3 mt-1 text-xl font-800">محصولات، خدمات و قیمت‌ها</h1>
 
     <div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <div class="inline-flex rounded-xl bg-black/5 p-1">

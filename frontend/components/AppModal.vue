@@ -16,7 +16,7 @@ function onKey(event: KeyboardEvent) {
         <section class="max-h-[92vh] w-full overflow-y-auto rounded-t-3xl bg-surface p-5 shadow-2xl sm:max-w-lg sm:rounded-3xl sm:p-6">
           <header class="mb-5 flex items-start justify-between gap-4">
             <div>
-              <h2 class="m-0 text-lg font-900">{{ title }}</h2>
+              <h2 class="m-0 text-lg font-700">{{ title }}</h2>
               <p v-if="description" class="mb-0 mt-1 text-sm leading-6 text-ink/50">{{ description }}</p>
             </div>
             <button class="btn-ghost h-9 w-9 p-0" aria-label="بستن" @click="emit('close')">

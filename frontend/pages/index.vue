@@ -27,14 +27,14 @@ const stats = computed(() => [
     </header>
 
     <div class="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
-      <article v-for="stat in stats" :key="stat.label" class="card p-4 sm:p-5">
+      <article v-for="stat in stats" :key="stat.label" class="card p-2 sm:p-3">
         <div class="mb-4 flex items-center justify-between">
           <span class="grid h-10 w-10 place-items-center rounded-xl" :class="stat.tone">
             <span class="h-5 w-5" :class="stat.icon" />
           </span>
           <span v-if="pending" class="h-5 w-12 animate-pulse rounded bg-black/6" />
+          <strong class="block text-2xl font-800 sm:text-3xl">{{ number(stat.value) }}</strong>
         </div>
-        <strong class="block text-2xl font-950 sm:text-3xl">{{ number(stat.value) }}</strong>
         <span class="mt-1 block text-xs leading-5 text-ink/45 sm:text-sm">{{ stat.label }}</span>
       </article>
     </div>
@@ -43,7 +43,7 @@ const stats = computed(() => [
       <section class="card overflow-hidden">
         <header class="flex items-center justify-between border-b border-black/6 px-5 py-4">
           <div>
-            <h2 class="m-0 text-base font-900">آخرین فاکتورها</h2>
+            <h2 class="m-0 text-base font-700">آخرین فاکتورها</h2>
             <p class="m-0 mt-1 text-xs text-ink/40">تازه‌ترین فعالیت‌های ثبت‌شده</p>
           </div>
           <NuxtLink to="/invoices" class="btn-ghost no-underline">مشاهده همه</NuxtLink>
@@ -65,12 +65,12 @@ const stats = computed(() => [
 
       <section class="card p-5">
         <div class="mb-5 flex items-center justify-between">
-          <h2 class="m-0 text-base font-900">عملکرد ماه جاری</h2>
+          <h2 class="m-0 text-base font-700">عملکرد ماه جاری</h2>
           <span class="i-lucide-chart-no-axes-combined h-5 w-5 text-brand-600" />
         </div>
         <div class="rounded-2xl bg-ink p-5 text-white">
           <p class="m-0 text-xs text-white/50">مشتریان یکتای ماه</p>
-          <strong class="mt-2 block text-4xl font-950">{{ number(dashboard?.month.uniqueCustomers) }}</strong>
+          <strong class="mt-2 block text-4xl font-800">{{ number(dashboard?.month.uniqueCustomers) }}</strong>
           <div class="mt-5 h-1.5 overflow-hidden rounded-full bg-white/10">
             <div class="h-full w-2/3 rounded-full bg-brand-400" />
           </div>

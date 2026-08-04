@@ -51,16 +51,12 @@ function openCustomerModal() {
 
 <template>
   <div class="list-page">
-    <header class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-      <div>
-        <p class="m-0 text-sm font-700 text-brand-700">دفتر مشتریان</p>
-        <h1 class="mb-0 mt-1 text-2xl font-950">مشتریان و خودروها</h1>
-        <p class="mb-0 mt-2 text-sm text-ink/45">جستجو، مشاهده سوابق و مدیریت خودروهای هر مشتری</p>
-      </div>
+    <header class="mb-3 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <h1 class="mb-0 mt-1 text-xl font-800">مشتریان و خودروها</h1>
       <button class="btn-primary" @click="openCustomerModal"><span class="i-lucide-user-plus h-5 w-5" />مشتری جدید</button>
     </header>
 
-    <section class="card mb-5 p-3">
+    <section class="card mb-4">
       <div class="relative">
         <span class="i-lucide-search absolute right-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-ink/35" />
         <input v-model="search" class="field border-0 bg-transparent pr-11 focus:ring-0" placeholder="جستجو با نام، شماره موبایل یا پلاک...">
@@ -80,9 +76,9 @@ function openCustomerModal() {
         <div class="grid content-start items-start gap-4 p-1 pb-4 md:grid-cols-2 xl:grid-cols-3">
           <article v-for="customer in customers" :key="customer.id" class="card w-full overflow-hidden">
             <div class="flex items-start gap-3 p-5">
-              <span class="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-brand-50 font-900 text-brand-700">{{ customer.name.slice(0, 1) }}</span>
+              <span class="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-brand-50 font-700 text-brand-700">{{ customer.name.slice(0, 1) }}</span>
               <div class="min-w-0 flex-1">
-                <h2 class="m-0 truncate text-base font-900">{{ customer.name }}</h2>
+                <h2 class="m-0 truncate text-base font-700">{{ customer.name }}</h2>
                 <a :href="`tel:${customer.mobileNormalized}`" class="mt-1 block text-sm text-ink/45 no-underline" dir="ltr">{{ customer.mobileDisplay }}</a>
               </div>
               <span class="badge bg-black/4 text-ink/55">{{ number(customer.vehicles?.length) }} خودرو</span>

@@ -216,8 +216,7 @@ async function submitDecision() {
 <template>
   <div class="list-page">
     <header class="mb-6">
-      <p class="m-0 text-sm font-700 text-brand-700">مدیریت کاتالوگ</p>
-      <h1 class="mb-0 mt-1 text-2xl font-950">پیشنهادهای محصولات و خدمات</h1>
+      <h1 class="mb-0 mt-1 text-2xl font-800">پیشنهادهای محصولات و خدمات</h1>
       <p class="mb-0 mt-2 max-w-2xl text-sm leading-7 text-ink/50">
         وقتی فروشگاه هنگام ثبت سفارش موردی را پیدا نمی‌کند، آن را به‌صورت «خارج از کاتالوگ» ثبت می‌کند.
         این موارد برای تأیید، اتصال به مورد موجود یا رد شدن در این صف قرار می‌گیرند.

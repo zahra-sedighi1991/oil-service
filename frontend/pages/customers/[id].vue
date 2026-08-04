@@ -60,9 +60,9 @@ async function createVehicle() {
     <section class="card mb-5 overflow-hidden">
       <div class="h-24 bg-ink" />
       <div class="-mt-10 flex flex-col gap-4 px-5 pb-5 sm:flex-row sm:items-end sm:px-7">
-        <span class="grid h-20 w-20 place-items-center rounded-3xl border-4 border-surface bg-brand-100 text-2xl font-950 text-brand-800">{{ customer.name.slice(0, 1) }}</span>
+        <span class="grid h-20 w-20 place-items-center rounded-3xl border-4 border-surface bg-brand-100 text-2xl font-800 text-brand-800">{{ customer.name.slice(0, 1) }}</span>
         <div class="flex-1">
-          <h1 class="m-0 text-2xl font-950">{{ customer.name }}</h1>
+          <h1 class="m-0 text-2xl font-800">{{ customer.name }}</h1>
           <p class="m-0 mt-1 text-sm text-ink/45" dir="ltr">{{ customer.mobileDisplay }}</p>
         </div>
         <button class="btn-primary" @click="openVehicleModal"><span class="i-lucide-car-front h-5 w-5" />افزودن خودرو</button>
@@ -75,7 +75,7 @@ async function createVehicle() {
           <span class="grid h-12 w-12 place-items-center rounded-2xl bg-brand-50 text-brand-700"><span class="i-lucide-car h-6 w-6" /></span>
           <span v-if="vehicle.year" class="badge bg-black/4 text-ink/55">{{ vehicle.year }}</span>
         </div>
-        <h2 class="m-0 text-lg font-900">{{ vehicle.brand?.nameFa }} {{ vehicle.model?.nameFa }}</h2>
+        <h2 class="m-0 text-lg font-700">{{ vehicle.brand?.nameFa }} {{ vehicle.model?.nameFa }}</h2>
         <p class="mb-0 mt-2 font-800 tracking-wider">{{ vehicle.plateDisplay || vehicle.temporaryIdentifier || 'بدون پلاک' }}</p>
         <div class="mt-5 flex items-center justify-between border-t border-black/6 pt-4 text-sm">
           <span class="text-ink/45">آخرین کیلومتر</span>

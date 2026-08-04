@@ -14,11 +14,7 @@ const filtered = computed(() => invoices.value?.filter(item =>
 
 <template>
   <div class="list-page">
-    <header class="mb-6">
-      <p class="m-0 text-sm font-700 text-brand-700">اسناد مالی سرویس</p>
-      <h1 class="mb-0 mt-1 text-2xl font-950">فاکتورها</h1>
-      <p class="mb-0 mt-2 text-sm text-ink/45">نسخه تغییرناپذیر اقلام و مبالغ سرویس‌های نهایی‌شده</p>
-    </header>
+      <h1 class="mb-3 mt-1 text-xl font-800">فاکتورها</h1>
     <section class="card list-panel">
       <div class="border-b border-black/6 p-4">
         <div class="relative max-w-sm"><span class="i-lucide-search absolute right-3 top-1/2 h-4.5 w-4.5 -translate-y-1/2 text-ink/30" /><input v-model="search" class="field py-2.5 pr-10" placeholder="شماره فاکتور..."></div>
