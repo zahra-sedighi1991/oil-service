@@ -538,6 +538,32 @@ async function openShare() {
     preparingShare.value = false
   }
 }
+
+async function startNextService() {
+  await navigateTo('/service-orders/new', { replace: true })
+  step.value = 1
+  customerSearch.value = ''
+  selectedCustomer.value = null
+  selectedVehicle.value = null
+  odometer.value = undefined
+  suggestedOdometer.value = undefined
+  note.value = ''
+  products.value = []
+  services.value = []
+  productSearch.value = ''
+  localServiceName.value = ''
+  selectedProductIds.value = []
+  selectedPendingProductIds.value = []
+  selectedServiceIds.value = []
+  selectedPendingServiceIds.value = []
+  showProduct.value = false
+  showProductSuggestion.value = false
+  showService.value = false
+  showVehicle.value = false
+  showCustomer.value = false
+  showShare.value = false
+  success.value = null
+}
 </script>
 
 <template>
@@ -574,7 +600,7 @@ async function openShare() {
             <span v-else class="i-lucide-share-2 h-4.5 w-4.5" />
             {{ preparingShare ? 'آماده‌سازی...' : 'اشتراک‌گذاری' }}
           </button>
-          <button class="btn-ghost" @click="navigateTo('/service-orders/new', { replace: true })">سرویس بعدی</button>
+          <button type="button" class="btn-ghost" @click="startNextService">سرویس بعدی</button>
         </div>
       </div>
     </section>
