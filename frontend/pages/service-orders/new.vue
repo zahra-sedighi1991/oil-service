@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { CatalogService, Customer, Product, Vehicle, VehicleModelOption } from '~/types/api'
 
+interface ProductTypeOption { id: string; title: string }
+
 definePageMeta({ middleware: 'auth' })
 useHead({ title: 'ثبت سرویس جدید' })
 
@@ -47,11 +49,22 @@ const note = ref('')
 const products = ref<ProductLine[]>([])
 const services = ref<LaborLine[]>([])
 const showProduct = ref(false)
+const showProductSuggestion = ref(false)
 const showService = ref(false)
 const showVehicle = ref(false)
 const showCustomer = ref(false)
 const showShare = ref(false)
 const productSearch = ref('')
+const savingProductSuggestion = ref(false)
+const appliesSuggestionToAllVehicles = ref(true)
+const suggestionVehicleSearch = ref('')
+const productSuggestionForm = reactive({
+  productTypeId: '',
+  name: '',
+  productModel: '',
+  packageVolume: undefined as number | undefined,
+  vehicleModelIds: [] as string[]
+})
 const localServiceName = ref('')
 const submitting = ref(false)
 const savingVehicle = ref(false)
@@ -93,6 +106,10 @@ const { data: vehicleModels } = await useAsyncData(
   'service-vehicle-models',
   () => api.get<VehicleModelOption[]>('/catalog/vehicle-models')
 )
+const { data: productTypes } = await useAsyncData(
+  'service-product-suggestion-types',
+  () => api.get<ProductTypeOption[]>('/catalog/product-types')
+)
 
 const productTotal = computed(() => products.value.reduce((sum, line) => sum + line.quantity * line.unitPrice, 0))
 const serviceTotal = computed(() => services.value.reduce((sum, line) => sum + line.quantity * line.unitFee, 0))
@@ -121,6 +138,12 @@ const canCreateVehicle = computed(() => Boolean(
   && vehicleForm.modelId
   && !plateIncomplete.value
 ))
+const filteredSuggestionVehicleModels = computed(() => {
+  const value = suggestionVehicleSearch.value.trim().toLocaleLowerCase('fa')
+  if (!value) return vehicleModels.value || []
+  return (vehicleModels.value || []).filter(model => [model.nameFa, model.nameEn, model.brand?.nameFa]
+    .filter(Boolean).some(label => label!.toLocaleLowerCase('fa').includes(value)))
+})
 
 let odometerRequest = 0
 watch(selectedVehicle, async (vehicle) => {
@@ -281,6 +304,53 @@ function addTemporaryProduct() {
   products.value.push({ key: crypto.randomUUID(), description: name, quantity: 1, unitPrice: 0 })
   productSearch.value = ''
   showProduct.value = false
+}
+
+function openProductSuggestionModal() {
+  Object.assign(productSuggestionForm, {
+    productTypeId: '', name: productSearch.value.trim(), productModel: '', packageVolume: undefined, vehicleModelIds: []
+  })
+  appliesSuggestionToAllVehicles.value = true
+  suggestionVehicleSearch.value = ''
+  showProductSuggestion.value = true
+}
+
+function toggleSuggestionVehicle(id: string) {
+  const index = productSuggestionForm.vehicleModelIds.indexOf(id)
+  if (index >= 0) productSuggestionForm.vehicleModelIds.splice(index, 1)
+  else productSuggestionForm.vehicleModelIds.push(id)
+}
+
+async function submitProductSuggestion() {
+  const name = productSuggestionForm.name.trim()
+  if (!name) return toast.error('نام کامل محصول را وارد کنید.')
+  if (!appliesSuggestionToAllVehicles.value && !productSuggestionForm.vehicleModelIds.length) {
+    return toast.error('حداقل یک مدل خودرو انتخاب کنید یا گزینه همه خودروها را بزنید.')
+  }
+  savingProductSuggestion.value = true
+  try {
+    await api.post('/suggestions', {
+      entityType: 'product',
+      payload: {
+        description: name,
+        productTypeId: productSuggestionForm.productTypeId,
+        attributes: Object.fromEntries(Object.entries({
+          model: productSuggestionForm.productModel.trim() || undefined,
+          package_volume: productSuggestionForm.packageVolume
+        }).filter(([, value]) => value !== undefined && value !== '')),
+        vehicleModelIds: appliesSuggestionToAllVehicles.value ? [] : productSuggestionForm.vehicleModelIds
+      }
+    })
+    products.value.push({ key: crypto.randomUUID(), description: name, quantity: 1, unitPrice: 0 })
+    productSearch.value = ''
+    showProductSuggestion.value = false
+    showProduct.value = false
+    toast.success('پیشنهاد محصول ثبت و به فاکتور اضافه شد.')
+  } catch (error) {
+    toast.error(errorMessage(error))
+  } finally {
+    savingProductSuggestion.value = false
+  }
 }
 
 function addPendingProduct(item: PendingSuggestion) {
@@ -671,12 +741,62 @@ async function openShare() {
         </div>
       </div>
       <div class="mt-3 rounded-xl border border-dashed border-black/10 bg-black/[.02] p-3">
-        <p class="m-0 text-xs leading-6 text-ink/50">محصول پیدا نشد؟ همین نام جست‌وجوشده به سفارش اضافه و برای تکمیل کاتالوگ به مدیر پیشنهاد می‌شود.</p>
-        <button class="btn-ghost mt-2 w-full" :disabled="!productSearch.trim()" @click="addTemporaryProduct">
-          <span class="i-lucide-file-plus" />
-          {{ productSearch.trim() ? `ثبت «${productSearch.trim()}» خارج از کاتالوگ` : 'ابتدا نام محصول را وارد کنید' }}
+        <p class="m-0 text-xs leading-6 text-ink/50">محصول پیدا نشد؟ مشخصات آن را ثبت کنید تا برای بررسی مدیر ارسال و هم‌زمان به این فاکتور افزوده شود.</p>
+        <button class="btn-ghost mt-2 w-full" @click="openProductSuggestionModal">
+          <span class="i-lucide-lightbulb" />
+          ثبت پیشنهاد محصول
         </button>
       </div>
+    </AppModal>
+
+    <AppModal
+      :open="showProductSuggestion"
+      title="ثبت پیشنهاد محصول"
+      description="مشخصات محصول را وارد کنید؛ محصول پیشنهادی همین حالا با قیمت قابل‌ویرایش به فاکتور اضافه می‌شود."
+      @close="showProductSuggestion = false"
+    >
+      <form class="space-y-4" @submit.prevent="submitProductSuggestion">
+        <div>
+          <label class="label">نوع محصول</label>
+          <select v-model="productSuggestionForm.productTypeId" class="field" required>
+            <option value="" disabled>انتخاب نوع محصول</option>
+            <option v-for="type in productTypes || []" :key="type.id" :value="type.id">{{ type.title }}</option>
+          </select>
+        </div>
+        <div>
+          <label class="label">نام کامل محصول</label>
+          <input v-model="productSuggestionForm.name" class="field" required placeholder="مثلاً روغن موتور بهران سوپر پیشتاز">
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div><label class="label">مدل محصول <span class="font-400 text-ink/40">(اختیاری)</span></label><input v-model="productSuggestionForm.productModel" class="field" placeholder="مثلاً 10W-40"></div>
+          <div><label class="label">حجم <span class="font-400 text-ink/40">(اختیاری)</span></label><input v-model.number="productSuggestionForm.packageVolume" type="number" min="0" step="0.1" class="field text-left" dir="ltr" placeholder="مثلاً 4"></div>
+        </div>
+        <div class="rounded-xl border border-black/7 p-3">
+          <label class="label">نوع خودرو</label>
+          <div class="grid grid-cols-2 gap-2">
+            <label class="flex cursor-pointer items-center gap-2 rounded-lg border p-3" :class="appliesSuggestionToAllVehicles ? 'border-brand-300 bg-brand-50' : 'border-black/7'">
+              <input v-model="appliesSuggestionToAllVehicles" type="radio" :value="true" class="accent-brand-600"> همه خودروها
+            </label>
+            <label class="flex cursor-pointer items-center gap-2 rounded-lg border p-3" :class="!appliesSuggestionToAllVehicles ? 'border-brand-300 bg-brand-50' : 'border-black/7'">
+              <input v-model="appliesSuggestionToAllVehicles" type="radio" :value="false" class="accent-brand-600"> انتخاب یک یا چند خودرو
+            </label>
+          </div>
+          <div v-if="!appliesSuggestionToAllVehicles" class="mt-3">
+            <input v-model="suggestionVehicleSearch" class="field" placeholder="جستجوی مدل خودرو...">
+            <div class="scroll-container mt-2 max-h-52 space-y-1 overflow-y-auto">
+              <label v-for="model in filteredSuggestionVehicleModels" :key="model.id" class="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 hover:bg-black/[.03]">
+                <input type="checkbox" :checked="productSuggestionForm.vehicleModelIds.includes(model.id)" class="accent-brand-600" @change="toggleSuggestionVehicle(model.id)">
+                <span class="text-sm">{{ model.nameFa }}</span>
+              </label>
+            </div>
+            <p class="mb-0 mt-2 text-xs text-ink/45">{{ productSuggestionForm.vehicleModelIds.length }} مدل انتخاب شده است.</p>
+          </div>
+        </div>
+        <button class="btn-primary w-full" :disabled="savingProductSuggestion">
+          <span v-if="savingProductSuggestion" class="i-lucide-loader-circle h-4 w-4 animate-spin" />
+          {{ savingProductSuggestion ? 'در حال ثبت…' : 'ثبت پیشنهاد و افزودن به فاکتور' }}
+        </button>
+      </form>
     </AppModal>
 
     <AppModal :open="showService" title="افزودن خدمت" description="خدمت استاندارد را انتخاب کنید یا نام خدمت خارج از کاتالوگ را بنویسید." @close="showService = false">
