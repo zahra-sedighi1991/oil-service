@@ -24,7 +24,19 @@ interface CatalogRow {
 const api = useApi()
 const toast = useToast()
 const { errorMessage } = useFormat()
-const tab = ref<TabKey>('brands')
+const route = useRoute()
+const router = useRouter()
+
+const tabKeys: TabKey[] = ['brands', 'models', 'types', 'products', 'services']
+
+function tabFromQuery(value: unknown): TabKey | null {
+  const normalizedValue = Array.isArray(value) ? value[0] : value
+  return typeof normalizedValue === 'string' && tabKeys.includes(normalizedValue as TabKey)
+    ? normalizedValue as TabKey
+    : null
+}
+
+const tab = ref<TabKey>(tabFromQuery(route.query.tab) || 'brands')
 const modal = ref(false)
 const saving = ref(false)
 const updatingPopularity = ref<string | null>(null)
@@ -40,6 +52,20 @@ const tabs: Array<{ key: TabKey; label: string }> = [
   { key: 'products', label: 'محصولات قابل فروش' },
   { key: 'services', label: 'خدمات' }
 ]
+
+watch(() => route.query.tab, (value) => {
+  tab.value = tabFromQuery(value) || 'brands'
+})
+
+async function selectTab(key: TabKey) {
+  if (tab.value === key && tabFromQuery(route.query.tab) === key) return
+  await router.push({
+    query: {
+      ...route.query,
+      tab: key,
+    },
+  })
+}
 
 const form = reactive({
   nameFa: '',
@@ -265,7 +291,7 @@ async function saveProduct(value: ProductEditorValue) {
         :key="item.key"
         class="rounded-lg border-0 px-3 py-2 text-sm font-700"
         :class="tab === item.key ? 'bg-white shadow-sm' : 'bg-transparent text-ink/45'"
-        @click="tab = item.key"
+        @click="selectTab(item.key)"
       >
         {{ item.label }}
       </button>
