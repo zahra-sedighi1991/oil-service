@@ -87,6 +87,7 @@ async function shareImage() {
   try {
     await navigator.share({
       title: props.message,
+      text: `${props.message}\n${props.url}`,
       files: [createImageFile()]
     })
     emit('close')
