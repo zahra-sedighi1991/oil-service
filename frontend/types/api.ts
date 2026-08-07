@@ -68,6 +68,7 @@ export interface Product {
     salePrice?: string
     isActive: boolean
     favorite: boolean
+    sortOrder?: number
     override?: {
       intervalKm?: number
       [key: string]: unknown
@@ -83,6 +84,7 @@ export interface CatalogService {
     fee?: string
     isActive: boolean
     favorite: boolean
+    sortOrder?: number
   }
 }
 
