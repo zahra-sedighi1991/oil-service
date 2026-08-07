@@ -1,5 +1,6 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import ExcelJS from 'exceljs';
 import { DataSource, ILike, Repository } from 'typeorm';
 import { AuditLog, Customer, Vehicle, VehicleModel, VehiclePublicLink } from '../database/entities';
 import { PublicLinkStatus, RecordStatus } from '../common/enums';
@@ -23,6 +24,74 @@ export class CrmService {
     if (mobile) qb.andWhere('customer.mobileNormalized LIKE :mobile', { mobile: `%${normalizeMobile(mobile)}%` });
     if (search) qb.andWhere('customer.name ILIKE :search', { search: `%${search}%` });
     return qb.orderBy('customer.updatedAt', 'DESC').take(50).getMany();
+  }
+
+  async exportCustomers(shopId: string) {
+    const customers = await this.customers.find({
+      where: { shopId },
+      relations: { vehicles: { brand: true, model: true } },
+      order: { createdAt: 'DESC' },
+    });
+
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = 'RoghanYar';
+    workbook.created = new Date();
+    const worksheet = workbook.addWorksheet('مشتریان', {
+      views: [{ rightToLeft: true, state: 'frozen', ySplit: 1 }],
+      properties: { defaultRowHeight: 22 },
+    });
+
+    worksheet.columns = [
+      { header: 'ردیف', key: 'index', width: 8 },
+      { header: 'نام و نام خانوادگی', key: 'name', width: 24 },
+      { header: 'شماره موبایل', key: 'mobile', width: 18 },
+      { header: 'جنسیت', key: 'gender', width: 11 },
+      { header: 'تعداد خودرو', key: 'vehicleCount', width: 13 },
+      { header: 'خودروها', key: 'vehicles', width: 34 },
+      { header: 'پلاک یا شناسه خودرو', key: 'plates', width: 27 },
+      { header: 'آخرین کیلومتر ثبت‌شده', key: 'odometers', width: 24 },
+      { header: 'یادداشت', key: 'note', width: 36 },
+      { header: 'تاریخ ثبت', key: 'createdAt', width: 16 },
+    ];
+
+    customers.forEach((customer, index) => {
+      const vehicles = customer.vehicles ?? [];
+      worksheet.addRow({
+        index: index + 1,
+        name: customer.name === 'مشتری بدون نام' ? 'بدون نام' : customer.name,
+        mobile: customer.mobileNormalized,
+        gender: customer.gender === 'female' ? 'خانم' : 'آقا',
+        vehicleCount: vehicles.length,
+        vehicles: vehicles.map((vehicle) => [
+          vehicle.brand?.nameFa,
+          vehicle.model?.nameFa,
+          vehicle.year,
+        ].filter(Boolean).join(' ')).filter(Boolean).join('، '),
+        plates: vehicles.map((vehicle) => vehicle.plateDisplay || vehicle.temporaryIdentifier).filter(Boolean).join('، '),
+        odometers: vehicles.map((vehicle) => vehicle.lastOdometer?.toLocaleString('fa-IR')).filter(Boolean).join('، '),
+        note: customer.note ?? '',
+        createdAt: customer.createdAt,
+      });
+    });
+
+    const header = worksheet.getRow(1);
+    header.height = 28;
+    header.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    header.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF176B4D' } };
+    header.alignment = { horizontal: 'center', vertical: 'middle' };
+    worksheet.autoFilter = { from: 'A1', to: 'J1' };
+    worksheet.getColumn('mobile').numFmt = '@';
+    worksheet.getColumn('createdAt').numFmt = 'yyyy/mm/dd';
+
+    worksheet.eachRow((row, rowNumber) => {
+      if (rowNumber === 1) return;
+      row.alignment = { horizontal: 'right', vertical: 'middle', wrapText: true };
+      if (rowNumber % 2 === 0) {
+        row.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F8F5' } };
+      }
+    });
+
+    return Buffer.from(await workbook.xlsx.writeBuffer());
   }
 
   async getCustomer(shopId: string, id: string) {

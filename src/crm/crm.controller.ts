@@ -1,5 +1,6 @@
-import { Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query, Res, StreamableFile } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import type { Response } from 'express';
 import { CurrentUser } from '../auth/auth.decorators';
 import type { AuthUser } from '../auth/auth.types';
 import { CrmService } from './crm.service';
@@ -12,6 +13,13 @@ export class CrmController {
   @Get('customers')
   customers(@CurrentUser() user: AuthUser, @Query('mobile') mobile?: string, @Query('search') search?: string) {
     return this.crm.listCustomers(user.shopId!, mobile, search);
+  }
+  @Get('customers/export')
+  async exportCustomers(@CurrentUser() user: AuthUser, @Res({ passthrough: true }) response: Response) {
+    const date = new Date().toISOString().slice(0, 10);
+    response.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    response.setHeader('Content-Disposition', `attachment; filename="customers-${date}.xlsx"`);
+    return new StreamableFile(await this.crm.exportCustomers(user.shopId!));
   }
   @Get('customers/:id')
   customer(@CurrentUser() user: AuthUser, @Param('id') id: string) { return this.crm.getCustomer(user.shopId!, id); }

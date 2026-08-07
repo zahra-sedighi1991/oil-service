@@ -10,6 +10,7 @@ const { number, errorMessage } = useFormat()
 const search = ref('')
 const showCustomer = ref(false)
 const saving = ref(false)
+const exporting = ref(false)
 const form = reactive({ name: '', mobile: '', gender: 'male' as 'male' | 'female', note: '' })
 const searchQuery = computed(() => {
   const value = search.value.trim()
@@ -47,21 +48,53 @@ function openCustomerModal() {
   Object.assign(form, { name: '', mobile: '', gender: 'male', note: '' })
   showCustomer.value = true
 }
+
+async function exportCustomers() {
+  exporting.value = true
+  try {
+    const blob = await api.download('/customers/export')
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `customers-${new Date().toISOString().slice(0, 10)}.xlsx`
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    URL.revokeObjectURL(url)
+    toast.success('فایل Excel مشتریان دانلود شد.')
+  } catch (error) {
+    toast.error(errorMessage(error))
+  } finally {
+    exporting.value = false
+  }
+}
 </script>
 
 <template>
   <!-- Search -->
 <section class="card mb-4 p-2">
-  <div class="relative">
-    <span
-      class="i-lucide-search absolute right-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-ink/30"
-    />
+  <div class="flex flex-col gap-2 sm:flex-row">
+    <div class="relative min-w-0 flex-1">
+      <span
+        class="i-lucide-search absolute right-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-ink/30"
+      />
 
-    <input
-      v-model="search"
-      class="field w-full border-0 bg-transparent pr-11 focus:ring-0"
-      placeholder="جستجو با نام، شماره موبایل یا پلاک..."
+      <input
+        v-model="search"
+        class="field w-full border-0 bg-transparent pr-11 focus:ring-0"
+        placeholder="جستجو با نام، شماره موبایل یا پلاک..."
+      >
+    </div>
+    <button
+      type="button"
+      class="btn-secondary shrink-0 sm:min-w-36"
+      :disabled="exporting"
+      @click="exportCustomers"
     >
+      <span v-if="exporting" class="i-lucide-loader-circle h-4.5 w-4.5 animate-spin" />
+      <span v-else class="i-lucide-file-spreadsheet h-4.5 w-4.5" />
+      {{ exporting ? 'در حال ساخت…' : 'خروجی Excel' }}
+    </button>
   </div>
 </section>
 
