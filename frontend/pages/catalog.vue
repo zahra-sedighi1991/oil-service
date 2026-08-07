@@ -21,6 +21,7 @@ const editing = ref<{
   favorite: boolean
 } | null>(null)
 const saving = ref(false)
+const movingCard = ref(false)
 const showSuggestion = ref(false)
 const savingSuggestion = ref(false)
 const appliesToAllVehicles = ref(true)
@@ -79,6 +80,33 @@ function editService(service: CatalogService) {
     value: Number(service.shopConfiguration?.fee || 0),
     active: service.shopConfiguration?.isActive ?? true,
     favorite: service.shopConfiguration?.favorite ?? false
+  }
+}
+
+function canMove(items: Array<Product | CatalogService>, index: number, direction: -1 | 1) {
+  const target = items[index + direction]
+  return Boolean(target && target.shopConfiguration?.favorite === items[index].shopConfiguration?.favorite)
+}
+
+async function moveCard(type: 'product' | 'service', index: number, direction: -1 | 1) {
+  const source = type === 'product' ? products.value : services.value
+  if (!source || !canMove(source, index, direction) || movingCard.value) return
+
+  const reordered = [...source]
+  const targetIndex = index + direction
+  ;[reordered[index], reordered[targetIndex]] = [reordered[targetIndex], reordered[index]]
+  movingCard.value = true
+  try {
+    await Promise.all(reordered.map((item, sortOrder) => api.put(
+      type === 'product' ? `/shop-products/${item.id}` : `/shop-services/${item.id}`,
+      { sortOrder }
+    )))
+    if (type === 'product') await refreshProducts()
+    else await refreshServices()
+  } catch (error) {
+    toast.error(errorMessage(error))
+  } finally {
+    movingCard.value = false
   }
 }
 
@@ -179,7 +207,7 @@ async function submitProductSuggestion() {
     <section class="card list-panel">
       <div v-if="tab === 'products'" class="flex min-h-0 flex-1 flex-col">
         <div v-if="products?.length" class="scroll-container list-scroll divide-y divide-black/5">
-          <div v-for="product in products" :key="product.id" class="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:px-5">
+          <div v-for="(product, index) in products" :key="product.id" class="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:px-5">
             <span class="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-700"><span class="i-lucide-package h-5 w-5" /></span>
             <div class="min-w-0 flex-1">
               <div class="flex flex-wrap items-center gap-2">
@@ -194,10 +222,14 @@ async function submitProductSuggestion() {
                 <template v-if="product.attributes?.package_volume"> · حجم {{ product.attributes.package_volume }}</template>
               </span>
             </div>
-            <div class="flex items-center justify-between gap-3 sm:justify-end">
+            <div class="flex items-center justify-between gap-2 sm:justify-end">
               <strong :class="product.shopConfiguration?.salePrice ? 'text-ink' : 'text-amber-600'">
                 {{ product.shopConfiguration?.salePrice ? money(product.shopConfiguration.salePrice) : 'بدون قیمت' }}
               </strong>
+              <div class="flex flex-col">
+                <button class="btn-ghost h-6 w-7 p-0" :disabled="movingCard || !canMove(products || [], index, -1)" title="انتقال به بالا" aria-label="انتقال به بالا" @click="moveCard('product', index, -1)"><span class="i-lucide-chevron-up h-4 w-4" /></button>
+                <button class="btn-ghost h-6 w-7 p-0" :disabled="movingCard || !canMove(products || [], index, 1)" title="انتقال به پایین" aria-label="انتقال به پایین" @click="moveCard('product', index, 1)"><span class="i-lucide-chevron-down h-4 w-4" /></button>
+              </div>
               <button class="btn-secondary px-3 py-2" @click="editProduct(product)"><span class="i-lucide-pencil h-4 w-4" />تنظیم</button>
             </div>
           </div>
@@ -210,9 +242,13 @@ async function submitProductSuggestion() {
       </div>
       <div v-else class="flex min-h-0 flex-1 flex-col">
         <div v-if="services?.length" class="scroll-container list-scroll divide-y divide-black/5">
-          <div v-for="service in services" :key="service.id" class="flex items-center gap-4 px-5 py-4">
+          <div v-for="(service, index) in services" :key="service.id" class="flex items-center gap-4 px-5 py-4">
             <span class="grid h-11 w-11 place-items-center rounded-xl bg-blue-50 text-blue-700"><span class="i-lucide-wrench h-5 w-5" /></span>
             <div class="flex-1"><strong class="text-sm">{{ service.name }}</strong><span class="mt-1 block text-xs text-ink/40">{{ service.category || 'خدمت عمومی' }}</span></div>
+            <div class="flex flex-col">
+              <button class="btn-ghost h-6 w-7 p-0" :disabled="movingCard || !canMove(services || [], index, -1)" title="انتقال به بالا" aria-label="انتقال به بالا" @click="moveCard('service', index, -1)"><span class="i-lucide-chevron-up h-4 w-4" /></button>
+              <button class="btn-ghost h-6 w-7 p-0" :disabled="movingCard || !canMove(services || [], index, 1)" title="انتقال به پایین" aria-label="انتقال به پایین" @click="moveCard('service', index, 1)"><span class="i-lucide-chevron-down h-4 w-4" /></button>
+            </div>
             <button class="btn-secondary px-3 py-2" @click="editService(service)">تعیین اجرت</button>
           </div>
         </div>
