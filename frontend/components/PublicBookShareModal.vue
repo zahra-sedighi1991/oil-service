@@ -20,7 +20,8 @@ let generationId = 0
 const supportsNativeShare = computed(() => import.meta.client && typeof navigator.share === 'function')
 const imageFileName = computed(() => `service-${props.card?.invoiceNo || 'card'}.png`.replace(/[^a-zA-Z0-9._-]/g, '-'))
 const supportsImageShare = computed(() => {
-  if (!import.meta.client || !imageBlob.value || typeof navigator.canShare !== 'function') return false
+  if (!supportsNativeShare.value || !imageBlob.value) return false
+  if (typeof navigator.canShare !== 'function') return true
   try {
     return navigator.canShare({ files: [createImageFile()] })
   } catch {
@@ -80,34 +81,43 @@ function createImageFile() {
   return new File([imageBlob.value!], imageFileName.value, { type: 'image/png' })
 }
 
-function channelUrl(channel: 'eitaa' | 'telegram') {
-  const base = channel === 'telegram'
-    ? 'https://t.me/share/url'
-    : 'https://eitaa.com/share/url'
-  return `${base}?url=${encodeURIComponent(props.url)}&text=${encodeURIComponent(props.message)}`
-}
-
-async function nativeShare() {
-  if (props.card && !imageBlob.value) return
-  const shareData: ShareData = {
-    title: 'دفترچه سرویس خودرو',
-    text: props.message,
-    url: props.url
-  }
-  if (supportsImageShare.value) {
-    shareData.files = [createImageFile()]
-    shareData.text = `${props.message}\n${props.url}`
-    delete shareData.url
-  }
+async function shareImage() {
+  if (!imageBlob.value || !supportsImageShare.value) return
   sharing.value = true
   try {
-    await navigator.share(shareData)
+    await navigator.share({
+      title: props.message,
+      files: [createImageFile()]
+    })
     emit('close')
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') return
-    toast.error('اشتراک‌گذاری مستقیم در دسترس نیست؛ ایتا یا تلگرام را انتخاب کنید.')
+    toast.error('ارسال مستقیم تصویر انجام نشد؛ تصویر را دانلود و در پیام‌رسان پیوست کنید.')
   } finally {
     sharing.value = false
+  }
+}
+
+async function copyLink() {
+  if (!props.url) return
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(props.url)
+    } else {
+      const input = document.createElement('textarea')
+      input.value = props.url
+      input.setAttribute('readonly', '')
+      input.style.position = 'fixed'
+      input.style.opacity = '0'
+      document.body.appendChild(input)
+      input.select()
+      const copied = document.execCommand('copy')
+      input.remove()
+      if (!copied) throw new Error('Copy command failed')
+    }
+    toast.success('لینک دفترچه سرویس کپی شد.')
+  } catch {
+    toast.error('کپی لینک انجام نشد؛ دوباره تلاش کنید.')
   }
 }
 
@@ -145,47 +155,30 @@ function downloadImage() {
       </div>
     </div>
 
-    <div class="mb-3 grid gap-2" :class="card && supportsNativeShare ? 'sm:grid-cols-2' : ''">
+    <div class="mb-3 grid gap-2 sm:grid-cols-2">
       <button
-        v-if="supportsNativeShare"
+        v-if="card && supportsImageShare"
+        type="button"
         class="btn-primary w-full"
-        :disabled="sharing || (Boolean(card) && !imageBlob)"
-        @click="nativeShare"
+        :disabled="sharing"
+        @click="shareImage"
       >
         <span v-if="sharing" class="i-lucide-loader-circle h-5 w-5 animate-spin" />
         <span v-else class="i-lucide-share-2 h-5 w-5" />
-        {{ supportsImageShare ? 'اشتراک تصویر و لینک' : 'اشتراک لینک' }}
+        {{ sharing ? 'در حال اشتراک…' : 'اشتراک تصویر' }}
       </button>
-      <button v-if="card" class="btn-secondary w-full" :disabled="!imageBlob" @click="downloadImage">
+      <button type="button" class="btn-secondary w-full" :disabled="!url" @click="copyLink">
+        <span class="i-lucide-copy h-5 w-5" />
+        کپی لینک
+      </button>
+      <button v-if="card" type="button" class="btn-secondary w-full sm:col-span-2" :disabled="!imageBlob" @click="downloadImage">
         <span class="i-lucide-download h-5 w-5" />
         دانلود تصویر
       </button>
     </div>
     <p v-if="card && imageBlob && !supportsImageShare" class="mb-3 mt-0 rounded-xl bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-800">
-      مرورگر شما ارسال مستقیم فایل را پشتیبانی نمی‌کند؛ تصویر را دانلود و در پیام‌رسان پیوست کنید.
+      مرورگر یا اتصال فعلی ارسال مستقیم فایل را پشتیبانی نمی‌کند؛ تصویر را دانلود و در پیام‌رسان پیوست کنید. این قابلیت روی HTTPS در دسترس است.
     </p>
-    <div class="grid gap-3 sm:grid-cols-2">
-      <a
-        :href="channelUrl('eitaa')"
-        class="flex items-center gap-3 rounded-2xl border border-black/7 bg-white p-4 text-right text-ink no-underline transition hover:border-amber-400 hover:bg-amber-50"
-        @click="emit('close')"
-      >
-        <span class="grid h-11 w-11 place-items-center rounded-xl bg-amber-500 text-white">
-          <span class="i-lucide-message-circle h-6 w-6" />
-        </span>
-        <span><strong class="block">ارسال لینک در ایتا</strong><small class="mt-1 block text-ink/45">انتخاب مخاطب در ایتا</small></span>
-      </a>
-      <a
-        :href="channelUrl('telegram')"
-        class="flex items-center gap-3 rounded-2xl border border-black/7 bg-white p-4 text-right text-ink no-underline transition hover:border-sky-400 hover:bg-sky-50"
-        @click="emit('close')"
-      >
-        <span class="grid h-11 w-11 place-items-center rounded-xl bg-sky-500 text-white">
-          <span class="i-lucide-send h-6 w-6" />
-        </span>
-        <span><strong class="block">ارسال لینک در تلگرام</strong><small class="mt-1 block text-ink/45">انتخاب مخاطب در تلگرام</small></span>
-      </a>
-    </div>
   </AppModal>
 
   <div v-if="open && card" class="pointer-events-none fixed left-[-12000px] top-0" aria-hidden="true">
