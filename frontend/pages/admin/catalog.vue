@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Product } from '~/types/api'
+import type { ProductEditorValue } from '~/types/product-editor'
 
 definePageMeta({ middleware: ['auth', 'admin'] })
 useHead({ title: 'کاتالوگ سراسری' })
@@ -20,13 +21,6 @@ interface CatalogRow {
   isPopular?: boolean
   attributes?: Record<string, unknown>
 }
-interface ProductEditorValue {
-  productTypeId: string
-  name: string
-  attributes: Record<string, unknown>
-  vehicleModelIds: string[]
-}
-
 const api = useApi()
 const toast = useToast()
 const { errorMessage } = useFormat()
@@ -35,10 +29,9 @@ const modal = ref(false)
 const saving = ref(false)
 const updatingPopularity = ref<string | null>(null)
 const editingProduct = ref<Product | null>(null)
+const productEditorMode = ref<'create' | 'edit' | null>(null)
 const productEditorValue = ref<Partial<ProductEditorValue>>({})
 const savingProductEditor = ref(false)
-const appliesToAllVehicles = ref(true)
-const vehicleModelSearch = ref('')
 
 const tabs: Array<{ key: TabKey; label: string }> = [
   { key: 'brands', label: 'برند خودرو' },
@@ -59,11 +52,7 @@ const form = reactive({
   name: '',
   category: '',
   description: '',
-  productTypeId: '',
-  isPopular: false,
-  productModel: '',
-  packageVolume: undefined as number | undefined,
-  vehicleModelIds: [] as string[]
+  isPopular: false
 })
 
 const { data: brands, refresh: refreshBrands } = await useAsyncData(
@@ -131,25 +120,22 @@ function resetForm() {
   form.name = ''
   form.category = ''
   form.description = ''
-  form.productTypeId = ''
   form.isPopular = false
-  form.productModel = ''
-  form.packageVolume = undefined
-  form.vehicleModelIds = []
-  appliesToAllVehicles.value = true
-  vehicleModelSearch.value = ''
 }
 
 function openCreateModal() {
+  if (tab.value === 'products') {
+    editingProduct.value = null
+    productEditorValue.value = {}
+    productEditorMode.value = 'create'
+    return
+  }
   resetForm()
   modal.value = true
 }
 
 async function createItem() {
-  if (tab.value === 'products' && !appliesToAllVehicles.value && !form.vehicleModelIds.length) {
-    toast.error('حداقل یک مدل خودرو انتخاب کنید یا گزینه همه خودروها را بزنید.')
-    return
-  }
+  if (tab.value === 'products') return
   saving.value = true
   try {
     if (tab.value === 'brands') {
@@ -175,17 +161,6 @@ async function createItem() {
         titleTemplate: form.titleTemplate || undefined
       })
       await refreshTypes()
-    } else if (tab.value === 'products') {
-      await api.post('/admin/catalog/products', {
-        productTypeId: form.productTypeId,
-        name: form.name,
-        attributes: Object.fromEntries(Object.entries({
-          model: form.productModel || undefined,
-          package_volume: form.packageVolume
-        }).filter(([, value]) => value !== undefined && value !== '')),
-        vehicleModelIds: appliesToAllVehicles.value ? [] : form.vehicleModelIds
-      })
-      await refreshProducts()
     } else {
       await api.post('/admin/catalog/services', {
         name: form.name,
@@ -196,9 +171,7 @@ async function createItem() {
     }
     modal.value = false
     resetForm()
-    toast.success(tab.value === 'products'
-      ? 'محصول ایجاد شد و اکنون برای قیمت‌گذاری فروشنده در دسترس است.'
-      : 'اطلاعات پایه با موفقیت ایجاد شد.')
+    toast.success('اطلاعات پایه با موفقیت ایجاد شد.')
   } catch (error) {
     toast.error(errorMessage(error))
   } finally {
@@ -221,19 +194,6 @@ async function toggleModelPopularity(item: CatalogRow) {
   }
 }
 
-const filteredVehicleModels = computed(() => {
-  const search = vehicleModelSearch.value.trim().toLocaleLowerCase('fa')
-  if (!search) return models.value || []
-  return (models.value || []).filter(model => [model.nameFa, model.nameEn]
-    .filter(Boolean).some(value => value!.toLocaleLowerCase('fa').includes(search)))
-})
-
-function toggleVehicleModel(id: string, target: string[] = form.vehicleModelIds) {
-  const index = target.indexOf(id)
-  if (index >= 0) target.splice(index, 1)
-  else target.push(id)
-}
-
 async function openProductEditor(product: Product) {
   try {
     const rules = await api.get<Array<{ vehicleModelId: string }>>('/catalog/product-compatibilities', {
@@ -246,19 +206,35 @@ async function openProductEditor(product: Product) {
       vehicleModelIds: rules.map(item => item.vehicleModelId)
     }
     editingProduct.value = product
+    productEditorMode.value = 'edit'
   } catch (error) {
     toast.error(errorMessage(error))
   }
 }
 
-async function saveProductEdit(value: ProductEditorValue) {
-  if (!editingProduct.value) return
+function closeProductEditor() {
+  if (savingProductEditor.value) return
+  productEditorMode.value = null
+  editingProduct.value = null
+  productEditorValue.value = {}
+}
+
+async function saveProduct(value: ProductEditorValue) {
+  if (!productEditorMode.value) return
   savingProductEditor.value = true
   try {
-    await api.patch(`/admin/catalog/products/${editingProduct.value.id}`, value)
+    if (productEditorMode.value === 'create') {
+      await api.post('/admin/catalog/products', value)
+    } else if (editingProduct.value) {
+      await api.patch(`/admin/catalog/products/${editingProduct.value.id}`, value)
+    }
     await refreshProducts()
+    toast.success(productEditorMode.value === 'create'
+      ? 'محصول ایجاد شد و اکنون برای قیمت‌گذاری فروشنده در دسترس است.'
+      : 'اطلاعات محصول با موفقیت ویرایش شد.')
+    productEditorMode.value = null
     editingProduct.value = null
-    toast.success('اطلاعات محصول با موفقیت ویرایش شد.')
+    productEditorValue.value = {}
   } catch (error) {
     toast.error(errorMessage(error))
   } finally {
@@ -534,186 +510,8 @@ async function saveProductEdit(value: ProductEditorValue) {
         </div>
       </template>
 
-      <!-- محصول -->
-      <template v-else-if="tab === 'products'">
-        <div>
-          <label class="label">
-            نوع محصول
-          </label>
-
-          <select
-            v-model="form.productTypeId"
-            class="field"
-            required
-          >
-            <option
-              value=""
-              disabled
-            >
-              انتخاب نوع محصول
-            </option>
-
-            <option
-              v-for="type in types || []"
-              :key="type.id"
-              :value="type.id"
-            >
-              {{ type.title }}
-            </option>
-          </select>
-
-          <small
-            v-if="!types?.length"
-            class="mt-2 block text-amber-700"
-          >
-            ابتدا از تب «دسته‌های محصول» یک دسته بسازید.
-          </small>
-        </div>
-
-        <div>
-          <label class="label">
-            نام کامل محصول
-          </label>
-
-          <input
-            v-model="form.name"
-            class="field"
-            placeholder="مثلاً روغن موتور بهران سوپر پیشتاز"
-            required
-          >
-        </div>
-
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="label">
-              مدل محصول
-              <span class="font-400 text-ink/40">
-                (اختیاری)
-              </span>
-            </label>
-
-            <input
-              v-model="form.productModel"
-              class="field"
-              placeholder="مثلاً 10W-40"
-            >
-          </div>
-
-          <div>
-            <label class="label">
-              حجم
-              <span class="font-400 text-ink/40">
-                (اختیاری)
-              </span>
-            </label>
-
-            <input
-              v-model.number="form.packageVolume"
-              type="number"
-              min="0"
-              step="0.1"
-              class="field text-left"
-              dir="ltr"
-              placeholder="مثلاً 4"
-            >
-          </div>
-        </div>
-
-        <div class="rounded-xl border border-black/7 p-3">
-          <label class="label">
-            نوع خودرو
-          </label>
-
-          <div class="grid grid-cols-2 gap-2">
-            <label
-              class="flex cursor-pointer items-center gap-2 rounded-lg border p-3"
-              :class="
-                appliesToAllVehicles
-                  ? 'border-brand-300 bg-brand-50'
-                  : 'border-black/7'
-              "
-            >
-              <input
-                v-model="appliesToAllVehicles"
-                type="radio"
-                :value="true"
-                class="accent-brand-600"
-              >
-
-              <span class="text-sm">
-                همه خودروها
-              </span>
-            </label>
-
-            <label
-              class="flex cursor-pointer items-center gap-2 rounded-lg border p-3"
-              :class="
-                !appliesToAllVehicles
-                  ? 'border-brand-300 bg-brand-50'
-                  : 'border-black/7'
-              "
-            >
-              <input
-                v-model="appliesToAllVehicles"
-                type="radio"
-                :value="false"
-                class="accent-brand-600"
-              >
-
-              <span class="text-sm">
-                انتخاب یک یا چند خودرو
-              </span>
-            </label>
-          </div>
-
-          <div
-            v-if="!appliesToAllVehicles"
-            class="mt-3"
-          >
-            <input
-              v-model="vehicleModelSearch"
-              class="field"
-              placeholder="جستجوی مدل خودرو..."
-            >
-
-            <div
-              class="scroll-container mt-2 max-h-44 space-y-1 overflow-y-auto overscroll-contain"
-            >
-              <label
-                v-for="model in filteredVehicleModels"
-                :key="model.id"
-                class="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 hover:bg-black/[.03]"
-              >
-                <input
-                  type="checkbox"
-                  :checked="form.vehicleModelIds.includes(model.id)"
-                  class="accent-brand-600"
-                  @change="toggleVehicleModel(model.id)"
-                >
-
-                <span class="text-sm">
-                  {{ model.nameFa }}
-                </span>
-              </label>
-            </div>
-
-            <p class="mb-0 mt-2 text-xs text-ink/45">
-              {{ form.vehicleModelIds.length }}
-              مدل انتخاب شده است.
-            </p>
-
-            <p
-              v-if="!form.vehicleModelIds.length"
-              class="mb-0 mt-1 text-xs text-danger"
-            >
-              حداقل یک مدل خودرو انتخاب کنید.
-            </p>
-          </div>
-        </div>
-      </template>
-
       <!-- خدمات -->
-      <template v-else>
+      <template v-else-if="tab === 'services'">
         <div>
           <label class="label">
             نام خدمت
@@ -758,14 +556,7 @@ async function saveProductEdit(value: ProductEditorValue) {
     >
       <button
         class="btn-primary w-full"
-        :disabled="
-          saving ||
-          (
-            tab === 'products' &&
-            !appliesToAllVehicles &&
-            !form.vehicleModelIds.length
-          )
-        "
+        :disabled="saving"
       >
         <span
           v-if="saving"
@@ -779,16 +570,16 @@ async function saveProductEdit(value: ProductEditorValue) {
 </AppModal>
 
     <ProductEditorModal
-      :open="Boolean(editingProduct)"
-      :title="`ویرایش ${editingProduct?.displayName || 'محصول'}`"
-      description="نوع، نام، مدل، حجم و خودروهای مناسب محصول را ویرایش کنید."
-      submit-label="ذخیره تغییرات"
+      :open="Boolean(productEditorMode)"
+      :title="productEditorMode === 'create' ? 'ایجاد محصول' : `ویرایش ${editingProduct?.displayName || 'محصول'}`"
+      :description="productEditorMode === 'create' ? 'نوع، نام، مدل، حجم و خودروهای مناسب محصول را وارد کنید.' : 'نوع، نام، مدل، حجم و خودروهای مناسب محصول را ویرایش کنید.'"
+      :submit-label="productEditorMode === 'create' ? 'ایجاد محصول' : 'ذخیره تغییرات'"
       :saving="savingProductEditor"
       :value="productEditorValue"
       :product-types="types || []"
       :vehicle-models="models || []"
-      @close="editingProduct = null"
-      @submit="saveProductEdit"
+      @close="closeProductEditor"
+      @submit="saveProduct"
     />
   </div>
 </template>

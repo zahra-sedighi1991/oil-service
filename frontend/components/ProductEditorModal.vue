@@ -1,12 +1,6 @@
 <script setup lang="ts">
 import type { VehicleModelOption } from '~/types/api'
-
-export interface ProductEditorValue {
-  productTypeId: string
-  name: string
-  attributes: Record<string, unknown>
-  vehicleModelIds: string[]
-}
+import type { ProductEditorValue } from '~/types/product-editor'
 
 const props = withDefaults(defineProps<{
   open: boolean

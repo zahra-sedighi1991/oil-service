@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { VehicleModelOption } from '~/types/api'
+import type { ProductEditorValue } from '~/types/product-editor'
 
 definePageMeta({ middleware: ['auth', 'admin'] })
 useHead({ title: 'بررسی پیشنهادها' })
@@ -21,13 +22,6 @@ interface Suggestion {
 }
 interface CatalogOption { id: string; displayName?: string; name?: string }
 interface ProductTypeOption { id: string; title: string }
-interface ProductEditorValue {
-  productTypeId: string
-  name: string
-  attributes: Record<string, unknown>
-  vehicleModelIds: string[]
-}
-
 const statusFilter = ref<'all' | Suggestion['status']>('pending')
 const selected = ref<Suggestion | null>(null)
 const decision = ref<Decision>('approved')

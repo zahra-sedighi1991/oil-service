@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { CatalogService, Product, VehicleModelOption } from '~/types/api'
+import type { ProductEditorValue } from '~/types/product-editor'
 
 interface ProductTypeOption { id: string; title: string }
 
@@ -24,15 +25,7 @@ const saving = ref(false)
 const movingCard = ref(false)
 const showSuggestion = ref(false)
 const savingSuggestion = ref(false)
-const appliesToAllVehicles = ref(true)
-const vehicleSearch = ref('')
-const suggestionForm = reactive({
-  productTypeId: '',
-  name: '',
-  productModel: '',
-  packageVolume: undefined as number | undefined,
-  vehicleModelIds: [] as string[]
-})
+const suggestionValue = ref<Partial<ProductEditorValue>>({})
 
 const { data: products, refresh: refreshProducts } = await useAsyncData('catalog-products', () => api.get<Product[]>('/catalog/products', search.value ? { search: search.value } : undefined), { watch: [search] })
 const { data: services, refresh: refreshServices } = await useAsyncData('catalog-services', () => api.get<CatalogService[]>('/catalog/services'))
@@ -44,13 +37,6 @@ const { data: vehicleModels } = await useAsyncData(
   'shop-product-suggestion-models',
   () => api.get<VehicleModelOption[]>('/catalog/vehicle-models')
 )
-
-const filteredVehicleModels = computed(() => {
-  const value = vehicleSearch.value.trim().toLocaleLowerCase('fa')
-  if (!value) return vehicleModels.value || []
-  return (vehicleModels.value || []).filter(model => [model.nameFa, model.nameEn, model.brand?.nameFa]
-    .filter(Boolean).some(label => label!.toLocaleLowerCase('fa').includes(value)))
-})
 
 function productDefaultIntervalKm(product: Product) {
   const value = Number(
@@ -137,37 +123,20 @@ async function saveSetting() {
 }
 
 function openSuggestionModal() {
-  Object.assign(suggestionForm, {
-    productTypeId: '', name: '', productModel: '', packageVolume: undefined, vehicleModelIds: []
-  })
-  appliesToAllVehicles.value = true
-  vehicleSearch.value = ''
+  suggestionValue.value = {}
   showSuggestion.value = true
 }
 
-function toggleSuggestedVehicle(id: string) {
-  const index = suggestionForm.vehicleModelIds.indexOf(id)
-  if (index >= 0) suggestionForm.vehicleModelIds.splice(index, 1)
-  else suggestionForm.vehicleModelIds.push(id)
-}
-
-async function submitProductSuggestion() {
-  if (!appliesToAllVehicles.value && !suggestionForm.vehicleModelIds.length) {
-    toast.error('حداقل یک مدل خودرو انتخاب کنید یا گزینه همه خودروها را بزنید.')
-    return
-  }
+async function submitProductSuggestion(value: ProductEditorValue) {
   savingSuggestion.value = true
   try {
     await api.post('/suggestions', {
       entityType: 'product',
       payload: {
-        description: suggestionForm.name.trim(),
-        productTypeId: suggestionForm.productTypeId,
-        attributes: Object.fromEntries(Object.entries({
-          model: suggestionForm.productModel.trim() || undefined,
-          package_volume: suggestionForm.packageVolume
-        }).filter(([, value]) => value !== undefined && value !== '')),
-        vehicleModelIds: appliesToAllVehicles.value ? [] : suggestionForm.vehicleModelIds
+        description: value.name,
+        productTypeId: value.productTypeId,
+        attributes: value.attributes,
+        vehicleModelIds: value.vehicleModelIds
       }
     })
     showSuggestion.value = false
@@ -274,220 +243,17 @@ async function submitProductSuggestion() {
       </form>
     </AppModal>
 
-   <AppModal
-  :open="showSuggestion"
-  title="ثبت پیشنهاد محصول"
-  description="مشخصات محصول را وارد کنید؛ پس از تأیید مدیر، محصول برای فروشگاه شما فعال می‌شود."
-  @close="showSuggestion = false"
->
-  <form
-    class="flex min-h-0 flex-1 flex-col"
-    @submit.prevent="submitProductSuggestion"
-  >
-    <!-- محتوای اسکرولی -->
-    <div
-      class="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain pr-1"
-    >
-      <!-- نوع محصول -->
-      <div>
-        <label class="label">
-          نوع محصول
-        </label>
-
-        <select
-          v-model="suggestionForm.productTypeId"
-          class="field"
-          required
-        >
-          <option
-            value=""
-            disabled
-          >
-            انتخاب نوع محصول
-          </option>
-
-          <option
-            v-for="type in productTypes || []"
-            :key="type.id"
-            :value="type.id"
-          >
-            {{ type.title }}
-          </option>
-        </select>
-      </div>
-
-      <!-- نام کامل محصول -->
-      <div>
-        <label class="label">
-          نام کامل محصول
-        </label>
-
-        <input
-          v-model="suggestionForm.name"
-          class="field"
-          required
-          placeholder="مثلاً روغن موتور بهران سوپر پیشتاز"
-        >
-      </div>
-
-      <!-- مدل و حجم -->
-      <div class="grid grid-cols-2 gap-3">
-        <div>
-          <label class="label">
-            مدل محصول
-            <span class="font-400 text-ink/40">
-              (اختیاری)
-            </span>
-          </label>
-
-          <input
-            v-model="suggestionForm.productModel"
-            class="field"
-            placeholder="مثلاً 10W-40"
-          >
-        </div>
-
-        <div>
-          <label class="label">
-            حجم
-            <span class="font-400 text-ink/40">
-              (اختیاری)
-            </span>
-          </label>
-
-          <input
-            v-model.number="suggestionForm.packageVolume"
-            type="number"
-            min="0"
-            step="0.1"
-            class="field text-left"
-            dir="ltr"
-            placeholder="مثلاً 4"
-          >
-        </div>
-      </div>
-
-      <!-- خودروها -->
-      <div class="rounded-xl border border-black/7 p-3">
-        <label class="label">
-          نوع خودرو
-        </label>
-
-        <div class="grid grid-cols-2 gap-2">
-          <label
-            class="flex cursor-pointer items-center gap-2 rounded-lg border p-3"
-            :class="
-              appliesToAllVehicles
-                ? 'border-brand-300 bg-brand-50'
-                : 'border-black/7'
-            "
-          >
-            <input
-              v-model="appliesToAllVehicles"
-              type="radio"
-              :value="true"
-              class="accent-brand-600"
-            >
-
-            <span class="text-sm">
-              همه خودروها
-            </span>
-          </label>
-
-          <label
-            class="flex cursor-pointer items-center gap-2 rounded-lg border p-3"
-            :class="
-              !appliesToAllVehicles
-                ? 'border-brand-300 bg-brand-50'
-                : 'border-black/7'
-            "
-          >
-            <input
-              v-model="appliesToAllVehicles"
-              type="radio"
-              :value="false"
-              class="accent-brand-600"
-            >
-
-            <span class="text-sm">
-              انتخاب یک یا چند خودرو
-            </span>
-          </label>
-        </div>
-
-        <!-- انتخاب مدل خودرو -->
-        <div
-          v-if="!appliesToAllVehicles"
-          class="mt-3"
-        >
-          <input
-            v-model="vehicleSearch"
-            class="field"
-            placeholder="جستجوی مدل خودرو..."
-          >
-
-          <!-- اسکرول داخلی لیست خودرو -->
-          <div
-            class="scroll-container mt-2 max-h-52 space-y-1 overflow-y-auto overscroll-contain"
-          >
-            <label
-              v-for="model in filteredVehicleModels"
-              :key="model.id"
-              class="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 hover:bg-black/[.03]"
-            >
-              <input
-                type="checkbox"
-                :checked="suggestionForm.vehicleModelIds.includes(model.id)"
-                class="accent-brand-600"
-                @change="toggleSuggestedVehicle(model.id)"
-              >
-
-              <span class="text-sm">
-                {{ model.nameFa }}
-              </span>
-            </label>
-          </div>
-
-          <p class="mb-0 mt-2 text-xs text-ink/45">
-            {{ suggestionForm.vehicleModelIds.length }}
-            مدل انتخاب شده است.
-          </p>
-
-          <p
-            v-if="!suggestionForm.vehicleModelIds.length"
-            class="mb-0 mt-1 text-xs text-danger"
-          >
-            حداقل یک مدل خودرو انتخاب کنید.
-          </p>
-        </div>
-      </div>
-    </div>
-
-    <!-- Footer ثابت پایین -->
-    <div
-      class="shrink-0 border-t border-black/7 bg-surface pt-3"
-    >
-      <button
-        class="btn-primary w-full"
-        :disabled="
-          savingSuggestion ||
-          (!appliesToAllVehicles &&
-            !suggestionForm.vehicleModelIds.length)
-        "
-      >
-        <span
-          v-if="savingSuggestion"
-          class="i-lucide-loader-circle h-4 w-4 animate-spin"
-        />
-
-        {{
-          savingSuggestion
-            ? 'در حال ثبت…'
-            : 'ارسال برای بررسی مدیر'
-        }}
-      </button>
-    </div>
-  </form>
-</AppModal>
+    <ProductEditorModal
+      :open="showSuggestion"
+      title="ثبت پیشنهاد محصول"
+      description="مشخصات محصول را وارد کنید؛ پس از تأیید مدیر، محصول برای فروشگاه شما فعال می‌شود."
+      submit-label="ارسال برای بررسی مدیر"
+      :saving="savingSuggestion"
+      :value="suggestionValue"
+      :product-types="productTypes || []"
+      :vehicle-models="vehicleModels || []"
+      @close="showSuggestion = false"
+      @submit="submitProductSuggestion"
+    />
   </div>
 </template>
