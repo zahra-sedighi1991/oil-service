@@ -1,7 +1,6 @@
 {
   "name": "oil-service",
   "version": "0.0.1",
-  "packageManager": "pnpm@10.15.0",
   "description": "Multi-tenant oil-change shop and digital vehicle service-book API",
   "author": "",
   "private": true,
