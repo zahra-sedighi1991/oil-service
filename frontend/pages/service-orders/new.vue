@@ -2,6 +2,7 @@
 import type { CatalogService, Customer, Product, Shop, Vehicle, VehicleModelOption } from '~/types/api'
 import type { ProductEditorValue } from '~/types/product-editor'
 import type { ServiceShareCardData } from '~/types/share'
+import { createRandomId } from '~/utils/random-id'
 
 interface ProductTypeOption { id: string; title: string }
 
@@ -135,6 +136,9 @@ const selectableProducts = computed(() => (catalogProducts.value || []).filter(
 const compatibleProductCount = computed(() => selectableProducts.value.filter(
   product => product.compatibility?.status === 'compatible'
 ).length)
+const selectedProductCount = computed(
+  () => selectedProductIds.value.length + selectedPendingProductIds.value.length
+)
 const customerForm = reactive({ name: '', mobile: '', gender: 'male' as 'male' | 'female', note: '' })
 const pendingServiceSuggestions = computed(() => (pendingSuggestions.value || []).filter(
   item => item.entityType === 'service' && Boolean(item.payload.description?.trim())
@@ -296,7 +300,7 @@ function productDefaultIntervalKm(product: Product) {
 
 function addProduct(product: Product) {
   products.value.push({
-    key: crypto.randomUUID(),
+    key: createRandomId(),
     productId: product.id,
     description: product.displayName,
     quantity: 1,
@@ -318,6 +322,9 @@ function openProductModal() {
 }
 
 function confirmProducts() {
+  if (!selectedProductCount.value) {
+    return toast.error('حداقل یک محصول را انتخاب کنید.')
+  }
   for (const product of selectableProducts.value) {
     if (selectedProductIds.value.includes(product.id)) addProduct(product)
   }
@@ -330,7 +337,7 @@ function confirmProducts() {
 function addTemporaryProduct() {
   const name = productSearch.value.trim()
   if (!name) return toast.error('نام محصول خارج از کاتالوگ را وارد کنید.')
-  products.value.push({ key: crypto.randomUUID(), description: name, quantity: 1, unitPrice: 0 })
+  products.value.push({ key: createRandomId(), description: name, quantity: 1, unitPrice: 0 })
   productSearch.value = ''
   showProduct.value = false
 }
@@ -352,7 +359,7 @@ async function submitProductSuggestion(value: ProductEditorValue) {
         vehicleModelIds: value.vehicleModelIds
       }
     })
-    products.value.push({ key: crypto.randomUUID(), description: value.name, quantity: 1, unitPrice: 0 })
+    products.value.push({ key: createRandomId(), description: value.name, quantity: 1, unitPrice: 0 })
     productSearch.value = ''
     productSuggestionValue.value = {}
     showProductSuggestion.value = false
@@ -368,13 +375,13 @@ async function submitProductSuggestion(value: ProductEditorValue) {
 function addPendingProduct(item: PendingSuggestion) {
   const name = item.payload.description?.trim()
   if (!name) return
-  products.value.push({ key: crypto.randomUUID(), description: name, quantity: 1, unitPrice: 0 })
+  products.value.push({ key: createRandomId(), description: name, quantity: 1, unitPrice: 0 })
   productSearch.value = ''
 }
 
 function addService(service: CatalogService) {
   services.value.push({
-    key: crypto.randomUUID(),
+    key: createRandomId(),
     serviceId: service.id,
     description: service.name,
     quantity: 1,
@@ -401,7 +408,7 @@ function confirmServices() {
 function addLocalService() {
   const name = localServiceName.value.trim()
   if (!name) return toast.error('نام خدمت خارج از کاتالوگ را وارد کنید.')
-  services.value.push({ key: crypto.randomUUID(), description: name, quantity: 1, unitFee: 0 })
+  services.value.push({ key: createRandomId(), description: name, quantity: 1, unitFee: 0 })
   localServiceName.value = ''
   showService.value = false
 }
@@ -409,7 +416,7 @@ function addLocalService() {
 function addPendingService(item: PendingSuggestion) {
   const name = item.payload.description?.trim()
   if (!name) return
-  services.value.push({ key: crypto.randomUUID(), description: name, quantity: 1, unitFee: 0 })
+  services.value.push({ key: createRandomId(), description: name, quantity: 1, unitFee: 0 })
 }
 
 function goToItems() {
@@ -452,7 +459,7 @@ async function completeOrder() {
       currency?: string
       publicToken?: string
     }>(`/service-orders/${draft.id}/complete`, { discountAmount: 0 }, {
-      'Idempotency-Key': crypto.randomUUID()
+      'Idempotency-Key': createRandomId()
     })
     success.value = { ...result, completedAt: new Date().toISOString() }
     toast.success('سرویس و فاکتور با موفقیت ثبت شدند.')
@@ -852,6 +859,7 @@ async function startNextService() {
     <!-- محصولات -->
     <div class="space-y-2">
       <button
+        type="button"
         v-for="product in selectableProducts"
         :key="product.id"
         class="flex w-full items-center justify-between rounded-xl border p-3 text-right hover:border-brand-300 hover:bg-brand-50"
@@ -923,6 +931,7 @@ async function startNextService() {
 
       <div class="space-y-2">
         <button
+          type="button"
           v-for="item in pendingProductSuggestions"
           :key="item.id"
           class="flex w-full items-center justify-between rounded-xl border p-3 text-right hover:bg-amber-50"
@@ -978,12 +987,14 @@ async function startNextService() {
   <div
     class="shrink-0 border-t border-black/7 bg-surface pt-3"
   >
-    <button
-      class="btn-primary w-full"
-      @click="confirmProducts"
-    >
-      تأیید و افزودن
-    </button>
+      <button
+        type="button"
+        class="btn-primary w-full"
+        :disabled="!selectedProductCount"
+        @click="confirmProducts"
+      >
+        {{ selectedProductCount ? `تأیید و افزودن ${number(selectedProductCount)} مورد` : 'یک محصول انتخاب کنید' }}
+      </button>
   </div>
 </AppModal>
 
