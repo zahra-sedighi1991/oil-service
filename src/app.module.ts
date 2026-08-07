@@ -16,6 +16,7 @@ import { HealthController } from './health.controller';
 import { BillingModule } from './billing/billing.module';
 import { ShopsModule } from './shops/shops.module';
 import { AuditModule } from './audit/audit.module';
+import { join } from 'node:path';
 
 @Module({
   imports: [
@@ -25,21 +26,26 @@ import { AuditModule } from './audit/audit.module';
       inject: [ConfigService],
       useFactory: (config: ConfigService) => {
         const databaseUrl = config.get<string>('DATABASE_URL');
-        const isProduction = config.get<string>('NODE_ENV', 'development') === 'production';
-        const synchronize = config.get<string>(
-          'DB_SYNCHRONIZE',
-          isProduction ? 'false' : 'true',
-        ) === 'true';
+        const isProduction =
+          config.get<string>('NODE_ENV', 'development') === 'production';
+        const synchronize =
+          config.get<string>(
+            'DB_SYNCHRONIZE',
+            isProduction ? 'false' : 'true',
+          ) === 'true';
         return {
           type: 'postgres' as const,
-          ...(databaseUrl ? { url: databaseUrl } : {
-            host: config.get<string>('DB_HOST', 'localhost'),
-            port: Number(config.get<number | string>('DB_PORT', 5432)),
-            username: config.get<string>('DB_USER', 'postgres'),
-            password: config.get<string>('DB_PASSWORD', 'postgres'),
-            database: config.get<string>('DB_NAME', 'oil_service'),
-          }),
+          ...(databaseUrl
+            ? { url: databaseUrl }
+            : {
+                host: config.get<string>('DB_HOST', 'localhost'),
+                port: Number(config.get<number | string>('DB_PORT', 5432)),
+                username: config.get<string>('DB_USER', 'postgres'),
+                password: config.get<string>('DB_PASSWORD', 'postgres'),
+                database: config.get<string>('DB_NAME', 'oil_service'),
+              }),
           entities: ENTITIES,
+          migrations: [join(__dirname, 'database/migrations/*{.js,.ts}')],
           synchronize,
           logging: config.get<string>('DB_LOGGING', 'false') === 'true',
         };

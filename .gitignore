@@ -5,6 +5,7 @@
 **/.nuxt
 **/.output
 /build
+/.release
 
 # Logs
 logs

@@ -108,6 +108,8 @@ Temporary product or local-service lines can omit their catalog ID and provide
 
 ## Production notes
 
+- For a low-resource VPS, build Linux Docker images locally and upload the
+  ready-to-run release bundle. See [`deploy/README.md`](deploy/README.md).
 - Before restoring OTP, replace its in-memory challenge store with Redis and connect an SMS provider.
 - Use reviewed TypeORM migrations instead of schema synchronization.
 - Terminate TLS at the reverse proxy and set a strong JWT secret.
