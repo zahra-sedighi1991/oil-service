@@ -40,6 +40,14 @@ const filteredVehicleModels = computed(() => {
     .filter(Boolean).some(label => label!.toLocaleLowerCase('fa').includes(value)))
 })
 
+const selectedVehicleModels = computed(() => {
+  const selectedIds = new Set(form.vehicleModelIds)
+  return props.vehicleModels.filter(model => selectedIds.has(model.id))
+})
+
+const allFilteredVehiclesSelected = computed(() => filteredVehicleModels.value.length > 0
+  && filteredVehicleModels.value.every(model => form.vehicleModelIds.includes(model.id)))
+
 watch(() => [props.open, props.value] as const, ([open]) => {
   if (!open) return
   const attributes = props.value.attributes || {}
@@ -61,6 +69,19 @@ function toggleVehicle(id: string) {
   const index = form.vehicleModelIds.indexOf(id)
   if (index >= 0) form.vehicleModelIds.splice(index, 1)
   else form.vehicleModelIds.push(id)
+}
+
+function toggleFilteredVehicles() {
+  const filteredIds = filteredVehicleModels.value.map(model => model.id)
+  if (allFilteredVehiclesSelected.value) {
+    form.vehicleModelIds = form.vehicleModelIds.filter(id => !filteredIds.includes(id))
+    return
+  }
+  form.vehicleModelIds = [...new Set([...form.vehicleModelIds, ...filteredIds])]
+}
+
+function clearVehicleSelection() {
+  form.vehicleModelIds = []
 }
 
 function submit() {
@@ -168,99 +189,144 @@ function submit() {
         </div>
       </div>
 
-      <!-- نوع خودرو -->
-      <div class="rounded-xl border border-black/7 p-3">
-        <label class="label">
-          نوع خودرو
-        </label>
+      <!-- سازگاری با خودرو -->
+      <fieldset class="rounded-2xl border border-black/7 bg-black/[.015] p-3 sm:p-4">
+        <legend class="px-1 text-sm font-800 text-ink">
+          سازگاری با خودرو
+        </legend>
 
-        <div class="grid grid-cols-2 gap-2">
-          <label
-            class="flex cursor-pointer items-center gap-2 rounded-lg border p-3"
-            :class="
-              appliesToAllVehicles
-                ? 'border-brand-300 bg-brand-50'
-                : 'border-black/7'
-            "
+        <div class="grid gap-2 sm:grid-cols-2">
+          <button
+            type="button"
+            class="flex items-center gap-3 rounded-xl border p-3 text-right transition"
+            :class="appliesToAllVehicles ? 'border-brand-400 bg-brand-50 text-brand-800 ring-1 ring-brand-100' : 'border-black/7 bg-surface hover:border-black/15'"
+            :aria-pressed="appliesToAllVehicles"
+            @click="appliesToAllVehicles = true"
           >
-            <input
-              v-model="appliesToAllVehicles"
-              type="radio"
-              :value="true"
-              class="accent-brand-600"
+            <span
+              class="grid h-5 w-5 shrink-0 place-items-center rounded-full border"
+              :class="appliesToAllVehicles ? 'border-brand-600 bg-brand-600' : 'border-black/20 bg-white'"
             >
-
-            <span class="text-sm">
-              همه خودروها
+              <span v-if="appliesToAllVehicles" class="h-2 w-2 rounded-full bg-white" />
             </span>
-          </label>
+            <span>
+              <strong class="block text-sm">همه خودروها</strong>
+              <small class="mt-0.5 block text-ink/45">برای تمام مدل‌ها قابل استفاده است</small>
+            </span>
+          </button>
 
-          <label
-            class="flex cursor-pointer items-center gap-2 rounded-lg border p-3"
-            :class="
-              !appliesToAllVehicles
-                ? 'border-brand-300 bg-brand-50'
-                : 'border-black/7'
-            "
+          <button
+            type="button"
+            class="flex items-center gap-3 rounded-xl border p-3 text-right transition"
+            :class="!appliesToAllVehicles ? 'border-brand-400 bg-brand-50 text-brand-800 ring-1 ring-brand-100' : 'border-black/7 bg-surface hover:border-black/15'"
+            :aria-pressed="!appliesToAllVehicles"
+            @click="appliesToAllVehicles = false"
           >
-            <input
-              v-model="appliesToAllVehicles"
-              type="radio"
-              :value="false"
-              class="accent-brand-600"
+            <span
+              class="grid h-5 w-5 shrink-0 place-items-center rounded-full border"
+              :class="!appliesToAllVehicles ? 'border-brand-600 bg-brand-600' : 'border-black/20 bg-white'"
             >
-
-            <span class="text-sm">
-              انتخاب یک یا چند خودرو
+              <span v-if="!appliesToAllVehicles" class="h-2 w-2 rounded-full bg-white" />
             </span>
-          </label>
+            <span class="min-w-0">
+              <strong class="block text-sm">خودروهای مشخص</strong>
+              <small class="mt-0.5 block text-ink/45">
+                {{ form.vehicleModelIds.length ? `${form.vehicleModelIds.length} مدل انتخاب شده` : 'یک یا چند مدل را انتخاب کنید' }}
+              </small>
+            </span>
+          </button>
         </div>
 
-        <div
-          v-if="!appliesToAllVehicles"
-          class="mt-3"
-        >
-          <input
-            v-model="vehicleSearch"
-            class="field"
-            placeholder="جستجوی مدل خودرو..."
-          >
-
-          <!-- اسکرول داخلی لیست خودروها -->
-          <div
-            class="scroll-container mt-2 max-h-52 space-y-1 overflow-y-auto overscroll-contain"
-          >
-            <label
-              v-for="model in filteredVehicleModels"
-              :key="model.id"
-              class="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 hover:bg-black/[.03]"
-            >
-              <input
-                type="checkbox"
-                :checked="form.vehicleModelIds.includes(model.id)"
-                class="accent-brand-600"
-                @change="toggleVehicle(model.id)"
+        <div v-if="!appliesToAllVehicles" class="mt-4 overflow-hidden rounded-xl border border-black/7 bg-surface">
+          <div v-if="selectedVehicleModels.length" class="border-b border-black/7 bg-brand-50/60 p-3">
+            <div class="mb-2 flex items-center justify-between gap-3">
+              <strong class="text-xs text-brand-800">
+                {{ selectedVehicleModels.length }} مدل انتخاب شده
+              </strong>
+              <button type="button" class="border-0 bg-transparent p-0 text-xs font-700 text-danger" @click="clearVehicleSelection">
+                پاک‌کردن همه
+              </button>
+            </div>
+            <div class="flex max-h-24 flex-wrap gap-1.5 overflow-y-auto">
+              <button
+                v-for="model in selectedVehicleModels"
+                :key="model.id"
+                type="button"
+                class="inline-flex items-center gap-1 rounded-full border border-brand-200 bg-white px-2.5 py-1 text-xs text-brand-800"
+                :aria-label="`حذف ${model.nameFa} از انتخاب‌ها`"
+                @click="toggleVehicle(model.id)"
               >
-
-              <span class="text-sm">
-                {{ model.nameFa }}
-              </span>
-            </label>
+                {{ model.brand?.nameFa ? `${model.brand.nameFa} ${model.nameFa}` : model.nameFa }}
+                <span aria-hidden="true" class="text-base leading-none text-brand-500">×</span>
+              </button>
+            </div>
           </div>
 
-          <p class="mb-0 mt-2 text-xs text-ink/45">
-            {{ form.vehicleModelIds.length }}
-            مدل انتخاب شده است.
-          </p>
+          <div class="border-b border-black/7 p-3">
+            <div class="relative">
+              <span class="i-lucide-search pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink/30" />
+              <input
+                v-model="vehicleSearch"
+                class="field py-2.5 pr-9"
+                placeholder="جستجوی برند یا مدل خودرو..."
+                autocomplete="off"
+              >
+              <button
+                v-if="vehicleSearch"
+                type="button"
+                class="absolute left-2 top-1/2 grid h-7 w-7 -translate-y-1/2 place-items-center rounded-full border-0 bg-black/5 text-lg leading-none text-ink/45"
+                aria-label="پاک‌کردن جستجو"
+                @click="vehicleSearch = ''"
+              >
+                ×
+              </button>
+            </div>
 
-          <p
-            v-if="!form.vehicleModelIds.length"
-            class="mb-0 mt-1 text-xs text-danger"
-          >
-            حداقل یک مدل خودرو انتخاب کنید.
+            <div v-if="filteredVehicleModels.length" class="mt-2 flex items-center justify-between gap-3 text-xs">
+              <span class="text-ink/45">{{ filteredVehicleModels.length }} مدل پیدا شد</span>
+              <button type="button" class="border-0 bg-transparent p-0 font-700 text-brand-700" @click="toggleFilteredVehicles">
+                {{ allFilteredVehiclesSelected ? 'لغو انتخاب نتایج' : 'انتخاب همه نتایج' }}
+              </button>
+            </div>
+          </div>
+
+          <div class="scroll-container max-h-60 overflow-y-auto overscroll-contain p-2">
+            <button
+              v-for="model in filteredVehicleModels"
+              :key="model.id"
+              type="button"
+              class="mb-1 flex w-full items-center gap-3 rounded-lg border px-3 py-2.5 text-right transition last:mb-0"
+              :class="form.vehicleModelIds.includes(model.id) ? 'border-brand-200 bg-brand-50' : 'border-transparent hover:bg-black/[.03]'"
+              @click="toggleVehicle(model.id)"
+            >
+              <span
+                class="grid h-5 w-5 shrink-0 place-items-center rounded-md border"
+                :class="form.vehicleModelIds.includes(model.id) ? 'border-brand-600 bg-brand-600 text-white' : 'border-black/20 bg-white'"
+              >
+                <span v-if="form.vehicleModelIds.includes(model.id)" class="text-sm font-900 leading-none">✓</span>
+              </span>
+              <span class="min-w-0 flex-1">
+                <strong class="block truncate text-sm">{{ model.nameFa }}</strong>
+                <small class="mt-0.5 block truncate text-ink/40">
+                  {{ model.brand?.nameFa || model.nameEn || 'برند نامشخص' }}
+                </small>
+              </span>
+              <span v-if="model.isPopular" class="rounded-full bg-amber-50 px-2 py-1 text-[10px] font-700 text-amber-700">
+                پرکاربرد
+              </span>
+            </button>
+
+            <div v-if="!filteredVehicleModels.length" class="px-3 py-8 text-center">
+              <strong class="block text-sm text-ink/60">مدلی پیدا نشد</strong>
+              <span class="mt-1 block text-xs text-ink/40">نام برند یا مدل دیگری را جستجو کنید.</span>
+            </div>
+          </div>
+
+          <p v-if="!form.vehicleModelIds.length" class="m-0 border-t border-amber-100 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+            برای ادامه حداقل یک مدل خودرو انتخاب کنید.
           </p>
         </div>
-      </div>
+      </fieldset>
     </div>
 
     <!-- Footer ثابت -->
