@@ -55,6 +55,10 @@ const showVehicle = ref(false)
 const showCustomer = ref(false)
 const showShare = ref(false)
 const productSearch = ref('')
+const selectedProductIds = ref<string[]>([])
+const selectedPendingProductIds = ref<string[]>([])
+const selectedServiceIds = ref<string[]>([])
+const selectedPendingServiceIds = ref<string[]>([])
 const savingProductSuggestion = ref(false)
 const appliesSuggestionToAllVehicles = ref(true)
 const suggestionVehicleSearch = ref('')
@@ -295,6 +299,27 @@ function addProduct(product: Product) {
     unitPrice: Number(product.shopConfiguration?.salePrice || 0),
     intervalKm: productDefaultIntervalKm(product)
   })
+}
+
+function toggleSelection(items: string[], id: string) {
+  const index = items.indexOf(id)
+  if (index >= 0) items.splice(index, 1)
+  else items.push(id)
+}
+
+function openProductModal() {
+  selectedProductIds.value = []
+  selectedPendingProductIds.value = []
+  showProduct.value = true
+}
+
+function confirmProducts() {
+  for (const product of selectableProducts.value) {
+    if (selectedProductIds.value.includes(product.id)) addProduct(product)
+  }
+  for (const item of pendingProductSuggestions.value) {
+    if (selectedPendingProductIds.value.includes(item.id)) addPendingProduct(item)
+  }
   showProduct.value = false
 }
 
@@ -358,7 +383,6 @@ function addPendingProduct(item: PendingSuggestion) {
   if (!name) return
   products.value.push({ key: crypto.randomUUID(), description: name, quantity: 1, unitPrice: 0 })
   productSearch.value = ''
-  showProduct.value = false
 }
 
 function addService(service: CatalogService) {
@@ -369,6 +393,21 @@ function addService(service: CatalogService) {
     quantity: 1,
     unitFee: Number(service.shopConfiguration?.fee || 0)
   })
+}
+
+function openServiceModal() {
+  selectedServiceIds.value = []
+  selectedPendingServiceIds.value = []
+  showService.value = true
+}
+
+function confirmServices() {
+  for (const service of catalogServices.value || []) {
+    if (selectedServiceIds.value.includes(service.id)) addService(service)
+  }
+  for (const item of pendingServiceSuggestions.value) {
+    if (selectedPendingServiceIds.value.includes(item.id)) addPendingService(item)
+  }
   showService.value = false
 }
 
@@ -384,7 +423,6 @@ function addPendingService(item: PendingSuggestion) {
   const name = item.payload.description?.trim()
   if (!name) return
   services.value.push({ key: crypto.randomUUID(), description: name, quantity: 1, unitFee: 0 })
-  showService.value = false
 }
 
 function goToItems() {
@@ -578,7 +616,7 @@ async function openShare() {
       <div class="card overflow-hidden">
         <header class="flex items-center justify-between border-b border-black/6 px-5 py-4">
           <div><h2 class="m-0 text-base font-700">محصولات مصرفی</h2><p class="m-0 mt-1 text-xs text-ink/40">{{ number(products.length) }} قلم</p></div>
-          <button class="btn-secondary px-3 py-2" @click="showProduct = true"><span class="i-lucide-plus h-4 w-4" />افزودن</button>
+          <button class="btn-secondary px-3 py-2" @click="openProductModal"><span class="i-lucide-plus h-4 w-4" />افزودن</button>
         </header>
         <div v-if="products.length" class="divide-y divide-black/5">
           <div v-for="(line, index) in products" :key="line.key" class="p-4">
@@ -607,7 +645,7 @@ async function openShare() {
       <div class="card overflow-hidden">
         <header class="flex items-center justify-between border-b border-black/6 px-5 py-4">
           <div><h2 class="m-0 text-base font-700">خدمات و اجرت</h2><p class="m-0 mt-1 text-xs text-ink/40">{{ number(services.length) }} خدمت</p></div>
-          <button class="btn-secondary px-3 py-2" @click="showService = true"><span class="i-lucide-plus h-4 w-4" />افزودن</button>
+          <button class="btn-secondary px-3 py-2" @click="openServiceModal"><span class="i-lucide-plus h-4 w-4" />افزودن</button>
         </header>
         <div v-if="services.length" class="divide-y divide-black/5">
           <div v-for="(line, index) in services" :key="line.key" class="p-4">
@@ -718,7 +756,7 @@ async function openShare() {
         {{ number(compatibleProductCount) }} محصول مناسب این مدل خودرو پیدا شد.
       </div>
       <div class="max-h-80 space-y-2 overflow-y-auto">
-        <button v-for="product in selectableProducts" :key="product.id" class="flex w-full items-center justify-between rounded-xl border p-3 text-right hover:border-brand-300 hover:bg-brand-50" :class="product.compatibility?.status === 'compatible' ? 'border-emerald-200 bg-emerald-50/40' : 'border-black/7'" @click="addProduct(product)">
+        <button v-for="product in selectableProducts" :key="product.id" class="flex w-full items-center justify-between rounded-xl border p-3 text-right hover:border-brand-300 hover:bg-brand-50" :class="selectedProductIds.includes(product.id) ? 'border-brand-500 bg-brand-50' : product.compatibility?.status === 'compatible' ? 'border-emerald-200 bg-emerald-50/40' : 'border-black/7'" @click="toggleSelection(selectedProductIds, product.id)">
           <div>
             <div class="flex flex-wrap items-center gap-2">
               <strong class="block text-sm">{{ product.displayName }}</strong>
@@ -731,7 +769,7 @@ async function openShare() {
               <template v-if="product.attributes?.package_volume"> · حجم {{ product.attributes.package_volume }}</template>
             </span>
           </div>
-          <span class="i-lucide-plus h-5 w-5 text-brand-600" />
+          <span :class="selectedProductIds.includes(product.id) ? 'i-lucide-check text-brand-700' : 'i-lucide-plus text-brand-600'" class="h-5 w-5" />
         </button>
       </div>
       <div v-if="pendingProductSuggestions.length" class="mt-3 border-t border-black/7 pt-3">
@@ -740,11 +778,12 @@ async function openShare() {
           <button
             v-for="item in pendingProductSuggestions"
             :key="item.id"
-            class="flex w-full items-center justify-between rounded-xl border border-amber-200 bg-amber-50/60 p-3 text-right hover:bg-amber-50"
-            @click="addPendingProduct(item)"
+            class="flex w-full items-center justify-between rounded-xl border p-3 text-right hover:bg-amber-50"
+            :class="selectedPendingProductIds.includes(item.id) ? 'border-brand-500 bg-brand-50' : 'border-amber-200 bg-amber-50/60'"
+            @click="toggleSelection(selectedPendingProductIds, item.id)"
           >
             <div><strong class="block text-sm">{{ item.payload.description }}</strong><span class="mt-1 block text-xs text-amber-700/70">قابل استفاده تا زمان بررسی مدیر</span></div>
-            <span class="i-lucide-plus h-5 w-5 text-amber-700" />
+            <span :class="selectedPendingProductIds.includes(item.id) ? 'i-lucide-check text-brand-700' : 'i-lucide-plus text-amber-700'" class="h-5 w-5" />
           </button>
         </div>
       </div>
@@ -754,6 +793,9 @@ async function openShare() {
           <span class="i-lucide-lightbulb" />
           ثبت پیشنهاد محصول
         </button>
+      </div>
+      <div class="mt-4 flex justify-end">
+        <button class="btn-primary" @click="confirmProducts">تأیید و افزودن</button>
       </div>
     </AppModal>
 
@@ -809,9 +851,9 @@ async function openShare() {
 
     <AppModal :open="showService" title="افزودن خدمت" description="خدمت استاندارد را انتخاب کنید یا نام خدمت خارج از کاتالوگ را بنویسید." @close="showService = false">
       <div class="max-h-80 space-y-2 overflow-y-auto">
-        <button v-for="service in catalogServices" :key="service.id" class="flex w-full items-center justify-between rounded-xl border border-black/7 p-3 text-right hover:border-brand-300 hover:bg-brand-50" @click="addService(service)">
+        <button v-for="service in catalogServices" :key="service.id" class="flex w-full items-center justify-between rounded-xl border p-3 text-right hover:border-brand-300 hover:bg-brand-50" :class="selectedServiceIds.includes(service.id) ? 'border-brand-500 bg-brand-50' : 'border-black/7'" @click="toggleSelection(selectedServiceIds, service.id)">
           <div><strong class="block text-sm">{{ service.name }}</strong><span class="mt-1 block text-xs text-ink/40">{{ service.category || 'خدمت عمومی' }}</span></div>
-          <span class="i-lucide-plus h-5 w-5 text-brand-600" />
+          <span :class="selectedServiceIds.includes(service.id) ? 'i-lucide-check text-brand-700' : 'i-lucide-plus text-brand-600'" class="h-5 w-5" />
         </button>
       </div>
       <div v-if="pendingServiceSuggestions.length" class="mt-3 border-t border-black/7 pt-3">
@@ -820,11 +862,12 @@ async function openShare() {
           <button
             v-for="item in pendingServiceSuggestions"
             :key="item.id"
-            class="flex w-full items-center justify-between rounded-xl border border-amber-200 bg-amber-50/60 p-3 text-right hover:bg-amber-50"
-            @click="addPendingService(item)"
+            class="flex w-full items-center justify-between rounded-xl border p-3 text-right hover:bg-amber-50"
+            :class="selectedPendingServiceIds.includes(item.id) ? 'border-brand-500 bg-brand-50' : 'border-amber-200 bg-amber-50/60'"
+            @click="toggleSelection(selectedPendingServiceIds, item.id)"
           >
             <div><strong class="block text-sm">{{ item.payload.description }}</strong><span class="mt-1 block text-xs text-amber-700/70">قابل استفاده تا زمان بررسی مدیر</span></div>
-            <span class="i-lucide-plus h-5 w-5 text-amber-700" />
+            <span :class="selectedPendingServiceIds.includes(item.id) ? 'i-lucide-check text-brand-700' : 'i-lucide-plus text-amber-700'" class="h-5 w-5" />
           </button>
         </div>
       </div>
@@ -835,6 +878,9 @@ async function openShare() {
           <button class="btn-ghost shrink-0" :disabled="!localServiceName.trim()" @click="addLocalService"><span class="i-lucide-file-plus" />افزودن</button>
         </div>
         <p class="mb-0 mt-2 text-xs leading-5 text-ink/45">این نام در سفارش ثبت و برای تکمیل کاتالوگ به مدیر پیشنهاد می‌شود.</p>
+      </div>
+      <div class="mt-4 flex justify-end">
+        <button class="btn-primary" @click="confirmServices">تأیید و افزودن</button>
       </div>
     </AppModal>
 
