@@ -546,7 +546,7 @@ async function startNextService() {
       <template v-for="item in 3" :key="item">
         <div class="flex items-center gap-2">
           <span class="grid h-9 w-9 place-items-center rounded-full text-sm font-700" :class="step >= item ? 'bg-brand-700 text-white' : 'bg-black/6 text-ink/35'">{{ number(item) }}</span>
-          <span class="hidden text-sm font-700 sm:block" :class="step >= item ? 'text-ink' : 'text-ink/35'">{{ ['مشتری و خودرو', 'اقلام سرویس', 'مرور و ثبت'][item - 1] }}</span>
+          <span class="hidden text-sm font-700 sm:block" :class="step >= item ? 'text-ink' : 'text-ink/35'">{{ ['مشتری و خودرو', 'اقلام سرویس', 'بررسی نهایی'][item - 1] }}</span>
         </div>
         <div v-if="item < 3" class="mx-3 h-px flex-1" :class="step > item ? 'bg-brand-500' : 'bg-black/10'" />
       </template>
@@ -651,7 +651,7 @@ async function startNextService() {
       </div>
     </section>
 
-    <section v-else-if="step === 2" class="grid gap-5 xl:grid-cols-[1fr_1fr]">
+    <section v-else-if="step === 2" class="grid gap-5 pb-28 xl:grid-cols-[1fr_1fr] xl:pb-0">
       <div class="card overflow-hidden">
         <header class="flex items-center justify-between border-b border-black/6 px-5 py-4">
           <div><h2 class="m-0 text-base font-700">محصولات مصرفی</h2><p class="m-0 mt-1 text-xs text-ink/40">{{ number(products.length) }} قلم</p></div>
@@ -703,9 +703,25 @@ async function startNextService() {
         <AppEmptyState v-else icon="i-lucide-wrench" title="خدمتی اضافه نشده" />
       </div>
 
-      <div class="sticky bottom-20 z-20 flex items-center justify-between rounded-2xl bg-ink p-4 text-white shadow-2xl xl:bottom-4 xl:col-span-2">
-        <div><span class="block text-xs text-white/45">جمع فعلی</span><strong class="text-lg">{{ money(grandTotal) }}</strong></div>
-        <div class="flex gap-2"><button class="btn-ghost text-white" @click="step = 1">مرحله قبل</button><button class="btn bg-brand-500 text-white" @click="goToReview">مرور و ثبت<span class="i-lucide-arrow-left" /></button></div>
+      <div class="fixed inset-x-3 bottom-[5.5rem] z-30 flex flex-col gap-3 rounded-2xl border border-black/8 bg-white/95 p-3 shadow-[0_16px_45px_rgba(16,32,25,.18)] backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between sm:p-4 lg:sticky lg:inset-x-auto lg:bottom-4 xl:col-span-2">
+        <div class="flex items-center justify-between gap-3 sm:block">
+          <span class="text-xs text-ink/45 sm:block">جمع فعلی</span>
+          <strong class="text-lg text-ink">{{ money(grandTotal) }}</strong>
+        </div>
+        <div class="grid grid-cols-[auto_1fr] gap-2 sm:flex">
+          <button
+            type="button"
+            class="btn-secondary px-3 active:!border-brand-300 active:!bg-brand-50 active:!text-brand-800"
+            @click="step = 1"
+          >
+            <span class="i-lucide-arrow-right h-4 w-4" />
+            مرحله قبل
+          </button>
+          <button type="button" class="btn-primary min-w-0 sm:min-w-40" @click="goToReview">
+            بررسی نهایی
+            <span class="i-lucide-arrow-left h-4 w-4" />
+          </button>
+        </div>
       </div>
     </section>
 
