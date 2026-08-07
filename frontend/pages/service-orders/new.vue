@@ -40,6 +40,7 @@ const api = useApi()
 const toast = useToast()
 const { number, money, errorMessage } = useFormat()
 
+const pageRoot = ref<HTMLElement | null>(null)
 const step = ref(1)
 const customerSearch = ref('')
 const selectedCustomer = ref<Customer | null>(null)
@@ -144,6 +145,15 @@ const canCreateVehicle = computed(() => Boolean(
   && !plateIncomplete.value
 ))
 let odometerRequest = 0
+
+watch(step, async () => {
+  await nextTick()
+  const scrollContainer = pageRoot.value?.closest('main')
+  if (scrollContainer instanceof HTMLElement) {
+    scrollContainer.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+})
+
 watch(selectedVehicle, async (vehicle) => {
   const request = ++odometerRequest
   suggestedOdometer.value = undefined
@@ -537,7 +547,7 @@ async function startNextService() {
 </script>
 
 <template>
-  <div>
+  <div ref="pageRoot">
     <header class="mb-6">
       <h1 class="mb-0 mt-1 text-xl font-800">ثبت سرویس جدید</h1>
     </header>
