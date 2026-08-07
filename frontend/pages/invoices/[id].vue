@@ -76,6 +76,7 @@ async function openShare() {
       :open="showShare"
       :url="publicBookUrl"
       :message="shareMessage"
+      :customer-mobile="invoice.order?.customer?.mobileNormalized"
       @close="showShare = false"
     />
   </div>

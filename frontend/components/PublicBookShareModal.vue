@@ -6,6 +6,7 @@ const props = defineProps<{
   url: string
   message: string
   card?: ServiceShareCardData
+  customerMobile?: string
 }>()
 
 const emit = defineEmits<{ close: [] }>()
@@ -15,10 +16,13 @@ const imageBlob = shallowRef<Blob | null>(null)
 const previewUrl = ref('')
 const generatingImage = ref(false)
 const sharing = ref(false)
+const openingMessenger = ref<'telegram' | 'eitaa' | null>(null)
 const generationFailed = ref(false)
 let generationId = 0
+let eitaaFallbackTimer: ReturnType<typeof setTimeout> | undefined
 const supportsNativeShare = computed(() => import.meta.client && typeof navigator.share === 'function')
 const imageFileName = computed(() => `service-${props.card?.invoiceNo || 'card'}.png`.replace(/[^a-zA-Z0-9._-]/g, '-'))
+const customerPhone = computed(() => normalizeInternationalPhone(props.customerMobile))
 const supportsImageShare = computed(() => {
   if (!supportsNativeShare.value || !imageBlob.value) return false
   if (typeof navigator.canShare !== 'function') return true
@@ -37,7 +41,10 @@ watch(() => props.open, async (open) => {
   if (props.card) await generateImage()
 })
 
-onBeforeUnmount(clearGeneratedImage)
+onBeforeUnmount(() => {
+  clearGeneratedImage()
+  if (eitaaFallbackTimer) clearTimeout(eitaaFallbackTimer)
+})
 
 function clearGeneratedImage() {
   generationId += 1
@@ -79,6 +86,65 @@ async function generateImage() {
 
 function createImageFile() {
   return new File([imageBlob.value!], imageFileName.value, { type: 'image/png' })
+}
+
+function normalizeInternationalPhone(value?: string) {
+  if (!value) return ''
+  const latinDigits = value
+    .replace(/[\u06F0-\u06F9]/g, digit => String(digit.charCodeAt(0) - 0x06F0))
+    .replace(/[\u0660-\u0669]/g, digit => String(digit.charCodeAt(0) - 0x0660))
+  let digits = latinDigits.replace(/\D/g, '')
+  if (digits.startsWith('0098')) digits = digits.slice(2)
+  if (digits.startsWith('0')) digits = `98${digits.slice(1)}`
+  else if (digits.length === 10 && digits.startsWith('9')) digits = `98${digits}`
+  return /^989\d{9}$/.test(digits) ? digits : ''
+}
+
+async function copyImageForMessenger() {
+  if (!imageBlob.value || !window.isSecureContext || !navigator.clipboard?.write || typeof ClipboardItem === 'undefined') return false
+  try {
+    await navigator.clipboard.write([
+      new ClipboardItem({ 'image/png': imageBlob.value })
+    ])
+    return true
+  } catch {
+    return false
+  }
+}
+
+function openEitaaWithFallback(url: string) {
+  let appOpened = false
+  const onVisibilityChange = () => {
+    if (document.hidden) appOpened = true
+  }
+  document.addEventListener('visibilitychange', onVisibilityChange)
+  window.location.href = url
+  eitaaFallbackTimer = setTimeout(() => {
+    document.removeEventListener('visibilitychange', onVisibilityChange)
+    if (!appOpened && !document.hidden) window.location.href = 'https://web.eitaa.com/'
+  }, 1800)
+}
+
+async function openCustomerMessenger(messenger: 'telegram' | 'eitaa') {
+  if (!customerPhone.value || openingMessenger.value) return
+  openingMessenger.value = messenger
+  const text = `${props.message}\n${props.url}`
+  const imageCopied = await copyImageForMessenger()
+
+  if (imageBlob.value) {
+    if (imageCopied) toast.success('تصویر کپی شد؛ در گفت‌وگوی مشتری جای‌گذاری کنید.')
+    else toast.info('گفت‌وگوی مشتری باز می‌شود؛ تصویر را با دکمه «اشتراک تصویر» ارسال کنید.')
+  }
+
+  if (messenger === 'telegram') {
+    window.location.href = `https://t.me/+${customerPhone.value}?text=${encodeURIComponent(text)}`
+  } else {
+    openEitaaWithFallback(`eitaa://resolve?phone=${customerPhone.value}&text=${encodeURIComponent(text)}`)
+  }
+
+  window.setTimeout(() => {
+    openingMessenger.value = null
+  }, 2500)
 }
 
 async function shareImage() {
@@ -155,6 +221,44 @@ function downloadImage() {
         </div>
       </div>
     </div>
+
+    <div v-if="customerPhone" class="mb-4 rounded-2xl border border-brand-200 bg-brand-50/70 p-3">
+      <div class="mb-2 flex items-center justify-between gap-3">
+        <div>
+          <strong class="block text-sm text-brand-900">ارسال به همین مشتری</strong>
+          <span class="mt-0.5 block text-xs text-brand-800/65" dir="ltr">+{{ customerPhone }}</span>
+        </div>
+        <span class="i-lucide-message-circle h-5 w-5 shrink-0 text-brand-700" />
+      </div>
+      <div class="grid grid-cols-2 gap-2">
+        <button
+          type="button"
+          class="btn-secondary w-full border-sky-200 bg-white text-sky-700"
+          :disabled="Boolean(openingMessenger)"
+          @click="openCustomerMessenger('telegram')"
+        >
+          <span v-if="openingMessenger === 'telegram'" class="i-lucide-loader-circle h-5 w-5 animate-spin" />
+          <span v-else class="i-lucide-send h-5 w-5" />
+          تلگرام مشتری
+        </button>
+        <button
+          type="button"
+          class="btn-secondary w-full border-orange-200 bg-white text-orange-700"
+          :disabled="Boolean(openingMessenger)"
+          @click="openCustomerMessenger('eitaa')"
+        >
+          <span v-if="openingMessenger === 'eitaa'" class="i-lucide-loader-circle h-5 w-5 animate-spin" />
+          <span v-else class="i-lucide-message-square-share h-5 w-5" />
+          ایتا مشتری
+        </button>
+      </div>
+      <p class="mb-0 mt-2 text-xs leading-5 text-brand-900/65">
+        متن و لینک داخل گفت‌وگوی این شماره آماده می‌شود. اگر پیام «تصویر کپی شد» را دیدید، تصویر را در چت جای‌گذاری کنید.
+      </p>
+    </div>
+    <p v-else-if="customerMobile" class="mb-4 mt-0 rounded-xl bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-800">
+      شماره موبایل مشتری معتبر نیست؛ ارسال مستقیم به گفت‌وگوی او در دسترس نیست.
+    </p>
 
     <div class="mb-3 grid gap-2 sm:grid-cols-2">
       <button

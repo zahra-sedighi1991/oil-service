@@ -770,6 +770,7 @@ async function startNextService() {
       :url="publicBookUrl"
       :message="shareMessage"
       :card="serviceShareCard"
+      :customer-mobile="selectedCustomer?.mobileNormalized"
       @close="showShare = false"
     />
 
