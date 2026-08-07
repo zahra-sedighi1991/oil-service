@@ -71,6 +71,7 @@ async function exportCustomers() {
 </script>
 
 <template>
+<div class="list-page">
   <!-- Search -->
 <section class="card mb-4 p-2">
   <div class="flex flex-col gap-2 sm:flex-row">
@@ -191,6 +192,20 @@ async function exportCustomers() {
               >
                 {{ customer.mobileDisplay }}
               </a>
+
+              <div
+                v-if="customer.vehicles?.some(vehicle => vehicle.plateDisplay || vehicle.temporaryIdentifier)"
+                class="mt-2 flex flex-wrap gap-1.5"
+              >
+                <span
+                  v-for="vehicle in customer.vehicles.filter(item => item.plateDisplay || item.temporaryIdentifier)"
+                  :key="vehicle.id"
+                  class="inline-flex items-center gap-1 rounded-lg bg-black/[.035] px-2 py-1 text-[11px] font-700 text-ink/60"
+                >
+                  <span class="i-lucide-car-front h-3.5 w-3.5 text-brand-600" />
+                  {{ vehicle.plateDisplay || vehicle.temporaryIdentifier }}
+                </span>
+              </div>
             </div>
           </div>
 
@@ -406,4 +421,5 @@ async function exportCustomers() {
     </div>
   </form>
 </AppModal>
+</div>
 </template>
