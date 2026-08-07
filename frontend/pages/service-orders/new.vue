@@ -585,7 +585,11 @@ async function openShare() {
             <div class="mb-3 flex items-start justify-between gap-3"><input v-model="line.description" class="min-w-0 flex-1 border-0 bg-transparent text-sm font-800 outline-none" :readonly="Boolean(line.productId)"><button class="btn-ghost h-8 w-8 p-0 text-danger" @click="products.splice(index, 1)"><span class="i-lucide-trash-2 h-4 w-4" /></button></div>
             <div class="grid grid-cols-2 gap-2 sm:grid-cols-3">
               <div><label class="label">تعداد</label><input v-model.number="line.quantity" type="number" min=".001" step=".001" class="field py-2"></div>
-              <div><label class="label">قیمت واحد</label><input v-model.number="line.unitPrice" type="number" min="0" class="field py-2"></div>
+              <div>
+                <label class="label">قیمت واحد</label>
+                <input v-model.number="line.unitPrice" type="number" min="0" class="field py-2">
+                <p class="mb-0 mt-1 text-xs text-ink/45">{{ money(line.unitPrice) }}</p>
+              </div>
               <div>
                 <label class="label">تعویض بعد از (کیلومتر)</label>
                 <input v-model.number="line.intervalKm" type="number" min="0" step="500" class="field py-2">
@@ -610,7 +614,11 @@ async function openShare() {
             <div class="mb-3 flex items-start justify-between gap-3"><input v-model="line.description" class="min-w-0 flex-1 border-0 bg-transparent text-sm font-800 outline-none" :readonly="Boolean(line.serviceId)"><button class="btn-ghost h-8 w-8 p-0 text-danger" @click="services.splice(index, 1)"><span class="i-lucide-trash-2 h-4 w-4" /></button></div>
             <div class="grid grid-cols-2 gap-2">
               <div><label class="label">تعداد</label><input v-model.number="line.quantity" type="number" min=".001" step=".001" class="field py-2"></div>
-              <div><label class="label">اجرت واحد</label><input v-model.number="line.unitFee" type="number" min="0" class="field py-2"></div>
+              <div>
+                <label class="label">اجرت واحد</label>
+                <input v-model.number="line.unitFee" type="number" min="0" class="field py-2">
+                <p class="mb-0 mt-1 text-xs text-ink/45">{{ money(line.unitFee) }}</p>
+              </div>
             </div>
             <p class="mb-0 mt-3 text-left text-xs font-800 text-brand-700" dir="rtl">{{ money(line.quantity * line.unitFee) }}</p>
           </div>

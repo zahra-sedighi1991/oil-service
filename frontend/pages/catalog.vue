@@ -222,7 +222,11 @@ async function submitProductSuggestion() {
 
     <AppModal :open="Boolean(editing)" :title="editing?.title || ''" description="قیمت، دوره تعویض و وضعیت این قلم فقط برای فروشگاه شما اعمال می‌شود." @close="editing = null">
       <form v-if="editing" class="space-y-5" @submit.prevent="saveSetting">
-        <div><label class="label">{{ editing.type === 'product' ? 'قیمت فروش' : 'اجرت پیش‌فرض' }} (تومان)</label><input v-model.number="editing.value" type="number" min="0" class="field text-left" dir="ltr" required></div>
+        <div>
+          <label class="label">{{ editing.type === 'product' ? 'قیمت فروش' : 'اجرت پیش‌فرض' }} (تومان)</label>
+          <input v-model.number="editing.value" type="number" min="0" class="field text-left" dir="ltr" required>
+          <p class="mb-0 mt-1 text-left text-xs text-ink/45" dir="rtl">{{ money(editing.value) }}</p>
+        </div>
         <div v-if="editing.type === 'product'">
           <label class="label">دوره تعویض پیش‌فرض (کیلومتر)</label>
           <input v-model.number="editing.defaultIntervalKm" type="number" min="0" step="500" class="field text-left" dir="ltr" placeholder="مثلاً 5000">
