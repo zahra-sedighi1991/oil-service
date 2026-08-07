@@ -94,7 +94,7 @@ watch(() => route.fullPath, () => { mobileMenu.value = false })
     <Teleport to="body">
       <Transition name="drawer">
         <div v-if="mobileMenu" class="fixed inset-0 z-70 bg-ink/45 backdrop-blur-sm lg:hidden" @click.self="mobileMenu = false">
-          <aside class="mr-auto flex h-full w-[min(86vw,22rem)] flex-col bg-ink p-5 text-white">
+          <aside class="ml-auto flex h-full w-[min(86vw,22rem)] flex-col bg-ink p-5 text-white">
             <div class="mb-7 flex items-center justify-between">
               <strong class="text-lg">منوی روغن‌یار</strong>
               <button class="btn-ghost h-9 w-9 p-0 text-white" @click="mobileMenu = false"><span class="i-lucide-x h-5 w-5" /></button>
