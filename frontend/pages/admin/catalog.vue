@@ -336,141 +336,447 @@ async function saveProductEdit(value: ProductEditorValue) {
       />
     </section>
 
-    <AppModal :open="modal" :title="modalTitle" @close="modal = false">
-      <form class="space-y-4" @submit.prevent="createItem">
-        <template v-if="tab === 'brands'">
-          <div>
-            <label class="label">نام فارسی برند</label>
-            <input v-model="form.nameFa" class="field" placeholder="مثلاً ایران خودرو" required>
-          </div>
-          <div>
-            <label class="label">نام لاتین</label>
-            <input v-model="form.nameEn" class="field text-left" dir="ltr" placeholder="Iran Khodro">
-          </div>
-          <div>
-            <label class="label">کلید فنی</label>
-            <input v-model="form.slug" class="field text-left" dir="ltr" placeholder="iran-khodro" required>
-          </div>
-        </template>
-
-        <template v-else-if="tab === 'models'">
-          <div>
-            <label class="label">برند خودرو</label>
-            <select v-model="form.brandId" class="field" required>
-              <option value="" disabled>انتخاب برند</option>
-              <option v-for="brand in brands || []" :key="brand.id" :value="brand.id">
-                {{ brand.nameFa }}
-              </option>
-            </select>
-            <small v-if="!brands?.length" class="mt-2 block text-amber-700">
-              ابتدا از تب «برند خودرو» یک برند بسازید.
-            </small>
-          </div>
-          <div>
-            <label class="label">نام فارسی مدل</label>
-            <input v-model="form.nameFa" class="field" placeholder="مثلاً پژو ۴۰۵" required>
-          </div>
-          <div>
-            <label class="label">نام لاتین</label>
-            <input v-model="form.nameEn" class="field text-left" dir="ltr" placeholder="Peugeot 405">
-          </div>
-          <div>
-            <label class="label">کلید فنی</label>
-            <input v-model="form.slug" class="field text-left" dir="ltr" placeholder="peugeot-405" required>
-          </div>
-          <label class="flex items-center justify-between rounded-xl border border-black/7 p-3">
-            <span>
-              <strong class="block text-sm">مدل پراستفاده</strong>
-              <small class="text-ink/40">به‌صورت چیپ در فرم افزودن خودرو نمایش داده شود</small>
-            </span>
-            <input v-model="form.isPopular" type="checkbox" class="h-5 w-5 accent-brand-600">
+   <AppModal
+  :open="modal"
+  :title="modalTitle"
+  @close="modal = false"
+>
+  <form
+    class="flex min-h-0 flex-1 flex-col"
+    @submit.prevent="createItem"
+  >
+    <!-- محتوای اسکرولی -->
+    <div
+      class="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain pr-1"
+    >
+      <!-- برند خودرو -->
+      <template v-if="tab === 'brands'">
+        <div>
+          <label class="label">
+            نام فارسی برند
           </label>
-        </template>
 
-        <template v-else-if="tab === 'types'">
-          <div>
-            <label class="label">عنوان نوع محصول</label>
-            <input v-model="form.title" class="field" placeholder="مثلاً فیلتر هوا" required>
-          </div>
-          <div>
-            <label class="label">کلید فنی</label>
-            <input v-model="form.key" class="field text-left" dir="ltr" placeholder="air_filter" required>
-          </div>
-          <div>
-            <label class="label">قالب عنوان (اختیاری)</label>
-            <input v-model="form.titleTemplate" class="field" placeholder="مثلاً فیلتر هوا">
-          </div>
-        </template>
+          <input
+            v-model="form.nameFa"
+            class="field"
+            placeholder="مثلاً ایران خودرو"
+            required
+          >
+        </div>
 
-        <template v-else-if="tab === 'products'">
-          <div>
-            <label class="label">نوع محصول</label>
-            <select v-model="form.productTypeId" class="field" required>
-              <option value="" disabled>انتخاب نوع محصول</option>
-              <option v-for="type in types || []" :key="type.id" :value="type.id">
-                {{ type.title }}
-              </option>
-            </select>
-            <small v-if="!types?.length" class="mt-2 block text-amber-700">
-              ابتدا از تب «دسته‌های محصول» یک دسته بسازید.
+        <div>
+          <label class="label">
+            نام لاتین
+          </label>
+
+          <input
+            v-model="form.nameEn"
+            class="field text-left"
+            dir="ltr"
+            placeholder="Iran Khodro"
+          >
+        </div>
+
+        <div>
+          <label class="label">
+            کلید فنی
+          </label>
+
+          <input
+            v-model="form.slug"
+            class="field text-left"
+            dir="ltr"
+            placeholder="iran-khodro"
+            required
+          >
+        </div>
+      </template>
+
+      <!-- مدل خودرو -->
+      <template v-else-if="tab === 'models'">
+        <div>
+          <label class="label">
+            برند خودرو
+          </label>
+
+          <select
+            v-model="form.brandId"
+            class="field"
+            required
+          >
+            <option
+              value=""
+              disabled
+            >
+              انتخاب برند
+            </option>
+
+            <option
+              v-for="brand in brands || []"
+              :key="brand.id"
+              :value="brand.id"
+            >
+              {{ brand.nameFa }}
+            </option>
+          </select>
+
+          <small
+            v-if="!brands?.length"
+            class="mt-2 block text-amber-700"
+          >
+            ابتدا از تب «برند خودرو» یک برند بسازید.
+          </small>
+        </div>
+
+        <div>
+          <label class="label">
+            نام فارسی مدل
+          </label>
+
+          <input
+            v-model="form.nameFa"
+            class="field"
+            placeholder="مثلاً پژو ۴۰۵"
+            required
+          >
+        </div>
+
+        <div>
+          <label class="label">
+            نام لاتین
+          </label>
+
+          <input
+            v-model="form.nameEn"
+            class="field text-left"
+            dir="ltr"
+            placeholder="Peugeot 405"
+          >
+        </div>
+
+        <div>
+          <label class="label">
+            کلید فنی
+          </label>
+
+          <input
+            v-model="form.slug"
+            class="field text-left"
+            dir="ltr"
+            placeholder="peugeot-405"
+            required
+          >
+        </div>
+
+        <label
+          class="flex items-center justify-between rounded-xl border border-black/7 p-3"
+        >
+          <span>
+            <strong class="block text-sm">
+              مدل پراستفاده
+            </strong>
+
+            <small class="text-ink/40">
+              به‌صورت چیپ در فرم افزودن خودرو نمایش داده شود
             </small>
-          </div>
+          </span>
+
+          <input
+            v-model="form.isPopular"
+            type="checkbox"
+            class="h-5 w-5 accent-brand-600"
+          >
+        </label>
+      </template>
+
+      <!-- دسته محصول -->
+      <template v-else-if="tab === 'types'">
+        <div>
+          <label class="label">
+            عنوان نوع محصول
+          </label>
+
+          <input
+            v-model="form.title"
+            class="field"
+            placeholder="مثلاً فیلتر هوا"
+            required
+          >
+        </div>
+
+        <div>
+          <label class="label">
+            کلید فنی
+          </label>
+
+          <input
+            v-model="form.key"
+            class="field text-left"
+            dir="ltr"
+            placeholder="air_filter"
+            required
+          >
+        </div>
+
+        <div>
+          <label class="label">
+            قالب عنوان
+            <span class="font-400 text-ink/40">
+              (اختیاری)
+            </span>
+          </label>
+
+          <input
+            v-model="form.titleTemplate"
+            class="field"
+            placeholder="مثلاً فیلتر هوا"
+          >
+        </div>
+      </template>
+
+      <!-- محصول -->
+      <template v-else-if="tab === 'products'">
+        <div>
+          <label class="label">
+            نوع محصول
+          </label>
+
+          <select
+            v-model="form.productTypeId"
+            class="field"
+            required
+          >
+            <option
+              value=""
+              disabled
+            >
+              انتخاب نوع محصول
+            </option>
+
+            <option
+              v-for="type in types || []"
+              :key="type.id"
+              :value="type.id"
+            >
+              {{ type.title }}
+            </option>
+          </select>
+
+          <small
+            v-if="!types?.length"
+            class="mt-2 block text-amber-700"
+          >
+            ابتدا از تب «دسته‌های محصول» یک دسته بسازید.
+          </small>
+        </div>
+
+        <div>
+          <label class="label">
+            نام کامل محصول
+          </label>
+
+          <input
+            v-model="form.name"
+            class="field"
+            placeholder="مثلاً روغن موتور بهران سوپر پیشتاز"
+            required
+          >
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="label">نام کامل محصول</label>
+            <label class="label">
+              مدل محصول
+              <span class="font-400 text-ink/40">
+                (اختیاری)
+              </span>
+            </label>
+
             <input
-              v-model="form.name"
+              v-model="form.productModel"
               class="field"
-              placeholder="مثلاً روغن موتور بهران سوپر پیشتاز"
-              required
+              placeholder="مثلاً 10W-40"
             >
           </div>
-          <div class="grid grid-cols-2 gap-3">
-            <div><label class="label">مدل محصول <span class="font-400 text-ink/40">(اختیاری)</span></label><input v-model="form.productModel" class="field" placeholder="مثلاً 10W-40"></div>
-            <div><label class="label">حجم <span class="font-400 text-ink/40">(اختیاری)</span></label><input v-model.number="form.packageVolume" type="number" min="0" step="0.1" class="field text-left" dir="ltr" placeholder="مثلاً 4 لیتر"></div>
+
+          <div>
+            <label class="label">
+              حجم
+              <span class="font-400 text-ink/40">
+                (اختیاری)
+              </span>
+            </label>
+
+            <input
+              v-model.number="form.packageVolume"
+              type="number"
+              min="0"
+              step="0.1"
+              class="field text-left"
+              dir="ltr"
+              placeholder="مثلاً 4"
+            >
           </div>
-          <div class="rounded-xl border border-black/7 p-3">
-            <label class="label">نوع خودرو</label>
-            <div class="grid grid-cols-2 gap-2">
-              <label class="flex cursor-pointer items-center gap-2 rounded-lg border p-3" :class="appliesToAllVehicles ? 'border-brand-300 bg-brand-50' : 'border-black/7'">
-                <input v-model="appliesToAllVehicles" type="radio" :value="true" class="accent-brand-600"> همه خودروها
-              </label>
-              <label class="flex cursor-pointer items-center gap-2 rounded-lg border p-3" :class="!appliesToAllVehicles ? 'border-brand-300 bg-brand-50' : 'border-black/7'">
-                <input v-model="appliesToAllVehicles" type="radio" :value="false" class="accent-brand-600"> انتخاب یک یا چند خودرو
+        </div>
+
+        <div class="rounded-xl border border-black/7 p-3">
+          <label class="label">
+            نوع خودرو
+          </label>
+
+          <div class="grid grid-cols-2 gap-2">
+            <label
+              class="flex cursor-pointer items-center gap-2 rounded-lg border p-3"
+              :class="
+                appliesToAllVehicles
+                  ? 'border-brand-300 bg-brand-50'
+                  : 'border-black/7'
+              "
+            >
+              <input
+                v-model="appliesToAllVehicles"
+                type="radio"
+                :value="true"
+                class="accent-brand-600"
+              >
+
+              <span class="text-sm">
+                همه خودروها
+              </span>
+            </label>
+
+            <label
+              class="flex cursor-pointer items-center gap-2 rounded-lg border p-3"
+              :class="
+                !appliesToAllVehicles
+                  ? 'border-brand-300 bg-brand-50'
+                  : 'border-black/7'
+              "
+            >
+              <input
+                v-model="appliesToAllVehicles"
+                type="radio"
+                :value="false"
+                class="accent-brand-600"
+              >
+
+              <span class="text-sm">
+                انتخاب یک یا چند خودرو
+              </span>
+            </label>
+          </div>
+
+          <div
+            v-if="!appliesToAllVehicles"
+            class="mt-3"
+          >
+            <input
+              v-model="vehicleModelSearch"
+              class="field"
+              placeholder="جستجوی مدل خودرو..."
+            >
+
+            <div
+              class="scroll-container mt-2 max-h-44 space-y-1 overflow-y-auto overscroll-contain"
+            >
+              <label
+                v-for="model in filteredVehicleModels"
+                :key="model.id"
+                class="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 hover:bg-black/[.03]"
+              >
+                <input
+                  type="checkbox"
+                  :checked="form.vehicleModelIds.includes(model.id)"
+                  class="accent-brand-600"
+                  @change="toggleVehicleModel(model.id)"
+                >
+
+                <span class="text-sm">
+                  {{ model.nameFa }}
+                </span>
               </label>
             </div>
-            <div v-if="!appliesToAllVehicles" class="mt-3">
-              <input v-model="vehicleModelSearch" class="field" placeholder="جستجوی مدل خودرو...">
-              <div class="scroll-container mt-2 max-h-44 space-y-1 overflow-y-auto">
-                <label v-for="model in filteredVehicleModels" :key="model.id" class="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 hover:bg-black/[.03]">
-                  <input type="checkbox" :checked="form.vehicleModelIds.includes(model.id)" class="accent-brand-600" @change="toggleVehicleModel(model.id)">
-                  <span class="text-sm">{{ model.nameFa }}</span>
-                </label>
-              </div>
-              <p class="mb-0 mt-2 text-xs text-ink/45">{{ form.vehicleModelIds.length }} مدل انتخاب شده است.</p>
-            </div>
-          </div>
-        </template>
 
-        <template v-else>
-          <div>
-            <label class="label">نام خدمت</label>
-            <input v-model="form.name" class="field" placeholder="مثلاً تعویض روغن موتور" required>
-          </div>
-          <div>
-            <label class="label">دسته‌بندی</label>
-            <input v-model="form.category" class="field" placeholder="مثلاً سرویس دوره‌ای">
-          </div>
-          <div>
-            <label class="label">توضیحات</label>
-            <textarea v-model="form.description" class="field min-h-24 resize-y" />
-          </div>
-        </template>
+            <p class="mb-0 mt-2 text-xs text-ink/45">
+              {{ form.vehicleModelIds.length }}
+              مدل انتخاب شده است.
+            </p>
 
-        <button class="btn-primary w-full" :disabled="saving">
-          {{ saving ? 'در حال ذخیره...' : 'ایجاد رکورد' }}
-        </button>
-      </form>
-    </AppModal>
+            <p
+              v-if="!form.vehicleModelIds.length"
+              class="mb-0 mt-1 text-xs text-danger"
+            >
+              حداقل یک مدل خودرو انتخاب کنید.
+            </p>
+          </div>
+        </div>
+      </template>
+
+      <!-- خدمات -->
+      <template v-else>
+        <div>
+          <label class="label">
+            نام خدمت
+          </label>
+
+          <input
+            v-model="form.name"
+            class="field"
+            placeholder="مثلاً تعویض روغن موتور"
+            required
+          >
+        </div>
+
+        <div>
+          <label class="label">
+            دسته‌بندی
+          </label>
+
+          <input
+            v-model="form.category"
+            class="field"
+            placeholder="مثلاً سرویس دوره‌ای"
+          >
+        </div>
+
+        <div>
+          <label class="label">
+            توضیحات
+          </label>
+
+          <textarea
+            v-model="form.description"
+            class="field min-h-24 resize-y"
+          />
+        </div>
+      </template>
+    </div>
+
+    <!-- Footer ثابت پایین -->
+    <div
+      class="shrink-0 border-t border-black/7 bg-surface pt-3"
+    >
+      <button
+        class="btn-primary w-full"
+        :disabled="
+          saving ||
+          (
+            tab === 'products' &&
+            !appliesToAllVehicles &&
+            !form.vehicleModelIds.length
+          )
+        "
+      >
+        <span
+          v-if="saving"
+          class="i-lucide-loader-circle h-4 w-4 animate-spin"
+        />
+
+        {{ saving ? 'در حال ذخیره...' : 'ایجاد رکورد' }}
+      </button>
+    </div>
+  </form>
+</AppModal>
 
     <ProductEditorModal
       :open="Boolean(editingProduct)"

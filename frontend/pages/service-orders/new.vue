@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import type { CatalogService, Customer, Product, Vehicle, VehicleModelOption } from '~/types/api'
+import type { CatalogService, Customer, Product, Shop, Vehicle, VehicleModelOption } from '~/types/api'
+import type { ServiceShareCardData } from '~/types/share'
 
 interface ProductTypeOption { id: string; title: string }
 
@@ -75,7 +76,13 @@ const savingVehicle = ref(false)
 const savingCustomer = ref(false)
 const preparingShare = ref(false)
 const plateIncomplete = ref(false)
-const success = ref<{ invoiceNo: string; totalAmount: number; publicToken?: string } | null>(null)
+const success = ref<{
+  invoiceNo: string
+  totalAmount: number
+  currency?: string
+  publicToken?: string
+  completedAt: string
+} | null>(null)
 const vehicleForm = reactive({
   modelId: '',
   plate: '',
@@ -114,6 +121,7 @@ const { data: productTypes } = await useAsyncData(
   'service-product-suggestion-types',
   () => api.get<ProductTypeOption[]>('/catalog/product-types')
 )
+const { data: shop } = await useAsyncData('shop-profile', () => api.get<Shop>('/shop/profile'))
 
 const productTotal = computed(() => products.value.reduce((sum, line) => sum + line.quantity * line.unitPrice, 0))
 const serviceTotal = computed(() => services.value.reduce((sum, line) => sum + line.quantity * line.unitFee, 0))
@@ -462,11 +470,12 @@ async function completeOrder() {
     const result = await api.post<{
       invoiceNo: string
       totalAmount: number
+      currency?: string
       publicToken?: string
     }>(`/service-orders/${draft.id}/complete`, { discountAmount: 0 }, {
       'Idempotency-Key': crypto.randomUUID()
     })
-    success.value = result
+    success.value = { ...result, completedAt: new Date().toISOString() }
     toast.success('سرویس و فاکتور با موفقیت ثبت شدند.')
   } catch (error) {
     toast.error(errorMessage(error))
@@ -478,7 +487,41 @@ async function completeOrder() {
 const publicBookUrl = computed(() => success.value?.publicToken && import.meta.client
   ? `${window.location.origin}/public/service-book/${success.value.publicToken}`
   : '')
-const shareMessage = computed(() => `دفترچه سرویس خودرو${selectedCustomer.value ? `ی ${selectedCustomer.value.name}` : ''}`)
+const shareCustomerName = computed(() => {
+  const name = selectedCustomer.value?.name?.trim()
+  return name && name !== 'مشتری بدون نام' ? name : undefined
+})
+const shareMessage = computed(() => `دفترچه سرویس خودرو${shareCustomerName.value ? `ی ${shareCustomerName.value}` : ''}`)
+const serviceShareCard = computed<ServiceShareCardData | undefined>(() => {
+  if (!success.value || !selectedVehicle.value || odometer.value === undefined) return undefined
+  const dueProducts = products.value
+    .filter(line => line.intervalKm && line.intervalKm > 0)
+    .map(line => ({ odometer: odometer.value! + line.intervalKm!, item: line.description }))
+    .sort((a, b) => a.odometer - b.odometer)
+  const nextDue = dueProducts[0]
+
+  return {
+    shopName: shop.value?.name || 'روغن‌یار',
+    shopCity: shop.value?.city,
+    shopPhone: shop.value?.publicPhone,
+    customerName: shareCustomerName.value,
+    odometer: odometer.value,
+    nextDueOdometer: nextDue?.odometer,
+    nextDueItem: nextDue?.item,
+    invoiceNo: success.value.invoiceNo,
+    totalAmount: success.value.totalAmount,
+    currency: success.value.currency || shop.value?.currency,
+    serviceDate: success.value.completedAt,
+    products: products.value.map(line => ({
+      description: line.description,
+      totalAmount: line.quantity * line.unitPrice
+    })),
+    services: services.value.map(line => ({
+      description: line.description,
+      totalAmount: line.quantity * line.unitFee
+    }))
+  }
+})
 
 async function openShare() {
   if (!success.value || !selectedVehicle.value) return
@@ -697,6 +740,7 @@ async function openShare() {
       :open="showShare"
       :url="publicBookUrl"
       :message="shareMessage"
+      :card="serviceShareCard"
       @close="showShare = false"
     />
 
@@ -750,54 +794,176 @@ async function openShare() {
       </form>
     </AppModal>
 
-    <AppModal :open="showProduct" title="افزودن محصول" description="فقط محصولات فعال فروشگاه نمایش داده می‌شوند و گزینه‌های سازگار با خودرو در ابتدای فهرست هستند." @close="showProduct = false">
-      <div class="relative mb-3"><span class="i-lucide-search absolute right-3 top-1/2 -translate-y-1/2 text-ink/30" /><input v-model="productSearch" class="field pr-9" placeholder="نام واقعی محصول، برند یا ویژگی..."></div>
-      <div v-if="compatibleProductCount" class="mb-3 rounded-xl bg-emerald-50 px-3 py-2 text-xs text-emerald-800">
-        {{ number(compatibleProductCount) }} محصول مناسب این مدل خودرو پیدا شد.
-      </div>
-      <div class="max-h-80 space-y-2 overflow-y-auto">
-        <button v-for="product in selectableProducts" :key="product.id" class="flex w-full items-center justify-between rounded-xl border p-3 text-right hover:border-brand-300 hover:bg-brand-50" :class="selectedProductIds.includes(product.id) ? 'border-brand-500 bg-brand-50' : product.compatibility?.status === 'compatible' ? 'border-emerald-200 bg-emerald-50/40' : 'border-black/7'" @click="toggleSelection(selectedProductIds, product.id)">
-          <div>
-            <div class="flex flex-wrap items-center gap-2">
-              <strong class="block text-sm">{{ product.displayName }}</strong>
-              <span v-if="product.compatibility?.status === 'compatible'" class="badge bg-emerald-100 text-[10px] text-emerald-800">سازگار</span>
-            </div>
-            <span class="mt-1 block text-xs text-ink/40">
-              {{ product.shopConfiguration?.salePrice ? money(product.shopConfiguration.salePrice) : 'قیمت تعیین نشده' }}
-              <template v-if="productDefaultIntervalKm(product)"> · تعویض هر {{ number(productDefaultIntervalKm(product)) }} کیلومتر</template>
-              <template v-if="product.attributes?.model"> · مدل {{ product.attributes.model }}</template>
-              <template v-if="product.attributes?.package_volume"> · حجم {{ product.attributes.package_volume }}</template>
+<AppModal
+  :open="showProduct"
+  title="افزودن محصول"
+  description="فقط محصولات فعال فروشگاه نمایش داده می‌شوند و گزینه‌های سازگار با خودرو در ابتدای فهرست هستند."
+  @close="showProduct = false"
+>
+  <!-- Search: ثابت بالا -->
+  <div class="shrink-0 pb-3">
+    <div class="relative">
+      <span
+        class="i-lucide-search absolute right-3 top-1/2 -translate-y-1/2 text-ink/30"
+      />
+
+      <input
+        v-model="productSearch"
+        class="field pr-9"
+        placeholder="نام واقعی محصول، برند یا ویژگی..."
+      >
+    </div>
+
+    <div
+      v-if="compatibleProductCount"
+      class="mt-3 rounded-xl bg-emerald-50 px-3 py-2 text-xs text-emerald-800"
+    >
+      {{ number(compatibleProductCount) }}
+      محصول مناسب این مدل خودرو پیدا شد.
+    </div>
+  </div>
+
+  <!-- بخش اسکرولی -->
+  <div
+    class="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1"
+  >
+    <!-- محصولات -->
+    <div class="space-y-2">
+      <button
+        v-for="product in selectableProducts"
+        :key="product.id"
+        class="flex w-full items-center justify-between rounded-xl border p-3 text-right hover:border-brand-300 hover:bg-brand-50"
+        :class="
+          selectedProductIds.includes(product.id)
+            ? 'border-brand-500 bg-brand-50'
+            : product.compatibility?.status === 'compatible'
+              ? 'border-emerald-200 bg-emerald-50/40'
+              : 'border-black/7'
+        "
+        @click="toggleSelection(selectedProductIds, product.id)"
+      >
+        <div class="min-w-0">
+          <div class="flex flex-wrap items-center gap-2">
+            <strong class="block text-sm">
+              {{ product.displayName }}
+            </strong>
+
+            <span
+              v-if="product.compatibility?.status === 'compatible'"
+              class="badge bg-emerald-100 text-[10px] text-emerald-800"
+            >
+              سازگار
             </span>
           </div>
-          <span :class="selectedProductIds.includes(product.id) ? 'i-lucide-check text-brand-700' : 'i-lucide-plus text-brand-600'" class="h-5 w-5" />
-        </button>
-      </div>
-      <div v-if="pendingProductSuggestions.length" class="mt-3 border-t border-black/7 pt-3">
-        <p class="mb-2 mt-0 text-xs font-800 text-amber-700">محصولات خارج از کاتالوگ در انتظار بررسی</p>
-        <div class="space-y-2">
-          <button
-            v-for="item in pendingProductSuggestions"
-            :key="item.id"
-            class="flex w-full items-center justify-between rounded-xl border p-3 text-right hover:bg-amber-50"
-            :class="selectedPendingProductIds.includes(item.id) ? 'border-brand-500 bg-brand-50' : 'border-amber-200 bg-amber-50/60'"
-            @click="toggleSelection(selectedPendingProductIds, item.id)"
-          >
-            <div><strong class="block text-sm">{{ item.payload.description }}</strong><span class="mt-1 block text-xs text-amber-700/70">قابل استفاده تا زمان بررسی مدیر</span></div>
-            <span :class="selectedPendingProductIds.includes(item.id) ? 'i-lucide-check text-brand-700' : 'i-lucide-plus text-amber-700'" class="h-5 w-5" />
-          </button>
+
+          <span class="mt-1 block text-xs text-ink/40">
+            {{
+              product.shopConfiguration?.salePrice
+                ? money(product.shopConfiguration.salePrice)
+                : 'قیمت تعیین نشده'
+            }}
+
+            <template v-if="productDefaultIntervalKm(product)">
+              · تعویض هر
+              {{ number(productDefaultIntervalKm(product)) }}
+              کیلومتر
+            </template>
+
+            <template v-if="product.attributes?.model">
+              · مدل {{ product.attributes.model }}
+            </template>
+
+            <template v-if="product.attributes?.package_volume">
+              · حجم {{ product.attributes.package_volume }}
+            </template>
+          </span>
         </div>
-      </div>
-      <div class="mt-3 rounded-xl border border-dashed border-black/10 bg-black/[.02] p-3">
-        <p class="m-0 text-xs leading-6 text-ink/50">محصول پیدا نشد؟ مشخصات آن را ثبت کنید تا برای بررسی مدیر ارسال و هم‌زمان به این فاکتور افزوده شود.</p>
-        <button class="btn-ghost mt-2 w-full" @click="openProductSuggestionModal">
-          <span class="i-lucide-lightbulb" />
-          ثبت پیشنهاد محصول
+
+        <span
+          :class="
+            selectedProductIds.includes(product.id)
+              ? 'i-lucide-check text-brand-700'
+              : 'i-lucide-plus text-brand-600'
+          "
+          class="h-5 w-5 shrink-0"
+        />
+      </button>
+    </div>
+
+    <!-- Pending products -->
+    <div
+      v-if="pendingProductSuggestions.length"
+      class="mt-3 border-t border-black/7 pt-3"
+    >
+      <p class="mb-2 mt-0 text-xs font-800 text-amber-700">
+        محصولات خارج از کاتالوگ در انتظار بررسی
+      </p>
+
+      <div class="space-y-2">
+        <button
+          v-for="item in pendingProductSuggestions"
+          :key="item.id"
+          class="flex w-full items-center justify-between rounded-xl border p-3 text-right hover:bg-amber-50"
+          :class="
+            selectedPendingProductIds.includes(item.id)
+              ? 'border-brand-500 bg-brand-50'
+              : 'border-amber-200 bg-amber-50/60'
+          "
+          @click="toggleSelection(selectedPendingProductIds, item.id)"
+        >
+          <div class="min-w-0">
+            <strong class="block text-sm">
+              {{ item.payload.description }}
+            </strong>
+
+            <span class="mt-1 block text-xs text-amber-700/70">
+              قابل استفاده تا زمان بررسی مدیر
+            </span>
+          </div>
+
+          <span
+            :class="
+              selectedPendingProductIds.includes(item.id)
+                ? 'i-lucide-check text-brand-700'
+                : 'i-lucide-plus text-amber-700'
+            "
+            class="h-5 w-5 shrink-0"
+          />
         </button>
       </div>
-      <div class="mt-4 flex justify-end">
-        <button class="btn-primary" @click="confirmProducts">تأیید و افزودن</button>
-      </div>
-    </AppModal>
+    </div>
+
+    <!-- پیشنهاد محصول -->
+    <div
+      class="mt-3 rounded-xl border border-dashed border-black/10 bg-black/[.02] p-3"
+    >
+      <p class="m-0 text-xs leading-6 text-ink/50">
+        محصول پیدا نشد؟ مشخصات آن را ثبت کنید تا برای بررسی مدیر ارسال و
+        هم‌زمان به این فاکتور افزوده شود.
+      </p>
+
+      <button
+        class="btn-ghost mt-2 w-full"
+        @click="openProductSuggestionModal"
+      >
+        <span class="i-lucide-lightbulb" />
+        ثبت پیشنهاد محصول
+      </button>
+    </div>
+  </div>
+
+  <!-- Footer: ثابت پایین -->
+  <div
+    class="shrink-0 border-t border-black/7 bg-surface pt-3"
+  >
+    <button
+      class="btn-primary w-full"
+      @click="confirmProducts"
+    >
+      تأیید و افزودن
+    </button>
+  </div>
+</AppModal>
 
     <AppModal
       :open="showProductSuggestion"

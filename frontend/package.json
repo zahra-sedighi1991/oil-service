@@ -12,6 +12,7 @@
   "dependencies": {
     "@nuxtjs/color-mode": "^3.5.2",
     "@unocss/nuxt": "^66.5.4",
+    "modern-screenshot": "4.6.6",
     "nuxt": "^4.1.2",
     "unocss": "^66.5.4",
     "vue": "^3.5.21",
