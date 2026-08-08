@@ -19,7 +19,8 @@ const sharing = ref(false)
 const openingMessenger = ref<'telegram' | 'eitaa' | null>(null)
 const generationFailed = ref(false)
 let generationId = 0
-let eitaaFallbackTimer: ReturnType<typeof setTimeout> | undefined
+let messengerFallbackTimer: ReturnType<typeof setTimeout> | undefined
+let removeMessengerVisibilityListener: (() => void) | undefined
 const supportsNativeShare = computed(() => import.meta.client && typeof navigator.share === 'function')
 const imageFileName = computed(() => `service-${props.card?.invoiceNo || 'card'}.png`.replace(/[^a-zA-Z0-9._-]/g, '-'))
 const customerPhone = computed(() => normalizeInternationalPhone(props.customerMobile))
@@ -43,7 +44,7 @@ watch(() => props.open, async (open) => {
 
 onBeforeUnmount(() => {
   clearGeneratedImage()
-  if (eitaaFallbackTimer) clearTimeout(eitaaFallbackTimer)
+  clearMessengerFallback()
 })
 
 function clearGeneratedImage() {
@@ -100,46 +101,44 @@ function normalizeInternationalPhone(value?: string) {
   return /^989\d{9}$/.test(digits) ? digits : ''
 }
 
-async function copyImageForMessenger() {
-  if (!imageBlob.value || !window.isSecureContext || !navigator.clipboard?.write || typeof ClipboardItem === 'undefined') return false
-  try {
-    await navigator.clipboard.write([
-      new ClipboardItem({ 'image/png': imageBlob.value })
-    ])
-    return true
-  } catch {
-    return false
-  }
+function clearMessengerFallback() {
+  if (messengerFallbackTimer) clearTimeout(messengerFallbackTimer)
+  messengerFallbackTimer = undefined
+  removeMessengerVisibilityListener?.()
+  removeMessengerVisibilityListener = undefined
 }
 
-function openEitaaWithFallback(url: string) {
+function openMessengerWithFallback(appUrl: string, fallbackUrl: string) {
+  clearMessengerFallback()
   let appOpened = false
   const onVisibilityChange = () => {
     if (document.hidden) appOpened = true
   }
   document.addEventListener('visibilitychange', onVisibilityChange)
-  window.location.href = url
-  eitaaFallbackTimer = setTimeout(() => {
-    document.removeEventListener('visibilitychange', onVisibilityChange)
-    if (!appOpened && !document.hidden) window.location.href = 'https://web.eitaa.com/'
+  removeMessengerVisibilityListener = () => document.removeEventListener('visibilitychange', onVisibilityChange)
+
+  window.location.href = appUrl
+  messengerFallbackTimer = setTimeout(() => {
+    clearMessengerFallback()
+    if (!appOpened && !document.hidden) window.location.href = fallbackUrl
   }, 1800)
 }
 
-async function openCustomerMessenger(messenger: 'telegram' | 'eitaa') {
+function openCustomerMessenger(messenger: 'telegram' | 'eitaa') {
   if (!customerPhone.value || openingMessenger.value) return
   openingMessenger.value = messenger
-  const text = `${props.message}\n${props.url}`
-  const imageCopied = await copyImageForMessenger()
-
-  if (imageBlob.value) {
-    if (imageCopied) toast.success('تصویر کپی شد؛ در گفت‌وگوی مشتری جای‌گذاری کنید.')
-    else toast.info('گفت‌وگوی مشتری باز می‌شود؛ تصویر را با دکمه «اشتراک تصویر» ارسال کنید.')
-  }
+  const text = encodeURIComponent(`${props.message}\n${props.url}`)
 
   if (messenger === 'telegram') {
-    window.location.href = `https://t.me/+${customerPhone.value}?text=${encodeURIComponent(text)}`
+    openMessengerWithFallback(
+      `tg://resolve?phone=${customerPhone.value}&text=${text}`,
+      `https://t.me/+${customerPhone.value}?text=${text}`
+    )
   } else {
-    openEitaaWithFallback(`eitaa://resolve?phone=${customerPhone.value}&text=${encodeURIComponent(text)}`)
+    openMessengerWithFallback(
+      `eitaa://resolve?phone=${customerPhone.value}&text=${text}`,
+      'https://web.eitaa.com/'
+    )
   }
 
   window.setTimeout(() => {
@@ -253,7 +252,7 @@ function downloadImage() {
         </button>
       </div>
       <p class="mb-0 mt-2 text-xs leading-5 text-brand-900/65">
-        متن و لینک داخل گفت‌وگوی این شماره آماده می‌شود. اگر پیام «تصویر کپی شد» را دیدید، تصویر را در چت جای‌گذاری کنید.
+        گفت‌وگوی این شماره باز می‌شود و متن و لینک آماده خواهد بود؛ ارسال نهایی را خودتان انجام دهید.
       </p>
     </div>
     <p v-else-if="customerMobile" class="mb-4 mt-0 rounded-xl bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-800">
