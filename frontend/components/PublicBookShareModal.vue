@@ -17,6 +17,8 @@ const previewUrl = ref('')
 const generatingImage = ref(false)
 const sharing = ref(false)
 const openingMessenger = ref<'telegram' | 'eitaa' | null>(null)
+const showEitaaUsername = ref(false)
+const eitaaUsernameInput = ref('')
 const generationFailed = ref(false)
 let generationId = 0
 let messengerFallbackTimer: ReturnType<typeof setTimeout> | undefined
@@ -24,6 +26,8 @@ let removeMessengerVisibilityListener: (() => void) | undefined
 const supportsNativeShare = computed(() => import.meta.client && typeof navigator.share === 'function')
 const imageFileName = computed(() => `service-${props.card?.invoiceNo || 'card'}.png`.replace(/[^a-zA-Z0-9._-]/g, '-'))
 const customerPhone = computed(() => normalizeInternationalPhone(props.customerMobile))
+const eitaaUsername = computed(() => eitaaUsernameInput.value.trim().replace(/^@+/, ''))
+const isEitaaUsernameValid = computed(() => /^[a-zA-Z0-9_]{6,}$/.test(eitaaUsername.value))
 const supportsImageShare = computed(() => {
   if (!supportsNativeShare.value || !imageBlob.value) return false
   if (typeof navigator.canShare !== 'function') return true
@@ -37,6 +41,8 @@ const supportsImageShare = computed(() => {
 watch(() => props.open, async (open) => {
   if (!open) {
     clearGeneratedImage()
+    showEitaaUsername.value = false
+    eitaaUsernameInput.value = ''
     return
   }
   if (props.card) await generateImage()
@@ -124,26 +130,42 @@ function openMessengerWithFallback(appUrl: string, fallbackUrl: string) {
   }, 1800)
 }
 
-function openCustomerMessenger(messenger: 'telegram' | 'eitaa') {
+function openTelegramCustomer() {
   if (!customerPhone.value || openingMessenger.value) return
-  openingMessenger.value = messenger
+  openingMessenger.value = 'telegram'
   const text = encodeURIComponent(`${props.message}\n${props.url}`)
 
-  if (messenger === 'telegram') {
-    openMessengerWithFallback(
-      `tg://resolve?phone=${customerPhone.value}&text=${text}`,
-      `https://t.me/+${customerPhone.value}?text=${text}`
-    )
-  } else {
-    openMessengerWithFallback(
-      `eitaa://resolve?phone=${customerPhone.value}&text=${text}`,
-      'https://web.eitaa.com/'
-    )
-  }
+  openMessengerWithFallback(
+    `tg://resolve?phone=${customerPhone.value}&text=${text}`,
+    `https://t.me/+${customerPhone.value}?text=${text}`
+  )
 
   window.setTimeout(() => {
     openingMessenger.value = null
   }, 2500)
+}
+
+function openEitaaCustomer() {
+  if (!isEitaaUsernameValid.value || openingMessenger.value) return
+  openingMessenger.value = 'eitaa'
+  const username = encodeURIComponent(eitaaUsername.value)
+  const text = encodeURIComponent(`${props.message}\n${props.url}`)
+
+  openMessengerWithFallback(
+    `eitaa://resolve?domain=${username}&text=${text}`,
+    `https://eitaa.com/${username}?text=${text}`
+  )
+
+  window.setTimeout(() => {
+    openingMessenger.value = null
+  }, 2500)
+}
+
+function openSmsComposer() {
+  if (!customerPhone.value || openingMessenger.value) return
+  clearMessengerFallback()
+  const text = encodeURIComponent(`${props.message}\n${props.url}`)
+  window.location.href = `sms:+${customerPhone.value}?body=${text}`
 }
 
 async function shareImage() {
@@ -229,12 +251,12 @@ function downloadImage() {
         </div>
         <span class="i-lucide-message-circle h-5 w-5 shrink-0 text-brand-700" />
       </div>
-      <div class="grid grid-cols-2 gap-2">
+      <div class="grid gap-2 sm:grid-cols-3">
         <button
           type="button"
           class="btn-secondary w-full border-sky-200 bg-white text-sky-700"
           :disabled="Boolean(openingMessenger)"
-          @click="openCustomerMessenger('telegram')"
+          @click="openTelegramCustomer"
         >
           <span v-if="openingMessenger === 'telegram'" class="i-lucide-loader-circle h-5 w-5 animate-spin" />
           <span v-else class="i-lucide-send h-5 w-5" />
@@ -244,15 +266,57 @@ function downloadImage() {
           type="button"
           class="btn-secondary w-full border-orange-200 bg-white text-orange-700"
           :disabled="Boolean(openingMessenger)"
-          @click="openCustomerMessenger('eitaa')"
+          @click="showEitaaUsername = !showEitaaUsername"
         >
           <span v-if="openingMessenger === 'eitaa'" class="i-lucide-loader-circle h-5 w-5 animate-spin" />
           <span v-else class="i-lucide-message-square-share h-5 w-5" />
-          ایتا مشتری
+          ایتا
+        </button>
+        <button
+          type="button"
+          class="btn-secondary w-full border-emerald-200 bg-white text-emerald-700"
+          :disabled="Boolean(openingMessenger)"
+          @click="openSmsComposer"
+        >
+          <span class="i-lucide-message-square-text h-5 w-5" />
+          پیامک
         </button>
       </div>
+
+      <div v-if="showEitaaUsername" class="mt-3 rounded-xl border border-orange-200 bg-white p-3">
+        <label for="eitaa-username" class="mb-1.5 block text-xs font-700 text-orange-900">نام کاربری ایتای مشتری</label>
+        <div class="flex flex-col gap-2 sm:flex-row">
+          <input
+            id="eitaa-username"
+            v-model="eitaaUsernameInput"
+            class="input flex-1"
+            dir="ltr"
+            maxlength="64"
+            placeholder="username یا @username"
+            autocomplete="off"
+            @keyup.enter="openEitaaCustomer"
+          >
+          <button
+            type="button"
+            class="btn-secondary border-orange-200 text-orange-700"
+            :disabled="!isEitaaUsernameValid || Boolean(openingMessenger)"
+            @click="openEitaaCustomer"
+          >
+            <span v-if="openingMessenger === 'eitaa'" class="i-lucide-loader-circle h-5 w-5 animate-spin" />
+            <span v-else class="i-lucide-external-link h-5 w-5" />
+            باز کردن گفت‌وگو
+          </button>
+        </div>
+        <p v-if="eitaaUsernameInput && !isEitaaUsernameValid" class="mb-0 mt-1.5 text-xs text-danger">
+          نام کاربری باید حداقل ۶ کاراکتر و شامل حروف انگلیسی، عدد یا زیرخط باشد.
+        </p>
+        <button type="button" class="btn-ghost mt-2 text-xs text-ink/55" @click="openSmsComposer">
+          مشتری نام کاربری ایتا ندارد؟ ارسال با پیامک
+        </button>
+      </div>
+
       <p class="mb-0 mt-2 text-xs leading-5 text-brand-900/65">
-        گفت‌وگوی این شماره باز می‌شود و متن و لینک آماده خواهد بود؛ ارسال نهایی را خودتان انجام دهید.
+        تلگرام با شماره مشتری باز می‌شود. برای ایتا نام کاربری را وارد کنید؛ اگر هیچ‌کدام در دسترس نیست، پیامک را انتخاب کنید.
       </p>
     </div>
     <p v-else-if="customerMobile" class="mb-4 mt-0 rounded-xl bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-800">
