@@ -105,6 +105,13 @@ export interface Invoice {
     serviceDate: string
     customer: Customer
     vehicle: Vehicle
+    productLines?: Array<{
+      dueOdometer?: number | null
+      snapshot: {
+        displayName?: string
+        description?: string
+      }
+    }>
   }
   lines: Array<{
     id: string

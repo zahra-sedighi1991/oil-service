@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import type { Invoice } from '~/types/api'
+import type { Invoice, Shop } from '~/types/api'
+import type { ServiceShareCardData } from '~/types/share'
 
 definePageMeta({ middleware: 'auth' })
 const route = useRoute()
@@ -7,13 +8,47 @@ const api = useApi()
 const toast = useToast()
 const { money, number, dateTime, errorMessage } = useFormat()
 const { data: invoice } = await useAsyncData(`invoice-${route.params.id}`, () => api.get<Invoice>(`/invoices/${route.params.id}`))
+const { data: shop } = await useAsyncData('shop-profile', () => api.get<Shop>('/shop/profile'))
 const showShare = ref(false)
 const preparingShare = ref(false)
 const publicToken = ref('')
 const publicBookUrl = computed(() => publicToken.value && import.meta.client
   ? `${window.location.origin}/public/service-book/${publicToken.value}`
   : '')
-const shareMessage = computed(() => `دفترچه سرویس خودرو${invoice.value?.order?.customer?.name ? `ی ${invoice.value.order.customer.name}` : ''}`)
+const shareCustomerName = computed(() => {
+  const name = invoice.value?.order?.customer?.name?.trim()
+  return name && name !== 'مشتری بدون نام' ? name : undefined
+})
+const shareMessage = computed(() => `دفترچه سرویس خودرو${shareCustomerName.value ? `ی ${shareCustomerName.value}` : ''}`)
+const invoiceShareCard = computed<ServiceShareCardData | undefined>(() => {
+  const currentInvoice = invoice.value
+  const order = currentInvoice?.order
+  if (!currentInvoice || !order) return undefined
+
+  const nextDue = [...(order.productLines ?? [])]
+    .filter(line => line.dueOdometer !== null && line.dueOdometer !== undefined)
+    .sort((a, b) => Number(a.dueOdometer) - Number(b.dueOdometer))[0]
+
+  return {
+    shopName: shop.value?.name || 'روغن‌یار',
+    shopCity: shop.value?.city,
+    shopPhone: shop.value?.publicPhone,
+    customerName: shareCustomerName.value,
+    odometer: order.odometer,
+    nextDueOdometer: nextDue?.dueOdometer ?? undefined,
+    nextDueItem: nextDue?.snapshot.displayName || nextDue?.snapshot.description,
+    invoiceNo: currentInvoice.invoiceNo,
+    totalAmount: Number(currentInvoice.totalAmount),
+    currency: currentInvoice.currency || shop.value?.currency,
+    serviceDate: order.serviceDate || currentInvoice.issuedAt,
+    products: currentInvoice.lines
+      .filter(line => line.itemType === 'product')
+      .map(line => ({ description: line.descriptionSnapshot, totalAmount: Number(line.total) })),
+    services: currentInvoice.lines
+      .filter(line => line.itemType === 'service')
+      .map(line => ({ description: line.descriptionSnapshot, totalAmount: Number(line.total) }))
+  }
+})
 useHead({ title: () => invoice.value ? `فاکتور ${invoice.value.invoiceNo}` : 'فاکتور' })
 function printInvoice() {
   window.print()
@@ -45,7 +80,7 @@ async function openShare() {
         <button class="btn-secondary" :disabled="preparingShare" @click="openShare">
           <span v-if="preparingShare" class="i-lucide-loader-circle h-4 w-4 animate-spin" />
           <span v-else class="i-lucide-share-2 h-4 w-4" />
-          {{ preparingShare ? 'آماده‌سازی...' : 'ارسال لینک' }}
+          {{ preparingShare ? 'آماده‌سازی...' : 'اشتراک‌گذاری' }}
         </button>
         <button class="btn-secondary" @click="printInvoice"><span class="i-lucide-printer h-4 w-4" />چاپ فاکتور</button>
       </div>
@@ -76,6 +111,7 @@ async function openShare() {
       :open="showShare"
       :url="publicBookUrl"
       :message="shareMessage"
+      :card="invoiceShareCard"
       :customer-mobile="invoice.order?.customer?.mobileNormalized"
       @close="showShare = false"
     />

@@ -22,7 +22,14 @@ export class BillingService {
   async get(shopId: string, id: string) {
     const invoice = await this.invoices.findOne({
       where: { id, shopId },
-      relations: { lines: true, order: { customer: true, vehicle: { brand: true, model: true } } },
+      relations: {
+        lines: true,
+        order: {
+          customer: true,
+          vehicle: { brand: true, model: true },
+          productLines: true,
+        },
+      },
     });
     if (!invoice) throw new NotFoundException('فاکتور یافت نشد.');
     return invoice;
