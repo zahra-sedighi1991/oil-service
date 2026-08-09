@@ -60,7 +60,12 @@ const filtered = computed(() => {
           </div>
         </NuxtLink>
       </div>
-      <AppEmptyState v-else icon="i-lucide-receipt" title="فاکتوری وجود ندارد" description="پس از نهایی‌سازی سرویس، فاکتور اینجا ظاهر می‌شود." />
+      <AppEmptyState
+        v-else
+        icon="i-lucide-receipt"
+        :title="search.trim() ? 'فاکتوری با این مشخصات پیدا نشد' : 'فاکتوری وجود ندارد'"
+        :description="search.trim() ? 'نام، موبایل، پلاک یا شماره فاکتور دیگری را جست‌وجو کنید.' : 'پس از نهایی‌سازی سرویس، فاکتور اینجا ظاهر می‌شود.'"
+      />
     </section>
   </div>
 </template>
