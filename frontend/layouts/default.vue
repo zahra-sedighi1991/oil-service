@@ -18,6 +18,9 @@ const adminNav = [
   { label: 'پیشنهادها', to: '/admin/suggestions', icon: 'i-lucide-lightbulb' }
 ]
 const nav = computed(() => isAdmin.value ? adminNav : shopNav)
+const mobileNav = computed(() => isAdmin.value
+  ? adminNav
+  : shopNav.filter(item => ['/', '/service-orders/new', '/customers', '/invoices'].includes(item.to)))
 
 onMounted(restoreUser)
 watch(() => route.fullPath, () => { mobileMenu.value = false })
@@ -84,8 +87,11 @@ watch(() => route.fullPath, () => { mobileMenu.value = false })
       </div>
     </main>
 
-    <nav class="fixed inset-x-3 bottom-3 z-40 grid grid-cols-4 rounded-2xl border border-black/8 bg-white/94 p-1.5 shadow-2xl backdrop-blur-xl lg:hidden">
-      <NuxtLink v-for="item in nav.slice(0, 4)" :key="item.to" :to="item.to" class="flex flex-col items-center gap-1 rounded-xl py-2 text-[10px] font-700 text-ink/45 no-underline" active-class="!bg-brand-50 !text-brand-700">
+    <nav
+      class="fixed inset-x-3 bottom-3 z-40 grid rounded-2xl border border-black/8 bg-white/94 p-1.5 shadow-2xl backdrop-blur-xl lg:hidden"
+      :class="mobileNav.length === 3 ? 'grid-cols-3' : 'grid-cols-4'"
+    >
+      <NuxtLink v-for="item in mobileNav" :key="item.to" :to="item.to" class="flex flex-col items-center gap-1 rounded-xl py-2 text-[10px] font-700 text-ink/45 no-underline" active-class="!bg-brand-50 !text-brand-700">
         <span class="h-5 w-5" :class="item.icon" />
         {{ item.label.replace(' و خودروها', '') }}
       </NuxtLink>
