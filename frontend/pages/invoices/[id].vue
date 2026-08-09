@@ -138,6 +138,10 @@ async function cancelInvoice() {
           </table>
         </div>
         <div class="mr-auto mt-7 max-w-sm rounded-2xl bg-brand-50 p-5">
+          <div v-if="Number(invoice.discountAmount) > 0" class="mb-3 space-y-2 border-b border-brand-200 pb-3 text-sm">
+            <div class="flex items-center justify-between text-ink/55"><span>جمع اقلام</span><span>{{ money(Number(invoice.totalAmount) + Number(invoice.discountAmount), invoice.currency) }}</span></div>
+            <div class="flex items-center justify-between text-red-700"><span>تخفیف</span><span>− {{ money(invoice.discountAmount, invoice.currency) }}</span></div>
+          </div>
           <div class="flex items-center justify-between"><span class="font-800 text-brand-900">جمع نهایی</span><strong class="text-xl font-800 text-brand-800">{{ money(invoice.totalAmount, invoice.currency) }}</strong></div>
         </div>
       </div>

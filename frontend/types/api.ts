@@ -97,6 +97,9 @@ export interface Dashboard {
 export interface Invoice {
   id: string
   invoiceNo: string
+  productsTotal: string
+  servicesTotal: string
+  discountAmount: string
   totalAmount: string
   currency: string
   issuedAt: string
