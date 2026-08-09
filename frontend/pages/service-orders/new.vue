@@ -146,8 +146,14 @@ const pendingServiceSuggestions = computed(() => (pendingSuggestions.value || []
 const canCreateVehicle = computed(() => Boolean(
   selectedCustomer.value
   && vehicleForm.modelId
-  && !plateIncomplete.value
 ))
+
+function formattedOdometer(value: unknown) {
+  if (value === '' || value === undefined || value === null) return ''
+  const numericValue = Number(value)
+  return Number.isFinite(numericValue) ? `${number(numericValue)} کیلومتر` : ''
+}
+
 let odometerRequest = 0
 
 watch(step, async () => {
@@ -265,6 +271,8 @@ function openVehicleModal() {
 
 async function createVehicle() {
   if (!selectedCustomer.value) return
+  if (!vehicleForm.modelId) return toast.error('مدل خودرو را انتخاب کنید.')
+  if (plateIncomplete.value) return toast.error('پلاک را کامل وارد کنید یا همه بخش‌های آن را خالی بگذارید.')
   savingVehicle.value = true
   try {
     const created = await api.post<Vehicle>('/vehicles', {
@@ -655,6 +663,9 @@ async function startNextService() {
           <div class="mt-5">
             <label class="label">کیلومتر فعلی</label>
             <input v-model.number="odometer" type="number" min="0" class="field text-left" dir="ltr" placeholder="126500">
+            <p v-if="formattedOdometer(odometer)" class="mb-0 mt-1 text-xs text-ink/45">
+              {{ formattedOdometer(odometer) }}
+            </p>
             <p v-if="loadingSuggestedOdometer" class="mb-0 mt-2 text-xs text-ink/40">در حال دریافت موعد سرویس قبلی…</p>
             <div v-else-if="suggestedOdometer" class="mt-2 rounded-xl bg-emerald-50 px-3 py-2 text-xs leading-6 text-emerald-800">
               موعد محاسبه‌شده از سرویس قبلی: <strong>{{ number(suggestedOdometer) }} کیلومتر</strong>
@@ -1056,12 +1067,15 @@ async function startNextService() {
       <form class="grid gap-4 sm:grid-cols-2" @submit.prevent="createVehicle">
         <VehicleModelPicker v-model="vehicleForm.modelId" :models="vehicleModels || []" class="sm:col-span-2" />
         <div class="sm:col-span-2">
-          <label class="label">پلاک خودرو <span class="font-400 text-ink/40">(اختیاری)</span></label>
-          <IranianPlateInput v-model="vehicleForm.plate" @incomplete-change="plateIncomplete = $event" />
+          <label class="label">کیلومتر فعلی</label>
+          <input v-model.number="vehicleForm.lastOdometer" type="number" min="0" class="field text-left" dir="ltr" placeholder="126500">
+          <p v-if="formattedOdometer(vehicleForm.lastOdometer)" class="mb-0 mt-1 text-xs text-ink/45">
+            {{ formattedOdometer(vehicleForm.lastOdometer) }}
+          </p>
         </div>
         <div class="sm:col-span-2">
-          <label class="label">کیلومتر فعلی</label>
-          <input v-model.number="vehicleForm.lastOdometer" type="number" min="0" class="field">
+          <label class="label">پلاک خودرو <span class="font-400 text-ink/40">(اختیاری)</span></label>
+          <IranianPlateInput v-model="vehicleForm.plate" @incomplete-change="plateIncomplete = $event" />
         </div>
         <div class="flex justify-end gap-2 pt-2 sm:col-span-2">
           <button type="button" class="btn-ghost" @click="showVehicle = false">انصراف</button>
