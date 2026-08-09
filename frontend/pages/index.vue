@@ -36,7 +36,7 @@ const stats = computed(() => [
             <span class="h-5 w-5" :class="stat.icon" />
           </span>
           <span v-if="pending" class="h-5 w-12 animate-pulse rounded bg-black/6" />
-          <strong class="block text-2xl font-800 sm:text-3xl">{{ number(stat.value) }}</strong>
+          <strong v-else class="block text-2xl font-800 sm:text-3xl">{{ number(stat.value) }}</strong>
         </div>
         <span class="mt-1 block text-xs leading-5 text-ink/45 sm:text-sm">{{ stat.label }}</span>
       </article>
