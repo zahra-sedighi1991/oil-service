@@ -318,7 +318,7 @@ function downloadImage(showToast = true) {
           <input
             id="eitaa-username"
             v-model="eitaaUsernameInput"
-            class="input flex-1"
+            class="field flex-1"
             dir="ltr"
             maxlength="64"
             placeholder="username یا @username"
