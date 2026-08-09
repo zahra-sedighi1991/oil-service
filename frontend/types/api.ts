@@ -25,6 +25,7 @@ export interface Shop {
 export interface Vehicle {
   id: string
   ownerCustomerId: string
+  plateNormalized?: string
   plateDisplay?: string
   temporaryIdentifier?: string
   year?: number
