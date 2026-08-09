@@ -62,6 +62,7 @@ const odometer = ref<number | undefined>()
 const suggestedOdometer = ref<number | undefined>()
 const loadingSuggestedOdometer = ref(false)
 const note = ref('')
+const discountAmount = ref(0)
 const products = ref<ProductLine[]>([])
 const services = ref<LaborLine[]>([])
 const showProduct = ref(false)
@@ -137,6 +138,7 @@ const { data: shop } = await useAsyncData('shop-profile', () => api.get<Shop>('/
 const productTotal = computed(() => products.value.reduce((sum, line) => sum + line.quantity * line.unitPrice, 0))
 const serviceTotal = computed(() => services.value.reduce((sum, line) => sum + line.quantity * line.unitFee, 0))
 const grandTotal = computed(() => productTotal.value + serviceTotal.value)
+const payableTotal = computed(() => Math.max(0, grandTotal.value - Number(discountAmount.value || 0)))
 const pendingProductSuggestions = computed(() => {
   const search = productSearch.value.trim().toLocaleLowerCase('fa')
   return (pendingSuggestions.value || []).filter((item) => {
@@ -514,7 +516,7 @@ function showCompletion(result: CompletionResult) {
 async function finalizePendingOrder() {
   const result = await api.post<CompletionResult>(
     `/service-orders/${pendingOrderId.value}/complete`,
-    { discountAmount: 0 },
+    { discountAmount: discountAmount.value },
     { 'Idempotency-Key': completionKey.value }
   )
   showCompletion(result)
@@ -523,6 +525,12 @@ async function finalizePendingOrder() {
 async function completeOrder() {
   const payload = orderPayload()
   if (!payload) return
+  if (!Number.isInteger(discountAmount.value) || discountAmount.value < 0) {
+    return toast.error('مبلغ تخفیف را به‌صورت عدد صحیح وارد کنید.')
+  }
+  if (discountAmount.value > grandTotal.value) {
+    return toast.error('تخفیف نمی‌تواند بیشتر از جمع فاکتور باشد.')
+  }
   submitting.value = true
   try {
     const snapshot = JSON.stringify(payload)
@@ -618,6 +626,7 @@ async function startNextService() {
   odometer.value = undefined
   suggestedOdometer.value = undefined
   note.value = ''
+  discountAmount.value = 0
   products.value = []
   services.value = []
   productSearch.value = ''
@@ -848,7 +857,17 @@ async function startNextService() {
             <div v-for="line in services" :key="line.key" class="flex items-center justify-between gap-3 text-sm"><span class="text-ink/65">{{ line.description }} × {{ number(line.quantity) }}</span><strong>{{ money(line.quantity * line.unitFee) }}</strong></div>
           </div>
           <div class="my-5 border-t border-dashed border-black/10" />
-          <div class="flex items-center justify-between"><span class="font-800">مبلغ نهایی</span><strong class="text-xl font-800 text-brand-700">{{ money(grandTotal) }}</strong></div>
+          <div class="grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
+            <div>
+              <label class="label">تخفیف فاکتور <span class="font-400 text-ink/40">(تومان)</span></label>
+              <input v-model.number="discountAmount" type="number" min="0" :max="grandTotal" class="field text-left" dir="ltr">
+              <p v-if="discountAmount" class="mb-0 mt-1 text-xs text-ink/45">{{ money(discountAmount) }}</p>
+            </div>
+            <div class="rounded-xl bg-brand-50 px-4 py-3 sm:min-w-52">
+              <div v-if="discountAmount" class="mb-1 flex items-center justify-between gap-4 text-xs text-ink/45"><span>جمع اقلام</span><span>{{ money(grandTotal) }}</span></div>
+              <div class="flex items-center justify-between gap-4"><span class="font-800">قابل پرداخت</span><strong class="text-xl font-800 text-brand-700">{{ money(payableTotal) }}</strong></div>
+            </div>
+          </div>
           <div class="mt-5"><label class="label">یادداشت سرویس</label><textarea v-model="note" class="field min-h-24" placeholder="مثلاً بررسی سطح ضدیخ در مراجعه بعد..." /></div>
           <div class="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <button class="btn-ghost" @click="step = 2">بازگشت و ویرایش</button>
