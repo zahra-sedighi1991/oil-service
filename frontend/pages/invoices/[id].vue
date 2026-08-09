@@ -119,7 +119,19 @@ async function cancelInvoice() {
           <div><span class="block text-xs text-ink/40">خودرو</span><strong class="mt-1 block text-sm">{{ invoice.order.vehicle?.brand?.nameFa }} {{ invoice.order.vehicle?.model?.nameFa }}</strong></div>
           <div><span class="block text-xs text-ink/40">کیلومتر</span><strong class="mt-1 block text-sm">{{ number(invoice.order.odometer) }}</strong></div>
         </div>
-        <div class="overflow-x-auto">
+        <div class="space-y-2 sm:hidden">
+          <article v-for="line in invoice.lines" :key="`mobile-${line.id}`" class="rounded-xl border border-black/7 p-3">
+            <div class="flex items-start justify-between gap-3">
+              <strong class="text-sm leading-6">{{ line.descriptionSnapshot }}</strong>
+              <span class="badge shrink-0 bg-black/5 text-[10px] text-ink/55">{{ line.itemType === 'product' ? 'محصول' : 'خدمت' }}</span>
+            </div>
+            <div class="mt-3 flex items-end justify-between gap-3 border-t border-black/5 pt-3">
+              <span class="text-xs text-ink/45">{{ number(line.quantity) }} × {{ money(line.unitPrice, invoice.currency) }}</span>
+              <strong class="text-sm text-brand-800">{{ money(line.total, invoice.currency) }}</strong>
+            </div>
+          </article>
+        </div>
+        <div class="hidden overflow-x-auto sm:block">
           <table class="w-full border-collapse text-sm">
             <thead><tr class="border-b border-black/10 text-right text-xs text-ink/40"><th class="py-3 font-700">شرح</th><th class="py-3 font-700">نوع</th><th class="py-3 text-center font-700">تعداد</th><th class="py-3 text-left font-700">قیمت واحد</th><th class="py-3 text-left font-700">مبلغ</th></tr></thead>
             <tbody><tr v-for="line in invoice.lines" :key="line.id" class="border-b border-black/5"><td class="py-4 font-700">{{ line.descriptionSnapshot }}</td><td class="py-4 text-ink/45">{{ line.itemType === 'product' ? 'محصول' : 'خدمت' }}</td><td class="py-4 text-center">{{ number(line.quantity) }}</td><td class="py-4 text-left">{{ money(line.unitPrice, invoice.currency) }}</td><td class="py-4 text-left font-800">{{ money(line.total, invoice.currency) }}</td></tr></tbody>
