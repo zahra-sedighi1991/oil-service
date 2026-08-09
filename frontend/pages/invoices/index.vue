@@ -6,35 +6,12 @@ useHead({ title: 'فاکتورها' })
 const api = useApi()
 const { money, dateTime } = useFormat()
 const search = ref('')
-const { data: invoices, pending } = await useAsyncData('invoices', () => api.get<Invoice[]>('/invoices'))
-
-function normalizeSearch(value?: string) {
-  const persian = '۰۱۲۳۴۵۶۷۸۹'
-  const arabic = '٠١٢٣٤٥٦٧٨٩'
-  return (value || '')
-    .toLowerCase()
-    .replace(/[۰-۹]/g, digit => String(persian.indexOf(digit)))
-    .replace(/[٠-٩]/g, digit => String(arabic.indexOf(digit)))
-    .replace(/[\s-]/g, '')
-}
-
-const filtered = computed(() => {
-  const query = normalizeSearch(search.value)
-  if (!query) return invoices.value || []
-  return (invoices.value || []).filter((invoice) => {
-    const customer = invoice.order?.customer
-    const vehicle = invoice.order?.vehicle
-    return [
-      invoice.invoiceNo,
-      customer?.name,
-      customer?.mobileDisplay,
-      customer?.mobileNormalized,
-      vehicle?.plateDisplay,
-      vehicle?.plateNormalized,
-      vehicle?.temporaryIdentifier
-    ].some(value => normalizeSearch(value).includes(query))
-  })
-})
+const { data: invoices, pending } = await useAsyncData(
+  'invoices',
+  () => api.get<Invoice[]>('/invoices', search.value.trim() ? { search: search.value.trim() } : undefined),
+  { watch: [search] }
+)
+const filtered = computed(() => invoices.value || [])
 </script>
 
 <template>
