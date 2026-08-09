@@ -81,7 +81,7 @@ watch(() => route.fullPath, () => { mobileMenu.value = false })
       </NuxtLink>
     </header>
 
-    <main class="scroll-container h-[calc(100dvh-4rem)] overflow-y-auto overscroll-contain px-4 pb-24 pt-6 sm:px-6 lg:mr-66 lg:h-dvh lg:px-8 lg:pb-10 lg:pt-8 xl:px-10">
+    <main class="scroll-container h-[calc(100dvh-4rem)] overflow-y-auto overscroll-contain px-4 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-6 sm:px-6 lg:mr-66 lg:h-dvh lg:px-8 lg:pb-10 lg:pt-8 xl:px-10">
       <div class="mx-auto min-h-full max-w-7xl">
         <slot />
       </div>
@@ -90,6 +90,7 @@ watch(() => route.fullPath, () => { mobileMenu.value = false })
     <nav
       class="fixed inset-x-3 bottom-3 z-40 grid rounded-2xl border border-black/8 bg-white/94 p-1.5 shadow-2xl backdrop-blur-xl lg:hidden"
       :class="mobileNav.length === 3 ? 'grid-cols-3' : 'grid-cols-4'"
+      style="bottom: max(0.75rem, env(safe-area-inset-bottom));"
     >
       <NuxtLink v-for="item in mobileNav" :key="item.to" :to="item.to" class="flex flex-col items-center gap-1 rounded-xl py-2 text-[10px] font-700 text-ink/45 no-underline" active-class="!bg-brand-50 !text-brand-700">
         <span class="h-5 w-5" :class="item.icon" />
