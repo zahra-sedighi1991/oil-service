@@ -102,6 +102,7 @@ export interface Invoice {
   issuedAt: string
   status: 'issued' | 'void'
   order?: {
+    id: string
     odometer: number
     serviceDate: string
     customer: Customer

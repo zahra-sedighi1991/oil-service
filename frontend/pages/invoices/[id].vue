@@ -7,10 +7,13 @@ const route = useRoute()
 const api = useApi()
 const toast = useToast()
 const { money, number, dateTime, errorMessage } = useFormat()
-const { data: invoice } = await useAsyncData(`invoice-${route.params.id}`, () => api.get<Invoice>(`/invoices/${route.params.id}`))
+const { data: invoice, refresh } = await useAsyncData(`invoice-${route.params.id}`, () => api.get<Invoice>(`/invoices/${route.params.id}`))
 const { data: shop } = await useAsyncData('shop-profile', () => api.get<Shop>('/shop/profile'))
 const showShare = ref(false)
+const showCancel = ref(false)
 const preparingShare = ref(false)
+const canceling = ref(false)
+const cancellationReason = ref('')
 const publicToken = ref('')
 const publicBookUrl = computed(() => publicToken.value && import.meta.client
   ? `${window.location.origin}/public/service-book/${publicToken.value}`
@@ -70,19 +73,39 @@ async function openShare() {
     preparingShare.value = false
   }
 }
+
+async function cancelInvoice() {
+  const orderId = invoice.value?.order?.id
+  const reason = cancellationReason.value.trim()
+  if (!orderId) return toast.error('سرویس این فاکتور یافت نشد.')
+  if (!reason) return toast.error('دلیل ابطال را وارد کنید.')
+  canceling.value = true
+  try {
+    await api.post(`/service-orders/${orderId}/cancel`, { reason })
+    showCancel.value = false
+    cancellationReason.value = ''
+    toast.success('فاکتور باطل و سابقه کیلومتر خودرو اصلاح شد.')
+    await refresh()
+  } catch (error) {
+    toast.error(errorMessage(error))
+  } finally {
+    canceling.value = false
+  }
+}
 </script>
 
 <template>
   <div v-if="invoice" class="mx-auto max-w-4xl">
-    <div class="mb-5 flex items-center justify-between print:hidden">
+    <div class="mb-5 flex flex-col gap-3 print:hidden sm:flex-row sm:items-center sm:justify-between">
       <NuxtLink to="/invoices" class="inline-flex items-center gap-1 text-sm text-ink/50 no-underline"><span class="i-lucide-arrow-right" />بازگشت</NuxtLink>
-      <div class="flex flex-wrap justify-end gap-2">
-        <button class="btn-secondary" :disabled="preparingShare" @click="openShare">
+      <div class="grid gap-2 sm:flex sm:flex-wrap sm:justify-end" :class="invoice.status === 'issued' ? 'grid-cols-3' : 'grid-cols-1'">
+        <button v-if="invoice.status === 'issued'" class="btn-secondary px-2 sm:px-4" :disabled="preparingShare" @click="openShare">
           <span v-if="preparingShare" class="i-lucide-loader-circle h-4 w-4 animate-spin" />
           <span v-else class="i-lucide-share-2 h-4 w-4" />
-          {{ preparingShare ? 'آماده‌سازی...' : 'اشتراک‌گذاری' }}
+          {{ preparingShare ? 'آماده…' : 'اشتراک' }}
         </button>
-        <button class="btn-secondary" @click="printInvoice"><span class="i-lucide-printer h-4 w-4" />چاپ فاکتور</button>
+        <button class="btn-secondary px-2 sm:px-4" @click="printInvoice"><span class="i-lucide-printer h-4 w-4" />چاپ</button>
+        <button v-if="invoice.status === 'issued'" class="btn-secondary border-red-200 px-2 text-red-700 sm:px-4" @click="showCancel = true"><span class="i-lucide-ban h-4 w-4" />ابطال</button>
       </div>
     </div>
     <article class="card overflow-hidden bg-white">
@@ -115,6 +138,26 @@ async function openShare() {
       :customer-mobile="invoice.order?.customer?.mobileNormalized"
       @close="showShare = false"
     />
+    <AppModal
+      :open="showCancel"
+      title="ابطال فاکتور"
+      description="این فاکتور از سوابق معتبر حذف و کیلومتر خودرو بر اساس آخرین سرویس معتبر اصلاح می‌شود."
+      @close="showCancel = false"
+    >
+      <form class="space-y-4" @submit.prevent="cancelInvoice">
+        <div>
+          <label class="label">دلیل ابطال</label>
+          <textarea v-model="cancellationReason" class="field min-h-24 resize-y" placeholder="مثلاً کیلومتر یا اقلام اشتباه ثبت شده است" required />
+        </div>
+        <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <button type="button" class="btn-ghost" :disabled="canceling" @click="showCancel = false">انصراف</button>
+          <button class="btn-primary !bg-red-600 hover:!bg-red-700" :disabled="canceling">
+            <span v-if="canceling" class="i-lucide-loader-circle h-4 w-4 animate-spin" />
+            {{ canceling ? 'در حال ابطال…' : 'تأیید ابطال' }}
+          </button>
+        </div>
+      </form>
+    </AppModal>
   </div>
 </template>
 
