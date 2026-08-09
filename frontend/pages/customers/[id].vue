@@ -7,12 +7,20 @@ const api = useApi()
 const toast = useToast()
 const { number, errorMessage } = useFormat()
 const showVehicle = ref(false)
+const showCustomerEdit = ref(false)
 const saving = ref(false)
+const savingCustomer = ref(false)
 const plateIncomplete = ref(false)
 const vehicleForm = reactive({
   modelId: '',
   plate: '',
   lastOdometer: undefined as number | undefined
+})
+const customerForm = reactive({
+  name: '',
+  mobile: '',
+  gender: 'male' as 'male' | 'female',
+  note: ''
 })
 const canCreateVehicle = computed(() => Boolean(
   vehicleForm.modelId
@@ -32,6 +40,36 @@ function openVehicleModal() {
   plateIncomplete.value = false
   vehicleForm.lastOdometer = undefined
   showVehicle.value = true
+}
+
+function openCustomerEdit() {
+  if (!customer.value) return
+  Object.assign(customerForm, {
+    name: customer.value.name === 'مشتری بدون نام' ? '' : customer.value.name,
+    mobile: customer.value.mobileNormalized,
+    gender: customer.value.gender,
+    note: customer.value.note || ''
+  })
+  showCustomerEdit.value = true
+}
+
+async function updateCustomer() {
+  savingCustomer.value = true
+  try {
+    await api.patch(`/customers/${route.params.id}`, {
+      name: customerForm.name.trim(),
+      mobile: customerForm.mobile.trim(),
+      gender: customerForm.gender,
+      note: customerForm.note.trim()
+    })
+    showCustomerEdit.value = false
+    toast.success('مشخصات مشتری به‌روز شد.')
+    await refresh()
+  } catch (error) {
+    toast.error(errorMessage(error))
+  } finally {
+    savingCustomer.value = false
+  }
 }
 
 function formattedOdometer(value: unknown) {
@@ -101,14 +139,24 @@ async function createVehicle() {
       </div>
     </div>
 
-    <button
-      type="button"
-      class="btn-primary flex h-9 shrink-0 items-center justify-center gap-1.5 px-3 text-sm"
-      @click="openVehicleModal"
-    >
-      <span class="i-lucide-plus h-4 w-4" />
-      <span>افزودن خودرو</span>
-    </button>
+    <div class="grid grid-cols-2 gap-2 sm:flex sm:shrink-0">
+      <button
+        type="button"
+        class="btn-secondary flex h-10 items-center justify-center gap-1.5 px-3 text-sm"
+        @click="openCustomerEdit"
+      >
+        <span class="i-lucide-user-pen h-4 w-4" />
+        <span>ویرایش مشتری</span>
+      </button>
+      <button
+        type="button"
+        class="btn-primary flex h-10 items-center justify-center gap-1.5 px-3 text-sm"
+        @click="openVehicleModal"
+      >
+        <span class="i-lucide-plus h-4 w-4" />
+        <span>افزودن خودرو</span>
+      </button>
+    </div>
   </div>
 
   <!-- Empty State -->
@@ -236,7 +284,47 @@ async function createVehicle() {
     </button>
   </div>
 
-  <!-- Modal -->
+  <AppModal
+    :open="showCustomerEdit"
+    title="ویرایش مشتری"
+    description="نام، شماره تماس و یادداشت مشتری را اصلاح کنید."
+    @close="showCustomerEdit = false"
+  >
+    <form class="space-y-4" @submit.prevent="updateCustomer">
+      <div>
+        <label class="label">شماره موبایل</label>
+        <input v-model="customerForm.mobile" class="field text-left" dir="ltr" inputmode="tel" autocomplete="tel" required>
+      </div>
+      <div>
+        <label class="label">جنسیت</label>
+        <div class="grid grid-cols-2 gap-2">
+          <label class="flex cursor-pointer items-center justify-center gap-2 rounded-xl border p-3" :class="customerForm.gender === 'male' ? 'border-brand-300 bg-brand-50 text-brand-800' : 'border-black/7'">
+            <input v-model="customerForm.gender" type="radio" value="male" class="accent-brand-600"> آقا
+          </label>
+          <label class="flex cursor-pointer items-center justify-center gap-2 rounded-xl border p-3" :class="customerForm.gender === 'female' ? 'border-brand-300 bg-brand-50 text-brand-800' : 'border-black/7'">
+            <input v-model="customerForm.gender" type="radio" value="female" class="accent-brand-600"> خانم
+          </label>
+        </div>
+      </div>
+      <div>
+        <label class="label">نام و نام خانوادگی <span class="font-400 text-ink/40">(اختیاری)</span></label>
+        <input v-model="customerForm.name" class="field" autocomplete="name">
+      </div>
+      <div>
+        <label class="label">یادداشت <span class="font-400 text-ink/40">(اختیاری)</span></label>
+        <textarea v-model="customerForm.note" class="field min-h-20 resize-y" />
+      </div>
+      <div class="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
+        <button type="button" class="btn-ghost" :disabled="savingCustomer" @click="showCustomerEdit = false">انصراف</button>
+        <button class="btn-primary" :disabled="savingCustomer">
+          <span v-if="savingCustomer" class="i-lucide-loader-circle h-4 w-4 animate-spin" />
+          {{ savingCustomer ? 'در حال ذخیره…' : 'ذخیره تغییرات' }}
+        </button>
+      </div>
+    </form>
+  </AppModal>
+
+  <!-- Vehicle Modal -->
   <AppModal
     :open="showVehicle"
     title="افزودن خودرو"
