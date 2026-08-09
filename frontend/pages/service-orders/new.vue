@@ -134,6 +134,8 @@ const { data: productTypes } = await useAsyncData(
   () => api.get<ProductTypeOption[]>('/catalog/product-types')
 )
 const { data: shop } = await useAsyncData('shop-profile', () => api.get<Shop>('/shop/profile'))
+const shopCurrency = computed(() => shop.value?.currency || 'TOMAN')
+const currencyLabel = computed(() => shopCurrency.value === 'IRR' ? 'ریال' : 'تومان')
 
 const productTotal = computed(() => products.value.reduce((sum, line) => sum + line.quantity * line.unitPrice, 0))
 const serviceTotal = computed(() => services.value.reduce((sum, line) => sum + line.quantity * line.unitFee, 0))
@@ -674,7 +676,7 @@ async function startNextService() {
       <div class="p-6">
         <div class="mb-6 grid grid-cols-2 gap-3">
           <div class="rounded-xl bg-black/3 p-4"><span class="block text-xs text-ink/40">شماره فاکتور</span><strong class="mt-1 block">{{ success.invoiceNo }}</strong></div>
-          <div class="rounded-xl bg-black/3 p-4"><span class="block text-xs text-ink/40">مبلغ نهایی</span><strong class="mt-1 block">{{ money(success.totalAmount) }}</strong></div>
+          <div class="rounded-xl bg-black/3 p-4"><span class="block text-xs text-ink/40">مبلغ نهایی</span><strong class="mt-1 block">{{ money(success.totalAmount, success.currency || shopCurrency) }}</strong></div>
         </div>
         <div class="grid gap-2 sm:grid-cols-3">
           <NuxtLink :to="`/invoices/${success.invoiceId}`" class="btn-primary no-underline">مشاهده فاکتور</NuxtLink>
@@ -784,7 +786,7 @@ async function startNextService() {
               <div>
                 <label class="label">قیمت واحد</label>
                 <input v-model.number="line.unitPrice" type="number" min="0" class="field py-2">
-                <p class="mb-0 mt-1 text-xs text-ink/45">{{ money(line.unitPrice) }}</p>
+                <p class="mb-0 mt-1 text-xs text-ink/45">{{ money(line.unitPrice, shopCurrency) }}</p>
               </div>
               <div>
                 <label class="label">تعویض بعد از (کیلومتر)</label>
@@ -794,7 +796,7 @@ async function startNextService() {
                 </small>
               </div>
             </div>
-            <p class="mb-0 mt-3 text-left text-xs font-800 text-brand-700" dir="rtl">{{ money(line.quantity * line.unitPrice) }}</p>
+            <p class="mb-0 mt-3 text-left text-xs font-800 text-brand-700" dir="rtl">{{ money(line.quantity * line.unitPrice, shopCurrency) }}</p>
           </div>
         </div>
         <AppEmptyState v-else icon="i-lucide-package-open" title="محصولی اضافه نشده" />
@@ -813,10 +815,10 @@ async function startNextService() {
               <div>
                 <label class="label">اجرت واحد</label>
                 <input v-model.number="line.unitFee" type="number" min="0" class="field py-2">
-                <p class="mb-0 mt-1 text-xs text-ink/45">{{ money(line.unitFee) }}</p>
+                <p class="mb-0 mt-1 text-xs text-ink/45">{{ money(line.unitFee, shopCurrency) }}</p>
               </div>
             </div>
-            <p class="mb-0 mt-3 text-left text-xs font-800 text-brand-700" dir="rtl">{{ money(line.quantity * line.unitFee) }}</p>
+            <p class="mb-0 mt-3 text-left text-xs font-800 text-brand-700" dir="rtl">{{ money(line.quantity * line.unitFee, shopCurrency) }}</p>
           </div>
         </div>
         <AppEmptyState v-else icon="i-lucide-wrench" title="خدمتی اضافه نشده" />
@@ -825,7 +827,7 @@ async function startNextService() {
       <div class="fixed inset-x-3 bottom-[5.5rem] z-30 flex flex-col gap-3 rounded-2xl border border-black/8 bg-white/95 p-3 shadow-[0_16px_45px_rgba(16,32,25,.18)] backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between sm:p-4 lg:sticky lg:inset-x-auto lg:bottom-4 xl:col-span-2">
         <div class="flex items-center justify-between gap-3 sm:block">
           <span class="text-xs text-ink/45 sm:block">جمع فعلی</span>
-          <strong class="text-lg text-ink">{{ money(grandTotal) }}</strong>
+          <strong class="text-lg text-ink">{{ money(grandTotal, shopCurrency) }}</strong>
         </div>
         <div class="grid grid-cols-[auto_1fr] gap-2 sm:flex">
           <button
@@ -853,19 +855,19 @@ async function startNextService() {
         </header>
         <div class="p-5 sm:p-6">
           <div class="space-y-3">
-            <div v-for="line in products" :key="line.key" class="flex items-center justify-between gap-3 text-sm"><span class="text-ink/65">{{ line.description }} × {{ number(line.quantity) }}</span><strong>{{ money(line.quantity * line.unitPrice) }}</strong></div>
-            <div v-for="line in services" :key="line.key" class="flex items-center justify-between gap-3 text-sm"><span class="text-ink/65">{{ line.description }} × {{ number(line.quantity) }}</span><strong>{{ money(line.quantity * line.unitFee) }}</strong></div>
+            <div v-for="line in products" :key="line.key" class="flex items-center justify-between gap-3 text-sm"><span class="text-ink/65">{{ line.description }} × {{ number(line.quantity) }}</span><strong>{{ money(line.quantity * line.unitPrice, shopCurrency) }}</strong></div>
+            <div v-for="line in services" :key="line.key" class="flex items-center justify-between gap-3 text-sm"><span class="text-ink/65">{{ line.description }} × {{ number(line.quantity) }}</span><strong>{{ money(line.quantity * line.unitFee, shopCurrency) }}</strong></div>
           </div>
           <div class="my-5 border-t border-dashed border-black/10" />
           <div class="grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
             <div>
-              <label class="label">تخفیف فاکتور <span class="font-400 text-ink/40">(تومان)</span></label>
+              <label class="label">تخفیف فاکتور <span class="font-400 text-ink/40">({{ currencyLabel }})</span></label>
               <input v-model.number="discountAmount" type="number" min="0" :max="grandTotal" class="field text-left" dir="ltr">
-              <p v-if="discountAmount" class="mb-0 mt-1 text-xs text-ink/45">{{ money(discountAmount) }}</p>
+              <p v-if="discountAmount" class="mb-0 mt-1 text-xs text-ink/45">{{ money(discountAmount, shopCurrency) }}</p>
             </div>
             <div class="rounded-xl bg-brand-50 px-4 py-3 sm:min-w-52">
-              <div v-if="discountAmount" class="mb-1 flex items-center justify-between gap-4 text-xs text-ink/45"><span>جمع اقلام</span><span>{{ money(grandTotal) }}</span></div>
-              <div class="flex items-center justify-between gap-4"><span class="font-800">قابل پرداخت</span><strong class="text-xl font-800 text-brand-700">{{ money(payableTotal) }}</strong></div>
+              <div v-if="discountAmount" class="mb-1 flex items-center justify-between gap-4 text-xs text-ink/45"><span>جمع اقلام</span><span>{{ money(grandTotal, shopCurrency) }}</span></div>
+              <div class="flex items-center justify-between gap-4"><span class="font-800">قابل پرداخت</span><strong class="text-xl font-800 text-brand-700">{{ money(payableTotal, shopCurrency) }}</strong></div>
             </div>
           </div>
           <div class="mt-5"><label class="label">یادداشت سرویس</label><textarea v-model="note" class="field min-h-24" placeholder="مثلاً بررسی سطح ضدیخ در مراجعه بعد..." /></div>
@@ -1002,7 +1004,7 @@ async function startNextService() {
           <span class="mt-1 block text-xs text-ink/40">
             {{
               product.shopConfiguration?.salePrice
-                ? money(product.shopConfiguration.salePrice)
+                ? money(product.shopConfiguration.salePrice, shopCurrency)
                 : 'قیمت تعیین نشده'
             }}
 
