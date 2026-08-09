@@ -67,9 +67,17 @@ async function createVehicle() {
   <!-- Header -->
   <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
     <div class="min-w-0">
+      <NuxtLink
+        to="/customers"
+        class="mb-2 inline-flex items-center gap-1 text-xs font-700 text-brand-700 no-underline"
+      >
+        <span class="i-lucide-chevron-right h-3.5 w-3.5" />
+        <span>بازگشت به مشتریان</span>
+      </NuxtLink>
+
       <div class="flex items-center gap-2">
         <h1 class="m-0 text-lg font-800 text-ink sm:text-xl">
-          خودروهای مشتری
+          {{ customer.name || 'مشتری بدون نام' }}
         </h1>
 
         <span
@@ -80,9 +88,17 @@ async function createVehicle() {
         </span>
       </div>
 
-      <p class="mb-0 mt-1 text-xs text-ink/40 sm:text-sm">
-        خودروهای ثبت‌شده این مشتری
-      </p>
+      <div class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink/45 sm:text-sm">
+        <a
+          :href="`tel:${customer.mobileNormalized}`"
+          class="inline-flex items-center gap-1 text-inherit no-underline hover:text-brand-700"
+          dir="ltr"
+        >
+          <span class="i-lucide-phone h-3.5 w-3.5" />
+          <span>{{ customer.mobileDisplay }}</span>
+        </a>
+        <span>خودروهای ثبت‌شده مشتری</span>
+      </div>
     </div>
 
     <button
