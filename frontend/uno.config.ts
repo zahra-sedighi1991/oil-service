@@ -1,9 +1,13 @@
+import { icons as lucideIcons } from '@iconify-json/lucide'
 import { defineConfig, presetIcons, presetWind4, transformerDirectives } from 'unocss'
 
 export default defineConfig({
   presets: [
     presetWind4(),
     presetIcons({
+      collections: {
+        lucide: () => lucideIcons
+      },
       scale: 1.15,
       warn: true
     })
