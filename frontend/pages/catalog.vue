@@ -176,10 +176,10 @@ async function submitProductSuggestion(value: ProductEditorValue) {
       </div>
     </div>
 
-    <section class="card list-panel">
+    <section class="list-panel">
       <div v-if="tab === 'products'" class="flex min-h-0 flex-1 flex-col">
-        <div v-if="products?.length" class="scroll-container list-scroll divide-y divide-black/5">
-          <div v-for="(product, index) in products" :key="product.id" class="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:px-5">
+        <div v-if="products?.length" class="scroll-container list-scroll card-stack">
+          <div v-for="(product, index) in products" :key="product.id" class="card flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:px-5">
             <span class="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-700"><span class="i-lucide-package h-5 w-5" /></span>
             <div class="min-w-0 flex-1">
               <div class="flex flex-wrap items-center gap-2">
@@ -208,13 +208,14 @@ async function submitProductSuggestion(value: ProductEditorValue) {
         </div>
         <AppEmptyState
           v-else
+          class="card"
           title="محصولی پیدا نشد"
           description="اگر محصول موردنظرتان وجود ندارد، از دکمه ثبت پیشنهاد محصول استفاده کنید."
         />
       </div>
       <div v-else class="flex min-h-0 flex-1 flex-col">
-        <div v-if="services?.length" class="scroll-container list-scroll divide-y divide-black/5">
-          <div v-for="(service, index) in services" :key="service.id" class="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:px-5">
+        <div v-if="services?.length" class="scroll-container list-scroll card-stack">
+          <div v-for="(service, index) in services" :key="service.id" class="card flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:px-5">
             <div class="flex min-w-0 flex-1 items-center gap-3">
               <span class="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-blue-50 text-blue-700"><span class="i-lucide-wrench h-5 w-5" /></span>
               <div class="min-w-0 flex-1"><strong class="block truncate text-sm">{{ service.name }}</strong><span class="mt-1 block truncate text-xs text-muted">{{ service.category || 'خدمت عمومی' }}</span></div>
@@ -231,7 +232,7 @@ async function submitProductSuggestion(value: ProductEditorValue) {
             </div>
           </div>
         </div>
-        <AppEmptyState v-else title="خدمتی در کاتالوگ نیست" />
+        <AppEmptyState v-else class="card" title="خدمتی در کاتالوگ نیست" />
       </div>
     </section>
 

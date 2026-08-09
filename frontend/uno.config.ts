@@ -51,7 +51,9 @@ export default defineConfig({
     }
   },
   shortcuts: {
-    'card': 'rounded-2xl border border-black/7 bg-surface shadow-[0_1px_2px_rgba(24,35,30,.04),0_10px_30px_rgba(24,35,30,.055)]',
+    'card': 'rounded-[1.35rem] border border-black/7 bg-surface shadow-[0_1px_2px_rgba(24,35,30,.04),0_12px_32px_rgba(24,35,30,.06)]',
+    'card-interactive': 'card transition duration-200 hover:-translate-y-0.5 hover:border-brand-300/70 hover:shadow-[0_2px_4px_rgba(24,35,30,.05),0_16px_36px_rgba(24,35,30,.09)] active:translate-y-0',
+    'card-stack': 'grid gap-3 p-1 pb-4',
     'btn': 'inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-700 transition duration-180 disabled:cursor-not-allowed disabled:opacity-50',
     'btn-primary': 'btn bg-brand-700 text-white shadow-[0_8px_20px_rgba(38,82,64,.20)] hover:bg-brand-800 active:bg-brand-900',
     'btn-secondary': 'btn border border-black/10 bg-white text-ink hover:border-brand-600/30 hover:bg-brand-50',

@@ -113,7 +113,7 @@ async function exportCustomers() {
 <!-- Loading -->
 <section v-if="pending" class="list-panel">
   <div class="scroll-container list-scroll">
-    <div class="space-y-3 p-1 pb-4">
+    <div class="card-stack">
       <div
         v-for="i in 7"
         :key="i"
@@ -143,14 +143,12 @@ async function exportCustomers() {
   class="list-panel"
 >
   <div class="scroll-container list-scroll">
-    <div class="space-y-2 p-1 pb-4">
+    <div class="card-stack">
       <article
         v-for="customer in customers"
         :key="customer.id"
         class="
-          card w-full overflow-hidden
-          transition
-          hover:border-brand-200
+          card-interactive w-full overflow-hidden
         "
       >
         <div

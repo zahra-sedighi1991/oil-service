@@ -773,13 +773,13 @@ async function startNextService() {
     </section>
 
     <section v-else-if="step === 2" class="grid gap-5 pb-28 xl:grid-cols-[1fr_1fr] xl:pb-0">
-      <div class="card overflow-hidden">
-        <header class="flex items-center justify-between border-b border-black/6 px-5 py-4">
+      <div class="space-y-3">
+        <header class="card flex items-center justify-between px-5 py-4">
           <div><h2 class="m-0 text-base font-700">محصولات مصرفی</h2><p class="m-0 mt-1 text-xs text-muted">{{ number(products.length) }} قلم</p></div>
           <button class="btn-secondary px-3 py-2" @click="openProductModal"><span class="i-lucide-plus h-4 w-4" />افزودن</button>
         </header>
-        <div v-if="products.length" class="divide-y divide-black/5">
-          <div v-for="(line, index) in products" :key="line.key" class="p-4">
+        <div v-if="products.length" class="grid gap-3">
+          <div v-for="(line, index) in products" :key="line.key" class="card p-4">
             <div class="mb-3 flex items-start justify-between gap-3"><input v-model="line.description" class="min-w-0 flex-1 border-0 bg-transparent text-sm font-800 outline-none" :readonly="Boolean(line.productId)"><button class="btn-ghost h-8 w-8 p-0 text-danger" @click="products.splice(index, 1)"><span class="i-lucide-trash-2 h-4 w-4" /></button></div>
             <div class="grid grid-cols-2 gap-2 sm:grid-cols-3">
               <div><label class="label">تعداد</label><input v-model.number="line.quantity" type="number" min=".001" step=".001" class="field py-2"></div>
@@ -799,16 +799,16 @@ async function startNextService() {
             <p class="mb-0 mt-3 text-left text-xs font-800 text-brand-700" dir="rtl">{{ money(line.quantity * line.unitPrice, shopCurrency) }}</p>
           </div>
         </div>
-        <AppEmptyState v-else icon="i-lucide-package-open" title="محصولی اضافه نشده" />
+        <AppEmptyState v-else class="card" icon="i-lucide-package-open" title="محصولی اضافه نشده" />
       </div>
 
-      <div class="card overflow-hidden">
-        <header class="flex items-center justify-between border-b border-black/6 px-5 py-4">
+      <div class="space-y-3">
+        <header class="card flex items-center justify-between px-5 py-4">
           <div><h2 class="m-0 text-base font-700">خدمات و اجرت</h2><p class="m-0 mt-1 text-xs text-muted">{{ number(services.length) }} خدمت</p></div>
           <button class="btn-secondary px-3 py-2" @click="openServiceModal"><span class="i-lucide-plus h-4 w-4" />افزودن</button>
         </header>
-        <div v-if="services.length" class="divide-y divide-black/5">
-          <div v-for="(line, index) in services" :key="line.key" class="p-4">
+        <div v-if="services.length" class="grid gap-3">
+          <div v-for="(line, index) in services" :key="line.key" class="card p-4">
             <div class="mb-3 flex items-start justify-between gap-3"><input v-model="line.description" class="min-w-0 flex-1 border-0 bg-transparent text-sm font-800 outline-none" :readonly="Boolean(line.serviceId)"><button class="btn-ghost h-8 w-8 p-0 text-danger" @click="services.splice(index, 1)"><span class="i-lucide-trash-2 h-4 w-4" /></button></div>
             <div class="grid grid-cols-2 gap-2">
               <div><label class="label">تعداد</label><input v-model.number="line.quantity" type="number" min=".001" step=".001" class="field py-2"></div>
@@ -821,7 +821,7 @@ async function startNextService() {
             <p class="mb-0 mt-3 text-left text-xs font-800 text-brand-700" dir="rtl">{{ money(line.quantity * line.unitFee, shopCurrency) }}</p>
           </div>
         </div>
-        <AppEmptyState v-else icon="i-lucide-wrench" title="خدمتی اضافه نشده" />
+        <AppEmptyState v-else class="card" icon="i-lucide-wrench" title="خدمتی اضافه نشده" />
       </div>
 
       <div class="fixed inset-x-3 bottom-[5.5rem] z-30 flex flex-col gap-3 rounded-2xl border border-black/8 bg-white/95 p-3 shadow-[0_16px_45px_rgba(16,32,25,.18)] backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between sm:p-4 lg:sticky lg:inset-x-auto lg:bottom-4 xl:col-span-2">

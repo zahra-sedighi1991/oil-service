@@ -301,9 +301,9 @@ async function saveProduct(value: ProductEditorValue) {
       محصول واقعی را با نام کامل ثبت کنید و مشخص کنید برای همه خودروها یا چند مدل مشخص مناسب است.
     </div>
 
-    <section class="card list-panel">
-      <div v-if="items.length" class="scroll-container list-scroll divide-y divide-black/5">
-        <div v-for="item in items" :key="item.id" class="flex items-center justify-between gap-4 px-5 py-4">
+    <section class="list-panel">
+      <div v-if="items.length" class="scroll-container list-scroll card-stack">
+        <div v-for="item in items" :key="item.id" class="card flex items-center justify-between gap-4 px-5 py-4">
           <div class="min-w-0">
             <strong class="block truncate text-sm">{{ itemTitle(item) }}</strong>
             <span class="mt-1 block truncate text-xs text-muted">{{ itemSubtitle(item) }}</span>
@@ -333,6 +333,7 @@ async function saveProduct(value: ProductEditorValue) {
       </div>
       <AppEmptyState
         v-else
+        class="card"
         :title="tab === 'products' ? 'هنوز محصول قابل فروشی ایجاد نشده است' : 'رکوردی وجود ندارد'"
         :description="tab === 'products' ? 'دکمه رکورد جدید را بزنید و نوع محصول، نام کالا و خودروهای مناسب را انتخاب کنید.' : undefined"
       />

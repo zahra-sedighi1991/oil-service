@@ -233,10 +233,10 @@ async function submitDecision() {
       </button>
     </nav>
 
-    <section class="card list-panel">
-      <div v-if="pending" class="p-8 text-center text-sm text-muted">در حال دریافت پیشنهادها…</div>
-      <div v-else-if="filteredSuggestions.length" class="scroll-container list-scroll divide-y divide-black/5">
-        <article v-for="item in filteredSuggestions" :key="item.id" class="p-5">
+    <section class="list-panel">
+      <div v-if="pending" class="card p-8 text-center text-sm text-muted">در حال دریافت پیشنهادها…</div>
+      <div v-else-if="filteredSuggestions.length" class="scroll-container list-scroll card-stack">
+        <article v-for="item in filteredSuggestions" :key="item.id" class="card p-5">
           <div class="flex flex-col gap-4 sm:flex-row sm:items-start">
             <span class="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-amber-50 text-amber-700">
               <span class="i-lucide-lightbulb h-5 w-5" />
@@ -273,6 +273,7 @@ async function submitDecision() {
       </div>
       <AppEmptyState
         v-else
+        class="card"
         icon="i-lucide-inbox"
         title="پیشنهادی در این وضعیت نیست"
         description="با انتخاب وضعیت دیگری می‌توانید پیشنهادهای قبلی را ببینید."

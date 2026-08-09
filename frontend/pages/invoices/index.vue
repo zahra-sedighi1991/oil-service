@@ -17,13 +17,13 @@ const filtered = computed(() => invoices.value || [])
 <template>
   <div class="list-page">
       <h1 class="mb-3 mt-1 text-xl font-800">فاکتورها</h1>
-    <section class="card list-panel">
-      <div class="border-b border-black/6 p-4">
+    <section class="list-panel gap-3">
+      <div class="card p-3 sm:p-4">
         <div class="relative max-w-lg"><span class="i-lucide-search absolute right-3 top-1/2 h-4.5 w-4.5 -translate-y-1/2 text-ink/30" /><input v-model="search" class="field py-2.5 pr-10" placeholder="شماره فاکتور، مشتری، موبایل یا پلاک..."></div>
       </div>
-      <div v-if="pending" class="scroll-container list-scroll space-y-px"><div v-for="i in 5" :key="i" class="h-18 animate-pulse bg-black/[.025]" /></div>
-      <div v-else-if="filtered.length" class="scroll-container list-scroll divide-y divide-black/5">
-        <NuxtLink v-for="invoice in filtered" :key="invoice.id" :to="`/invoices/${invoice.id}`" class="block px-4 py-4 text-ink no-underline transition hover:bg-brand-50/50 sm:px-5">
+      <div v-if="pending" class="scroll-container list-scroll card-stack"><div v-for="i in 5" :key="i" class="card h-24 animate-pulse bg-black/[.025]" /></div>
+      <div v-else-if="filtered.length" class="scroll-container list-scroll card-stack">
+        <NuxtLink v-for="invoice in filtered" :key="invoice.id" :to="`/invoices/${invoice.id}`" class="card-interactive block px-4 py-4 text-ink no-underline sm:px-5">
           <div class="flex items-start justify-between gap-3">
             <div><strong class="block text-sm">{{ invoice.invoiceNo }}</strong><span class="mt-1 block text-xs text-muted">{{ dateTime(invoice.issuedAt) }}</span></div>
             <span class="badge shrink-0" :class="invoice.status === 'issued' ? 'bg-brand-50 text-brand-700' : 'bg-red-50 text-red-700'">{{ invoice.status === 'issued' ? 'صادرشده' : 'باطل‌شده' }}</span>
@@ -39,6 +39,7 @@ const filtered = computed(() => invoices.value || [])
       </div>
       <AppEmptyState
         v-else
+        class="card"
         icon="i-lucide-receipt"
         :title="search.trim() ? 'فاکتوری با این مشخصات پیدا نشد' : 'فاکتوری وجود ندارد'"
         :description="search.trim() ? 'نام، موبایل، پلاک یا شماره فاکتور دیگری را جست‌وجو کنید.' : 'پس از نهایی‌سازی سرویس، فاکتور اینجا ظاهر می‌شود.'"

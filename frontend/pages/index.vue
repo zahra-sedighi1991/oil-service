@@ -43,16 +43,16 @@ const stats = computed(() => [
     </div>
 
     <div class="mt-6 grid gap-5 xl:grid-cols-[1.5fr_1fr]">
-      <section class="card overflow-hidden">
-        <header class="flex items-center justify-between border-b border-black/6 px-5 py-4">
+      <section>
+        <header class="mb-3 flex items-center justify-between px-1">
           <div>
             <h2 class="m-0 text-base font-700">آخرین فاکتورها</h2>
             <p class="m-0 mt-1 text-xs text-muted">تازه‌ترین فعالیت‌های ثبت‌شده</p>
           </div>
           <NuxtLink to="/invoices" class="btn-ghost no-underline">مشاهده همه</NuxtLink>
         </header>
-        <div v-if="invoices?.length" class="divide-y divide-black/5">
-          <NuxtLink v-for="invoice in invoices.slice(0, 5)" :key="invoice.id" :to="`/invoices/${invoice.id}`" class="flex items-center gap-4 px-5 py-4 text-ink no-underline transition hover:bg-black/[.02]">
+        <div v-if="invoices?.length" class="grid gap-3">
+          <NuxtLink v-for="invoice in invoices.slice(0, 5)" :key="invoice.id" :to="`/invoices/${invoice.id}`" class="card-interactive flex items-center gap-4 px-4 py-3.5 text-ink no-underline sm:px-5">
             <span class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-black/4 text-muted"><span class="i-lucide-receipt h-5 w-5" /></span>
             <div class="min-w-0 flex-1">
               <strong class="block truncate text-sm">{{ invoice.invoiceNo }}</strong>
@@ -62,7 +62,7 @@ const stats = computed(() => [
             <strong class="text-sm">{{ money(invoice.totalAmount, invoice.currency) }}</strong>
           </NuxtLink>
         </div>
-        <AppEmptyState v-else title="هنوز فاکتوری ثبت نشده" description="اولین سرویس را ثبت کنید تا اینجا نمایش داده شود.">
+        <AppEmptyState v-else class="card" title="هنوز فاکتوری ثبت نشده" description="اولین سرویس را ثبت کنید تا اینجا نمایش داده شود.">
           <NuxtLink to="/service-orders/new" class="btn-secondary no-underline">ثبت اولین سرویس</NuxtLink>
         </AppEmptyState>
       </section>
