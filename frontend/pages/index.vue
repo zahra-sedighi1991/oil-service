@@ -22,7 +22,7 @@ const stats = computed(() => [
     <header class="mb-7 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
       <div>
         <h1 class="m-0 text-xl font-800">نمای کلی فروشگاه</h1>
-        <p class="mb-0 mt-2 text-sm text-ink/45">وضعیت سرویس‌ها و مشتری‌ها در یک نگاه</p>
+        <p class="mb-0 mt-2 text-sm text-muted">وضعیت سرویس‌ها و مشتری‌ها در یک نگاه</p>
       </div>
       <NuxtLink to="/service-orders/new" class="btn-primary no-underline">
         <span class="i-lucide-plus h-5 w-5" />ثبت سرویس جدید
@@ -38,7 +38,7 @@ const stats = computed(() => [
           <span v-if="pending" class="h-5 w-12 animate-pulse rounded bg-black/6" />
           <strong v-else class="block text-2xl font-800 sm:text-3xl">{{ number(stat.value) }}</strong>
         </div>
-        <span class="mt-1 block text-xs leading-5 text-ink/45 sm:text-sm">{{ stat.label }}</span>
+        <span class="mt-1 block text-xs leading-5 text-muted sm:text-sm">{{ stat.label }}</span>
       </article>
     </div>
 
@@ -47,17 +47,17 @@ const stats = computed(() => [
         <header class="flex items-center justify-between border-b border-black/6 px-5 py-4">
           <div>
             <h2 class="m-0 text-base font-700">آخرین فاکتورها</h2>
-            <p class="m-0 mt-1 text-xs text-ink/40">تازه‌ترین فعالیت‌های ثبت‌شده</p>
+            <p class="m-0 mt-1 text-xs text-muted">تازه‌ترین فعالیت‌های ثبت‌شده</p>
           </div>
           <NuxtLink to="/invoices" class="btn-ghost no-underline">مشاهده همه</NuxtLink>
         </header>
         <div v-if="invoices?.length" class="divide-y divide-black/5">
           <NuxtLink v-for="invoice in invoices.slice(0, 5)" :key="invoice.id" :to="`/invoices/${invoice.id}`" class="flex items-center gap-4 px-5 py-4 text-ink no-underline transition hover:bg-black/[.02]">
-            <span class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-black/4 text-ink/55"><span class="i-lucide-receipt h-5 w-5" /></span>
+            <span class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-black/4 text-muted"><span class="i-lucide-receipt h-5 w-5" /></span>
             <div class="min-w-0 flex-1">
               <strong class="block truncate text-sm">{{ invoice.invoiceNo }}</strong>
-              <span class="mt-0.5 block truncate text-xs text-ink/55">{{ invoice.order?.customer?.name || 'مشتری بدون نام' }}</span>
-              <span class="mt-0.5 block text-[11px] text-ink/35">{{ dateTime(invoice.issuedAt) }}</span>
+              <span class="mt-0.5 block truncate text-xs text-muted">{{ invoice.order?.customer?.name || 'مشتری بدون نام' }}</span>
+              <span class="mt-0.5 block text-[11px] text-muted">{{ dateTime(invoice.issuedAt) }}</span>
             </div>
             <strong class="text-sm">{{ money(invoice.totalAmount, invoice.currency) }}</strong>
           </NuxtLink>
@@ -75,11 +75,11 @@ const stats = computed(() => [
         <div class="rounded-2xl bg-ink p-5 text-white">
           <div class="grid grid-cols-2 divide-x divide-x-reverse divide-white/10">
             <div class="pl-4">
-              <p class="m-0 text-xs text-white/50">مشتریان یکتای ماه</p>
+              <p class="m-0 text-xs text-white/70">مشتریان یکتای ماه</p>
               <strong class="mt-2 block text-3xl font-800">{{ number(dashboard?.month.uniqueCustomers) }}</strong>
             </div>
             <div class="pr-4">
-              <p class="m-0 text-xs text-white/50">فاکتورهای صادرشده</p>
+              <p class="m-0 text-xs text-white/70">فاکتورهای صادرشده</p>
               <strong class="mt-2 block text-3xl font-800">{{ number(dashboard?.month.invoices) }}</strong>
             </div>
           </div>

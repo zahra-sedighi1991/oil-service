@@ -211,7 +211,7 @@ async function submitDecision() {
   <div class="list-page">
     <header class="mb-6">
       <h1 class="mb-0 mt-1 text-2xl font-800">پیشنهادهای محصولات و خدمات</h1>
-      <p class="mb-0 mt-2 max-w-2xl text-sm leading-7 text-ink/50">
+      <p class="mb-0 mt-2 max-w-2xl text-sm leading-7 text-muted">
         وقتی فروشگاه هنگام ثبت سفارش موردی را پیدا نمی‌کند، آن را به‌صورت «خارج از کاتالوگ» ثبت می‌کند.
         این موارد برای تأیید، اتصال به مورد موجود یا رد شدن در این صف قرار می‌گیرند.
       </p>
@@ -225,7 +225,7 @@ async function submitDecision() {
         ] as const)"
         :key="filter[0]"
         class="rounded-xl border px-3 py-2 text-sm font-700 transition"
-        :class="statusFilter === filter[0] ? 'border-brand-600 bg-brand-50 text-brand-700' : 'border-black/10 bg-white text-ink/55 hover:border-brand-200'"
+        :class="statusFilter === filter[0] ? 'border-brand-600 bg-brand-50 text-brand-700' : 'border-black/10 bg-white text-muted hover:border-brand-200'"
         @click="statusFilter = filter[0]"
       >
         {{ filter[1] }}
@@ -234,7 +234,7 @@ async function submitDecision() {
     </nav>
 
     <section class="card list-panel">
-      <div v-if="pending" class="p-8 text-center text-sm text-ink/45">در حال دریافت پیشنهادها…</div>
+      <div v-if="pending" class="p-8 text-center text-sm text-muted">در حال دریافت پیشنهادها…</div>
       <div v-else-if="filteredSuggestions.length" class="scroll-container list-scroll divide-y divide-black/5">
         <article v-for="item in filteredSuggestions" :key="item.id" class="p-5">
           <div class="flex flex-col gap-4 sm:flex-row sm:items-start">
@@ -246,13 +246,13 @@ async function submitDecision() {
                 <strong class="text-sm">{{ suggestionTitle(item) }}</strong>
                 <span class="badge" :class="statusMeta[item.status].class">{{ statusMeta[item.status].label }}</span>
               </div>
-              <span class="mt-2 block text-xs text-ink/45">
+              <span class="mt-2 block text-xs text-muted">
                 {{ entityLabel(item.entityType) }} · ثبت‌شده در {{ dateTime(item.createdAt) }}
               </span>
               <div v-if="productSuggestionMeta(item).length" class="mt-2 flex flex-wrap gap-1.5">
-                <span v-for="meta in productSuggestionMeta(item)" :key="String(meta)" class="badge bg-black/4 text-[10px] text-ink/55">{{ meta }}</span>
+                <span v-for="meta in productSuggestionMeta(item)" :key="String(meta)" class="badge bg-black/4 text-[10px] text-muted">{{ meta }}</span>
               </div>
-              <div v-if="item.decisionNote" class="mt-3 rounded-xl bg-black/[.025] px-3 py-2 text-xs leading-6 text-ink/60">
+              <div v-if="item.decisionNote" class="mt-3 rounded-xl bg-black/[.025] px-3 py-2 text-xs leading-6 text-muted">
                 <strong>یادداشت تصمیم:</strong> {{ item.decisionNote }}
                 <span v-if="item.mappedEntityId" class="mr-2">· شناسه مقصد: {{ item.mappedEntityId }}</span>
               </div>
@@ -287,18 +287,18 @@ async function submitDecision() {
     >
       <form class="space-y-4" @submit.prevent="submitDecision">
         <div class="rounded-xl bg-black/[.025] p-3">
-          <span class="block text-xs text-ink/45">پیشنهاد انتخاب‌شده</span>
+          <span class="block text-xs text-muted">پیشنهاد انتخاب‌شده</span>
           <strong class="mt-1 block text-sm">{{ selected ? suggestionTitle(selected) : '' }}</strong>
         </div>
         <div v-if="decision === 'approved'">
           <label class="label" for="catalog-name">نام نهایی در کاتالوگ</label>
           <input id="catalog-name" v-model="catalogName" class="field" required placeholder="نامی که کاربران در لیست خواهند دید">
-          <p class="mb-0 mt-2 text-xs leading-5 text-ink/45">در صورت نیاز نام پیشنهادی را اصلاح کنید؛ همین نام در لیست محصولات یا خدمات نمایش داده می‌شود.</p>
+          <p class="mb-0 mt-2 text-xs leading-5 text-muted">در صورت نیاز نام پیشنهادی را اصلاح کنید؛ همین نام در لیست محصولات یا خدمات نمایش داده می‌شود.</p>
         </div>
         <div v-if="decision === 'approved' && selected?.entityType === 'service'">
           <label class="label" for="service-category">دسته خدمت (اختیاری)</label>
           <input id="service-category" v-model="serviceCategory" class="field" placeholder="مثلاً تعمیرات موتور">
-          <p class="mb-0 mt-2 text-xs leading-5 text-ink/45">خدمت با نام پیشنهادی در کاتالوگ ساخته و برای فروشگاه فعال می‌شود.</p>
+          <p class="mb-0 mt-2 text-xs leading-5 text-muted">خدمت با نام پیشنهادی در کاتالوگ ساخته و برای فروشگاه فعال می‌شود.</p>
         </div>
         <div v-if="decision === 'merged'">
           <label class="label" for="mapped-entity-id">{{ selected?.entityType === 'product' ? 'محصول موجود' : 'خدمت موجود' }}</label>
@@ -315,7 +315,7 @@ async function submitDecision() {
               :value="option.id"
             >{{ option.displayName || option.name }}</option>
           </select>
-          <p class="mb-0 mt-1 text-xs leading-5 text-ink/45">پیشنهاد به این مورد موجود متصل می‌شود و مورد تکراری ساخته نخواهد شد.</p>
+          <p class="mb-0 mt-1 text-xs leading-5 text-muted">پیشنهاد به این مورد موجود متصل می‌شود و مورد تکراری ساخته نخواهد شد.</p>
         </div>
         <div>
           <label class="label" for="decision-note">{{ decision === 'rejected' ? 'دلیل رد' : 'یادداشت تصمیم' }}</label>

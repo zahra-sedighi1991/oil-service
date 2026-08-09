@@ -97,7 +97,7 @@ async function cancelInvoice() {
 <template>
   <div v-if="invoice" class="mx-auto max-w-4xl">
     <div class="mb-5 flex flex-col gap-3 print:hidden sm:flex-row sm:items-center sm:justify-between">
-      <NuxtLink to="/invoices" class="inline-flex items-center gap-1 text-sm text-ink/50 no-underline"><span class="i-lucide-arrow-right" />بازگشت</NuxtLink>
+      <NuxtLink to="/invoices" class="inline-flex items-center gap-1 text-sm text-muted no-underline"><span class="i-lucide-arrow-right" />بازگشت</NuxtLink>
       <div class="grid gap-2 sm:flex sm:flex-wrap sm:justify-end" :class="invoice.status === 'issued' ? 'grid-cols-3' : 'grid-cols-1'">
         <button v-if="invoice.status === 'issued'" class="btn-secondary px-2 sm:px-4" :disabled="preparingShare" @click="openShare">
           <span v-if="preparingShare" class="i-lucide-loader-circle h-4 w-4 animate-spin" />
@@ -110,36 +110,36 @@ async function cancelInvoice() {
     </div>
     <article class="card overflow-hidden bg-white">
       <header class="flex flex-col justify-between gap-5 bg-ink p-6 text-white sm:flex-row sm:items-start sm:p-8">
-        <div><span class="text-xs text-brand-300">فاکتور سرویس خودرو</span><h1 class="mb-0 mt-2 text-2xl font-800">{{ invoice.invoiceNo }}</h1><p class="mb-0 mt-2 text-sm text-white/45">{{ dateTime(invoice.issuedAt) }}</p></div>
+        <div><span class="text-xs text-brand-300">فاکتور سرویس خودرو</span><h1 class="mb-0 mt-2 text-2xl font-800">{{ invoice.invoiceNo }}</h1><p class="mb-0 mt-2 text-sm text-white/70">{{ dateTime(invoice.issuedAt) }}</p></div>
         <span class="badge w-fit bg-white/10 text-white">{{ invoice.status === 'issued' ? 'صادرشده' : 'باطل‌شده' }}</span>
       </header>
       <div class="p-6 sm:p-8">
         <div v-if="invoice.order" class="mb-7 grid gap-3 rounded-2xl bg-black/[.025] p-4 sm:grid-cols-3">
-          <div><span class="block text-xs text-ink/40">مشتری</span><strong class="mt-1 block text-sm">{{ invoice.order.customer?.name }}</strong></div>
-          <div><span class="block text-xs text-ink/40">خودرو</span><strong class="mt-1 block text-sm">{{ invoice.order.vehicle?.brand?.nameFa }} {{ invoice.order.vehicle?.model?.nameFa }}</strong></div>
-          <div><span class="block text-xs text-ink/40">کیلومتر</span><strong class="mt-1 block text-sm">{{ number(invoice.order.odometer) }}</strong></div>
+          <div><span class="block text-xs text-muted">مشتری</span><strong class="mt-1 block text-sm">{{ invoice.order.customer?.name }}</strong></div>
+          <div><span class="block text-xs text-muted">خودرو</span><strong class="mt-1 block text-sm">{{ invoice.order.vehicle?.brand?.nameFa }} {{ invoice.order.vehicle?.model?.nameFa }}</strong></div>
+          <div><span class="block text-xs text-muted">کیلومتر</span><strong class="mt-1 block text-sm">{{ number(invoice.order.odometer) }}</strong></div>
         </div>
         <div class="space-y-2 sm:hidden">
           <article v-for="line in invoice.lines" :key="`mobile-${line.id}`" class="rounded-xl border border-black/7 p-3">
             <div class="flex items-start justify-between gap-3">
               <strong class="text-sm leading-6">{{ line.descriptionSnapshot }}</strong>
-              <span class="badge shrink-0 bg-black/5 text-[10px] text-ink/55">{{ line.itemType === 'product' ? 'محصول' : 'خدمت' }}</span>
+              <span class="badge shrink-0 bg-black/5 text-[10px] text-muted">{{ line.itemType === 'product' ? 'محصول' : 'خدمت' }}</span>
             </div>
             <div class="mt-3 flex items-end justify-between gap-3 border-t border-black/5 pt-3">
-              <span class="text-xs text-ink/45">{{ number(line.quantity) }} × {{ money(line.unitPrice, invoice.currency) }}</span>
+              <span class="text-xs text-muted">{{ number(line.quantity) }} × {{ money(line.unitPrice, invoice.currency) }}</span>
               <strong class="text-sm text-brand-800">{{ money(line.total, invoice.currency) }}</strong>
             </div>
           </article>
         </div>
         <div class="hidden overflow-x-auto sm:block">
           <table class="w-full border-collapse text-sm">
-            <thead><tr class="border-b border-black/10 text-right text-xs text-ink/40"><th class="py-3 font-700">شرح</th><th class="py-3 font-700">نوع</th><th class="py-3 text-center font-700">تعداد</th><th class="py-3 text-left font-700">قیمت واحد</th><th class="py-3 text-left font-700">مبلغ</th></tr></thead>
-            <tbody><tr v-for="line in invoice.lines" :key="line.id" class="border-b border-black/5"><td class="py-4 font-700">{{ line.descriptionSnapshot }}</td><td class="py-4 text-ink/45">{{ line.itemType === 'product' ? 'محصول' : 'خدمت' }}</td><td class="py-4 text-center">{{ number(line.quantity) }}</td><td class="py-4 text-left">{{ money(line.unitPrice, invoice.currency) }}</td><td class="py-4 text-left font-800">{{ money(line.total, invoice.currency) }}</td></tr></tbody>
+            <thead><tr class="border-b border-black/10 text-right text-xs text-muted"><th class="py-3 font-700">شرح</th><th class="py-3 font-700">نوع</th><th class="py-3 text-center font-700">تعداد</th><th class="py-3 text-left font-700">قیمت واحد</th><th class="py-3 text-left font-700">مبلغ</th></tr></thead>
+            <tbody><tr v-for="line in invoice.lines" :key="line.id" class="border-b border-black/5"><td class="py-4 font-700">{{ line.descriptionSnapshot }}</td><td class="py-4 text-muted">{{ line.itemType === 'product' ? 'محصول' : 'خدمت' }}</td><td class="py-4 text-center">{{ number(line.quantity) }}</td><td class="py-4 text-left">{{ money(line.unitPrice, invoice.currency) }}</td><td class="py-4 text-left font-800">{{ money(line.total, invoice.currency) }}</td></tr></tbody>
           </table>
         </div>
         <div class="mr-auto mt-7 max-w-sm rounded-2xl bg-brand-50 p-5">
           <div v-if="Number(invoice.discountAmount) > 0" class="mb-3 space-y-2 border-b border-brand-200 pb-3 text-sm">
-            <div class="flex items-center justify-between text-ink/55"><span>جمع اقلام</span><span>{{ money(Number(invoice.totalAmount) + Number(invoice.discountAmount), invoice.currency) }}</span></div>
+            <div class="flex items-center justify-between text-muted"><span>جمع اقلام</span><span>{{ money(Number(invoice.totalAmount) + Number(invoice.discountAmount), invoice.currency) }}</span></div>
             <div class="flex items-center justify-between text-red-700"><span>تخفیف</span><span>− {{ money(invoice.discountAmount, invoice.currency) }}</span></div>
           </div>
           <div class="flex items-center justify-between"><span class="font-800 text-brand-900">جمع نهایی</span><strong class="text-xl font-800 text-brand-800">{{ money(invoice.totalAmount, invoice.currency) }}</strong></div>

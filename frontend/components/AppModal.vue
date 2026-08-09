@@ -36,7 +36,7 @@ function onKey(event: KeyboardEvent) {
 
               <p
                 v-if="description"
-                class="mb-0 mt-1 text-sm leading-6 text-ink/50"
+                class="mb-0 mt-1 text-sm leading-6 text-muted"
               >
                 {{ description }}
               </p>

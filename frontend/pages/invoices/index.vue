@@ -25,11 +25,11 @@ const filtered = computed(() => invoices.value || [])
       <div v-else-if="filtered.length" class="scroll-container list-scroll divide-y divide-black/5">
         <NuxtLink v-for="invoice in filtered" :key="invoice.id" :to="`/invoices/${invoice.id}`" class="block px-4 py-4 text-ink no-underline transition hover:bg-brand-50/50 sm:px-5">
           <div class="flex items-start justify-between gap-3">
-            <div><strong class="block text-sm">{{ invoice.invoiceNo }}</strong><span class="mt-1 block text-xs text-ink/40">{{ dateTime(invoice.issuedAt) }}</span></div>
+            <div><strong class="block text-sm">{{ invoice.invoiceNo }}</strong><span class="mt-1 block text-xs text-muted">{{ dateTime(invoice.issuedAt) }}</span></div>
             <span class="badge shrink-0" :class="invoice.status === 'issued' ? 'bg-brand-50 text-brand-700' : 'bg-red-50 text-red-700'">{{ invoice.status === 'issued' ? 'صادرشده' : 'باطل‌شده' }}</span>
           </div>
           <div class="mt-3 flex items-end justify-between gap-3">
-            <div class="min-w-0 text-sm text-ink/55">
+            <div class="min-w-0 text-sm text-muted">
               <strong class="block truncate font-700 text-ink/70">{{ invoice.order?.customer?.name || 'مشتری بدون نام' }}</strong>
               <span class="mt-0.5 block truncate text-xs">{{ invoice.order?.vehicle?.plateDisplay || invoice.order?.vehicle?.temporaryIdentifier || 'خودروی بدون پلاک' }}</span>
             </div>

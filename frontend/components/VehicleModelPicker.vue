@@ -87,7 +87,7 @@ function onFocusOut(event: FocusEvent) {
 
     <div class="relative">
       <div class="relative overflow-hidden rounded-2xl border border-black/8 bg-white focus-within:border-brand-400 focus-within:ring-3 focus-within:ring-brand-100">
-        <span class="i-lucide-search absolute right-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-ink/35" />
+        <span class="i-lucide-search absolute right-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-muted" />
         <input
           :id="inputId"
           v-model="search"
@@ -103,7 +103,7 @@ function onFocusOut(event: FocusEvent) {
         <button
           v-if="search"
           type="button"
-          class="absolute left-2.5 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-lg border-0 bg-black/5 text-ink/45 hover:bg-black/10"
+          class="absolute left-2.5 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-lg border-0 bg-black/5 text-muted hover:bg-black/10"
           aria-label="پاک کردن انتخاب مدل"
           @click="clearSelection"
         >
@@ -127,18 +127,18 @@ function onFocusOut(event: FocusEvent) {
         >
           <span>
             <strong>{{ model.nameFa }}</strong>
-            <small v-if="model.brand?.nameFa" class="mr-2 text-ink/40">{{ model.brand.nameFa }}</small>
+            <small v-if="model.brand?.nameFa" class="mr-2 text-muted">{{ model.brand.nameFa }}</small>
           </span>
           <span v-if="modelValue === model.id" class="i-lucide-check h-4.5 w-4.5 text-brand-600" />
         </button>
-        <p v-if="!filteredModels.length" class="my-6 text-center text-sm text-ink/45">
+        <p v-if="!filteredModels.length" class="my-6 text-center text-sm text-muted">
           مدلی با این نام پیدا نشد.
         </p>
       </div>
     </div>
 
     <div v-if="popularModels.length" class="mt-3">
-      <span class="mb-2 block text-xs font-700 text-ink/45">مدل‌های پرکاربرد</span>
+      <span class="mb-2 block text-xs font-700 text-muted">مدل‌های پرکاربرد</span>
       <div class="flex flex-wrap gap-2">
         <button
           v-for="model in popularModels"

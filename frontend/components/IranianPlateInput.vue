@@ -138,7 +138,7 @@ function handlePaste(event: ClipboardEvent) {
           placeholder="۳۴۵"
           @input="digitsFromEvent($event, 'middle')"
         >
-        <span class="grid place-items-center bg-black/[.025] px-1 text-center text-[10px] font-800 leading-4 text-ink/55">ایران</span>
+        <span class="grid place-items-center bg-black/[.025] px-1 text-center text-[10px] font-800 leading-4 text-muted">ایران</span>
         <input
           ref="regionInput"
           :value="region"
@@ -151,7 +151,7 @@ function handlePaste(event: ClipboardEvent) {
         >
       </div>
     </div>
-    <p class="mb-0 mt-2 text-xs" :class="partial ? 'text-amber-700' : 'text-ink/40'">
+    <p class="mb-0 mt-2 text-xs" :class="partial ? 'text-amber-700' : 'text-muted'">
       {{ partial ? 'پلاک را کامل وارد کنید یا همه بخش‌ها را خالی بگذارید.' : 'اختیاری است؛ می‌توانید پلاک کامل را نیز اینجا Paste کنید.' }}
     </p>
   </div>

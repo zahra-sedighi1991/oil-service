@@ -660,8 +660,8 @@ async function startNextService() {
     <div v-if="!success" class="mb-6 flex items-center">
       <template v-for="item in 3" :key="item">
         <div class="flex items-center gap-2">
-          <span class="grid h-9 w-9 place-items-center rounded-full text-sm font-700" :class="step >= item ? 'bg-brand-700 text-white' : 'bg-black/6 text-ink/35'">{{ number(item) }}</span>
-          <span class="hidden text-sm font-700 sm:block" :class="step >= item ? 'text-ink' : 'text-ink/35'">{{ ['مشتری و خودرو', 'اقلام سرویس', 'بررسی نهایی'][item - 1] }}</span>
+          <span class="grid h-9 w-9 place-items-center rounded-full text-sm font-700" :class="step >= item ? 'bg-brand-700 text-white' : 'bg-black/6 text-muted'">{{ number(item) }}</span>
+          <span class="hidden text-sm font-700 sm:block" :class="step >= item ? 'text-ink' : 'text-muted'">{{ ['مشتری و خودرو', 'اقلام سرویس', 'بررسی نهایی'][item - 1] }}</span>
         </div>
         <div v-if="item < 3" class="mx-3 h-px flex-1" :class="step > item ? 'bg-brand-500' : 'bg-black/10'" />
       </template>
@@ -671,12 +671,12 @@ async function startNextService() {
       <div class="bg-brand-800 px-6 py-10 text-white">
         <span class="i-lucide-circle-check-big mx-auto block h-16 w-16 text-brand-300" />
         <h2 class="mb-0 mt-5 text-2xl font-800">سرویس با موفقیت ثبت شد</h2>
-        <p class="mb-0 mt-2 text-sm text-white/55">فاکتور و سوابق خودرو اکنون به‌روز هستند.</p>
+        <p class="mb-0 mt-2 text-sm text-white/70">فاکتور و سوابق خودرو اکنون به‌روز هستند.</p>
       </div>
       <div class="p-6">
         <div class="mb-6 grid grid-cols-2 gap-3">
-          <div class="rounded-xl bg-black/3 p-4"><span class="block text-xs text-ink/40">شماره فاکتور</span><strong class="mt-1 block">{{ success.invoiceNo }}</strong></div>
-          <div class="rounded-xl bg-black/3 p-4"><span class="block text-xs text-ink/40">مبلغ نهایی</span><strong class="mt-1 block">{{ money(success.totalAmount, success.currency || shopCurrency) }}</strong></div>
+          <div class="rounded-xl bg-black/3 p-4"><span class="block text-xs text-muted">شماره فاکتور</span><strong class="mt-1 block">{{ success.invoiceNo }}</strong></div>
+          <div class="rounded-xl bg-black/3 p-4"><span class="block text-xs text-muted">مبلغ نهایی</span><strong class="mt-1 block">{{ money(success.totalAmount, success.currency || shopCurrency) }}</strong></div>
         </div>
         <div class="grid gap-2 sm:grid-cols-3">
           <NuxtLink :to="`/invoices/${success.invoiceId}`" class="btn-primary no-underline">مشاهده فاکتور</NuxtLink>
@@ -699,7 +699,7 @@ async function startNextService() {
           <button
             v-if="customerSearch"
             type="button"
-            class="absolute left-2 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-lg border-0 bg-black/5 text-ink/45 transition hover:bg-black/10 hover:text-ink"
+            class="absolute left-2 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-lg border-0 bg-black/5 text-muted transition hover:bg-black/10 hover:text-ink"
             aria-label="پاک کردن جست‌وجو"
             title="پاک کردن جست‌وجو"
             @click="customerSearch = ''"
@@ -710,8 +710,8 @@ async function startNextService() {
         <div class="mt-3 max-h-80 space-y-2 overflow-y-auto">
           <button v-for="customer in customers" :key="customer.id" class="flex w-full items-center gap-3 rounded-xl border p-3 text-right transition" :class="selectedCustomer?.id === customer.id ? 'border-brand-500 bg-brand-50' : 'border-black/6 bg-white hover:border-brand-300'" @click="selectCustomer(customer)">
             <span class="grid h-9 w-9 place-items-center rounded-xl bg-black/4 text-sm font-700">{{ customer.name.slice(0, 1) }}</span>
-            <div class="flex-1"><strong class="block text-sm">{{ customer.name }}</strong><span class="mt-0.5 block text-xs text-ink/40" dir="ltr">{{ customer.mobileDisplay }}</span></div>
-            <span class="text-xs text-ink/35">{{ number(customer.vehicles.length) }} خودرو</span>
+            <div class="flex-1"><strong class="block text-sm">{{ customer.name }}</strong><span class="mt-0.5 block text-xs text-muted" dir="ltr">{{ customer.mobileDisplay }}</span></div>
+            <span class="text-xs text-muted">{{ number(customer.vehicles.length) }} خودرو</span>
           </button>
         </div>
         <button
@@ -741,10 +741,10 @@ async function startNextService() {
             <button v-for="vehicle in selectedCustomer.vehicles" :key="vehicle.id" class="rounded-xl border p-3 text-right transition" :class="selectedVehicle?.id === vehicle.id ? 'border-brand-500 bg-brand-50' : 'border-black/7 bg-white hover:border-brand-300'" @click="selectedVehicle = vehicle">
               <span class="i-lucide-car-front mb-2 block h-5 w-5 text-brand-600" />
               <strong class="block text-sm">{{ vehicle.brand?.nameFa }} {{ vehicle.model?.nameFa }}</strong>
-              <span class="mt-1 block text-xs text-ink/45">{{ vehicle.plateDisplay || vehicle.temporaryIdentifier || 'بدون پلاک' }}</span>
+              <span class="mt-1 block text-xs text-muted">{{ vehicle.plateDisplay || vehicle.temporaryIdentifier || 'بدون پلاک' }}</span>
             </button>
           </div>
-          <div v-else class="rounded-xl border border-dashed border-black/10 p-5 text-center text-sm text-ink/45">
+          <div v-else class="rounded-xl border border-dashed border-black/10 p-5 text-center text-sm text-muted">
             این مشتری خودرو ندارد.
             <button class="btn-ghost mx-auto mt-2 text-brand-700" @click="openVehicleModal">
               همین‌جا خودرو را اضافه کنید
@@ -753,21 +753,21 @@ async function startNextService() {
           <div class="mt-5">
             <label class="label">کیلومتر فعلی</label>
             <input v-model.number="odometer" type="number" min="0" class="field text-left" dir="ltr" placeholder="126500">
-            <p v-if="formattedOdometer(odometer)" class="mb-0 mt-1 text-xs text-ink/45">
+            <p v-if="formattedOdometer(odometer)" class="mb-0 mt-1 text-xs text-muted">
               {{ formattedOdometer(odometer) }}
             </p>
-            <p v-if="selectedVehicle?.lastOdometer !== undefined && selectedVehicle?.lastOdometer !== null" class="mb-0 mt-2 text-xs text-ink/40">
+            <p v-if="selectedVehicle?.lastOdometer !== undefined && selectedVehicle?.lastOdometer !== null" class="mb-0 mt-2 text-xs text-muted">
               آخرین کیلومتر ثبت‌شده: <strong>{{ number(selectedVehicle.lastOdometer) }}</strong>
             </p>
-            <p v-if="loadingSuggestedOdometer" class="mb-0 mt-2 text-xs text-ink/40">در حال دریافت موعد سرویس قبلی…</p>
+            <p v-if="loadingSuggestedOdometer" class="mb-0 mt-2 text-xs text-muted">در حال دریافت موعد سرویس قبلی…</p>
             <div v-else-if="suggestedOdometer" class="mt-2 rounded-xl bg-emerald-50 px-3 py-2 text-xs leading-6 text-emerald-800">
               موعد محاسبه‌شده از سرویس قبلی: <strong>{{ number(suggestedOdometer) }} کیلومتر</strong>
               <span class="block text-emerald-700/70">این مقدار پیشنهادی است؛ در صورت مراجعه زودتر یا دیرتر، کیلومتر واقعی خودرو را وارد کنید.</span>
             </div>
-            <p v-else-if="selectedVehicle" class="mb-0 mt-2 text-xs text-ink/40">برای این خودرو هنوز موعد کیلومتری ثبت نشده است.</p>
+            <p v-else-if="selectedVehicle" class="mb-0 mt-2 text-xs text-muted">برای این خودرو هنوز موعد کیلومتری ثبت نشده است.</p>
           </div>
         </div>
-        <div v-else class="mt-4 grid min-h-52 place-items-center rounded-xl bg-black/[.025] text-center text-sm text-ink/35">ابتدا مشتری را از ستون مقابل انتخاب کنید.</div>
+        <div v-else class="mt-4 grid min-h-52 place-items-center rounded-xl bg-black/[.025] text-center text-sm text-muted">ابتدا مشتری را از ستون مقابل انتخاب کنید.</div>
         <button class="btn-primary mt-5 w-full" :disabled="!selectedCustomer || !selectedVehicle" @click="goToItems">ادامه و افزودن اقلام<span class="i-lucide-arrow-left h-4 w-4" /></button>
       </div>
     </section>
@@ -775,7 +775,7 @@ async function startNextService() {
     <section v-else-if="step === 2" class="grid gap-5 pb-28 xl:grid-cols-[1fr_1fr] xl:pb-0">
       <div class="card overflow-hidden">
         <header class="flex items-center justify-between border-b border-black/6 px-5 py-4">
-          <div><h2 class="m-0 text-base font-700">محصولات مصرفی</h2><p class="m-0 mt-1 text-xs text-ink/40">{{ number(products.length) }} قلم</p></div>
+          <div><h2 class="m-0 text-base font-700">محصولات مصرفی</h2><p class="m-0 mt-1 text-xs text-muted">{{ number(products.length) }} قلم</p></div>
           <button class="btn-secondary px-3 py-2" @click="openProductModal"><span class="i-lucide-plus h-4 w-4" />افزودن</button>
         </header>
         <div v-if="products.length" class="divide-y divide-black/5">
@@ -786,7 +786,7 @@ async function startNextService() {
               <div>
                 <label class="label">قیمت واحد</label>
                 <input v-model.number="line.unitPrice" type="number" min="0" class="field py-2">
-                <p class="mb-0 mt-1 text-xs text-ink/45">{{ money(line.unitPrice, shopCurrency) }}</p>
+                <p class="mb-0 mt-1 text-xs text-muted">{{ money(line.unitPrice, shopCurrency) }}</p>
               </div>
               <div>
                 <label class="label">تعویض بعد از (کیلومتر)</label>
@@ -804,7 +804,7 @@ async function startNextService() {
 
       <div class="card overflow-hidden">
         <header class="flex items-center justify-between border-b border-black/6 px-5 py-4">
-          <div><h2 class="m-0 text-base font-700">خدمات و اجرت</h2><p class="m-0 mt-1 text-xs text-ink/40">{{ number(services.length) }} خدمت</p></div>
+          <div><h2 class="m-0 text-base font-700">خدمات و اجرت</h2><p class="m-0 mt-1 text-xs text-muted">{{ number(services.length) }} خدمت</p></div>
           <button class="btn-secondary px-3 py-2" @click="openServiceModal"><span class="i-lucide-plus h-4 w-4" />افزودن</button>
         </header>
         <div v-if="services.length" class="divide-y divide-black/5">
@@ -815,7 +815,7 @@ async function startNextService() {
               <div>
                 <label class="label">اجرت واحد</label>
                 <input v-model.number="line.unitFee" type="number" min="0" class="field py-2">
-                <p class="mb-0 mt-1 text-xs text-ink/45">{{ money(line.unitFee, shopCurrency) }}</p>
+                <p class="mb-0 mt-1 text-xs text-muted">{{ money(line.unitFee, shopCurrency) }}</p>
               </div>
             </div>
             <p class="mb-0 mt-3 text-left text-xs font-800 text-brand-700" dir="rtl">{{ money(line.quantity * line.unitFee, shopCurrency) }}</p>
@@ -826,7 +826,7 @@ async function startNextService() {
 
       <div class="fixed inset-x-3 bottom-[5.5rem] z-30 flex flex-col gap-3 rounded-2xl border border-black/8 bg-white/95 p-3 shadow-[0_16px_45px_rgba(16,32,25,.18)] backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between sm:p-4 lg:sticky lg:inset-x-auto lg:bottom-4 xl:col-span-2">
         <div class="flex items-center justify-between gap-3 sm:block">
-          <span class="text-xs text-ink/45 sm:block">جمع فعلی</span>
+          <span class="text-xs text-muted sm:block">جمع فعلی</span>
           <strong class="text-lg text-ink">{{ money(grandTotal, shopCurrency) }}</strong>
         </div>
         <div class="grid grid-cols-[auto_1fr] gap-2 sm:flex">
@@ -849,9 +849,9 @@ async function startNextService() {
     <section v-else class="mx-auto max-w-3xl">
       <div class="card overflow-hidden">
         <header class="bg-ink p-5 text-white sm:p-6">
-          <p class="m-0 text-xs text-white/45">مرور نهایی سرویس</p>
+          <p class="m-0 text-xs text-white/70">مرور نهایی سرویس</p>
           <div class="mt-2 flex items-end justify-between gap-4"><h2 class="m-0 text-xl font-800">{{ selectedCustomer?.name }}</h2><strong class="text-brand-300">{{ selectedVehicle?.plateDisplay || selectedVehicle?.temporaryIdentifier || 'بدون پلاک' }}</strong></div>
-          <p class="mb-0 mt-2 text-sm text-white/50">{{ number(odometer) }} کیلومتر</p>
+          <p class="mb-0 mt-2 text-sm text-white/70">{{ number(odometer) }} کیلومتر</p>
         </header>
         <div class="p-5 sm:p-6">
           <div class="space-y-3">
@@ -861,12 +861,12 @@ async function startNextService() {
           <div class="my-5 border-t border-dashed border-black/10" />
           <div class="grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
             <div>
-              <label class="label">تخفیف فاکتور <span class="font-400 text-ink/40">({{ currencyLabel }})</span></label>
+              <label class="label">تخفیف فاکتور <span class="font-400 text-muted">({{ currencyLabel }})</span></label>
               <input v-model.number="discountAmount" type="number" min="0" :max="grandTotal" class="field text-left" dir="ltr">
-              <p v-if="discountAmount" class="mb-0 mt-1 text-xs text-ink/45">{{ money(discountAmount, shopCurrency) }}</p>
+              <p v-if="discountAmount" class="mb-0 mt-1 text-xs text-muted">{{ money(discountAmount, shopCurrency) }}</p>
             </div>
             <div class="rounded-xl bg-brand-50 px-4 py-3 sm:min-w-52">
-              <div v-if="discountAmount" class="mb-1 flex items-center justify-between gap-4 text-xs text-ink/45"><span>جمع اقلام</span><span>{{ money(grandTotal, shopCurrency) }}</span></div>
+              <div v-if="discountAmount" class="mb-1 flex items-center justify-between gap-4 text-xs text-muted"><span>جمع اقلام</span><span>{{ money(grandTotal, shopCurrency) }}</span></div>
               <div class="flex items-center justify-between gap-4"><span class="font-800">قابل پرداخت</span><strong class="text-xl font-800 text-brand-700">{{ money(payableTotal, shopCurrency) }}</strong></div>
             </div>
           </div>
@@ -907,7 +907,7 @@ async function startNextService() {
             required
             autofocus
           >
-          <p v-if="customerForm.mobile" class="mb-0 mt-2 text-xs text-ink/40">شماره از جست‌وجوی شما وارد شده و قابل ویرایش است.</p>
+          <p v-if="customerForm.mobile" class="mb-0 mt-2 text-xs text-muted">شماره از جست‌وجوی شما وارد شده و قابل ویرایش است.</p>
         </div>
         <div>
           <label class="label">جنسیت</label>
@@ -921,11 +921,11 @@ async function startNextService() {
           </div>
         </div>
         <div>
-          <label class="label">نام و نام خانوادگی <span class="font-400 text-ink/40">(اختیاری)</span></label>
+          <label class="label">نام و نام خانوادگی <span class="font-400 text-muted">(اختیاری)</span></label>
           <input v-model="customerForm.name" class="field" autocomplete="name" placeholder="در صورت تمایل وارد کنید">
         </div>
         <div>
-          <label class="label">یادداشت <span class="font-400 text-ink/40">(اختیاری)</span></label>
+          <label class="label">یادداشت <span class="font-400 text-muted">(اختیاری)</span></label>
           <textarea v-model="customerForm.note" class="field min-h-20 resize-y" />
         </div>
         <div class="flex justify-end gap-2 pt-2">
@@ -1001,7 +1001,7 @@ async function startNextService() {
             </span>
           </div>
 
-          <span class="mt-1 block text-xs text-ink/40">
+          <span class="mt-1 block text-xs text-muted">
             {{
               product.shopConfiguration?.salePrice
                 ? money(product.shopConfiguration.salePrice, shopCurrency)
@@ -1083,7 +1083,7 @@ async function startNextService() {
     <div
       class="mt-3 rounded-xl border border-dashed border-black/10 bg-black/[.02] p-3"
     >
-      <p class="m-0 text-xs leading-6 text-ink/50">
+      <p class="m-0 text-xs leading-6 text-muted">
         محصول پیدا نشد؟ مشخصات آن را ثبت کنید تا برای بررسی مدیر ارسال و
         هم‌زمان به این فاکتور افزوده شود.
       </p>
@@ -1129,7 +1129,7 @@ async function startNextService() {
     <AppModal :open="showService" title="افزودن خدمت" description="خدمت استاندارد را انتخاب کنید یا نام خدمت خارج از کاتالوگ را بنویسید." @close="showService = false">
       <div class="max-h-80 space-y-2 overflow-y-auto">
         <button v-for="service in selectableServices" :key="service.id" class="flex w-full items-center justify-between rounded-xl border p-3 text-right hover:border-brand-300 hover:bg-brand-50" :class="selectedServiceIds.includes(service.id) ? 'border-brand-500 bg-brand-50' : 'border-black/7'" @click="toggleSelection(selectedServiceIds, service.id)">
-          <div><strong class="block text-sm">{{ service.name }}</strong><span class="mt-1 block text-xs text-ink/40">{{ service.category || 'خدمت عمومی' }}</span></div>
+          <div><strong class="block text-sm">{{ service.name }}</strong><span class="mt-1 block text-xs text-muted">{{ service.category || 'خدمت عمومی' }}</span></div>
           <span :class="selectedServiceIds.includes(service.id) ? 'i-lucide-check text-brand-700' : 'i-lucide-plus text-brand-600'" class="h-5 w-5" />
         </button>
       </div>
@@ -1154,7 +1154,7 @@ async function startNextService() {
           <input id="local-service-name" v-model="localServiceName" class="field" placeholder="مثلاً شست‌وشوی انژکتور" @keyup.enter="addLocalService">
           <button class="btn-ghost shrink-0" :disabled="!localServiceName.trim()" @click="addLocalService"><span class="i-lucide-file-plus" />افزودن</button>
         </div>
-        <p class="mb-0 mt-2 text-xs leading-5 text-ink/45">این نام در سفارش ثبت و برای تکمیل کاتالوگ به مدیر پیشنهاد می‌شود.</p>
+        <p class="mb-0 mt-2 text-xs leading-5 text-muted">این نام در سفارش ثبت و برای تکمیل کاتالوگ به مدیر پیشنهاد می‌شود.</p>
       </div>
       <div class="mt-4 flex justify-end">
         <button class="btn-primary" @click="confirmServices">تأیید و افزودن</button>
@@ -1172,12 +1172,12 @@ async function startNextService() {
         <div class="sm:col-span-2">
           <label class="label">کیلومتر فعلی</label>
           <input v-model.number="vehicleForm.lastOdometer" type="number" min="0" class="field text-left" dir="ltr" placeholder="126500">
-          <p v-if="formattedOdometer(vehicleForm.lastOdometer)" class="mb-0 mt-1 text-xs text-ink/45">
+          <p v-if="formattedOdometer(vehicleForm.lastOdometer)" class="mb-0 mt-1 text-xs text-muted">
             {{ formattedOdometer(vehicleForm.lastOdometer) }}
           </p>
         </div>
         <div class="sm:col-span-2">
-          <label class="label">پلاک خودرو <span class="font-400 text-ink/40">(اختیاری)</span></label>
+          <label class="label">پلاک خودرو <span class="font-400 text-muted">(اختیاری)</span></label>
           <IranianPlateInput v-model="vehicleForm.plate" @incomplete-change="plateIncomplete = $event" />
         </div>
         <div class="flex justify-end gap-2 pt-2 sm:col-span-2">

@@ -258,7 +258,7 @@ function downloadImage(showToast = true) {
     <div v-if="card" class="mb-4 overflow-hidden rounded-2xl border border-black/8 bg-black/[.025]">
       <div class="aspect-[7/4] bg-ink/5">
         <img v-if="previewUrl" :src="previewUrl" class="h-full w-full object-cover" alt="پیش‌نمایش کارت سرویس">
-        <div v-else class="grid h-full place-items-center p-8 text-center text-sm text-ink/45">
+        <div v-else class="grid h-full place-items-center p-8 text-center text-sm text-muted">
           <div v-if="generatingImage">
             <span class="i-lucide-loader-circle mx-auto mb-3 block h-8 w-8 animate-spin text-brand-600" />
             در حال ساخت تصویر کارت…
@@ -342,7 +342,7 @@ function downloadImage(showToast = true) {
         <p v-else-if="eitaaUsernameInput" class="mb-0 mt-1.5 text-xs leading-5 text-orange-800/75">
           متن و لینک کپی می‌شود؛ پس از باز شدن گفت‌وگو آن را جای‌گذاری کنید.
         </p>
-        <button type="button" class="btn-ghost mt-2 text-xs text-ink/55" @click="openSmsComposer">
+        <button type="button" class="btn-ghost mt-2 text-xs text-muted" @click="openSmsComposer">
           مشتری نام کاربری ایتا ندارد؟ ارسال با پیامک
         </button>
       </div>

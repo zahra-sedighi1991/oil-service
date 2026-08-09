@@ -158,8 +158,8 @@ async function submitProductSuggestion(value: ProductEditorValue) {
 
     <div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <div class="inline-flex rounded-xl bg-black/5 p-1">
-        <button class="rounded-lg border-0 px-4 py-2 text-sm font-700" :class="tab === 'products' ? 'bg-white text-ink shadow-sm' : 'bg-transparent text-ink/45'" @click="tab = 'products'">محصولات</button>
-        <button class="rounded-lg border-0 px-4 py-2 text-sm font-700" :class="tab === 'services' ? 'bg-white text-ink shadow-sm' : 'bg-transparent text-ink/45'" @click="tab = 'services'">خدمات</button>
+        <button class="rounded-lg border-0 px-4 py-2 text-sm font-700" :class="tab === 'products' ? 'bg-white text-ink shadow-sm' : 'bg-transparent text-muted'" @click="tab = 'products'">محصولات</button>
+        <button class="rounded-lg border-0 px-4 py-2 text-sm font-700" :class="tab === 'services' ? 'bg-white text-ink shadow-sm' : 'bg-transparent text-muted'" @click="tab = 'services'">خدمات</button>
       </div>
       <div v-if="tab === 'products'" class="flex w-full items-center gap-2 sm:w-auto">
         <div class="relative min-w-0 flex-1 sm:w-80">
@@ -184,11 +184,11 @@ async function submitProductSuggestion(value: ProductEditorValue) {
             <div class="min-w-0 flex-1">
               <div class="flex flex-wrap items-center gap-2">
                 <strong class="block truncate text-sm">{{ product.displayName }}</strong>
-                <span class="badge text-[10px]" :class="product.shopConfiguration?.isActive ? 'bg-emerald-50 text-emerald-700' : 'bg-black/5 text-ink/40'">
+                <span class="badge text-[10px]" :class="product.shopConfiguration?.isActive ? 'bg-emerald-50 text-emerald-700' : 'bg-black/5 text-muted'">
                   {{ product.shopConfiguration?.isActive ? 'فعال در فروشگاه' : 'افزوده نشده' }}
                 </span>
               </div>
-              <span class="mt-1 block truncate text-xs text-ink/40">
+              <span class="mt-1 block truncate text-xs text-muted">
                 دوره تعویض: {{ productDefaultIntervalKm(product) ? `${productDefaultIntervalKm(product)?.toLocaleString('fa-IR')} کیلومتر` : 'تعیین نشده' }}
                 <template v-if="product.attributes?.model"> · مدل {{ product.attributes.model }}</template>
                 <template v-if="product.attributes?.package_volume"> · حجم {{ product.attributes.package_volume }}</template>
@@ -217,7 +217,7 @@ async function submitProductSuggestion(value: ProductEditorValue) {
           <div v-for="(service, index) in services" :key="service.id" class="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:px-5">
             <div class="flex min-w-0 flex-1 items-center gap-3">
               <span class="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-blue-50 text-blue-700"><span class="i-lucide-wrench h-5 w-5" /></span>
-              <div class="min-w-0 flex-1"><strong class="block truncate text-sm">{{ service.name }}</strong><span class="mt-1 block truncate text-xs text-ink/40">{{ service.category || 'خدمت عمومی' }}</span></div>
+              <div class="min-w-0 flex-1"><strong class="block truncate text-sm">{{ service.name }}</strong><span class="mt-1 block truncate text-xs text-muted">{{ service.category || 'خدمت عمومی' }}</span></div>
             </div>
             <div class="flex items-center justify-between gap-2 sm:justify-end">
               <strong :class="service.shopConfiguration?.fee ? 'text-ink' : 'text-amber-600'">
@@ -240,15 +240,15 @@ async function submitProductSuggestion(value: ProductEditorValue) {
         <div>
           <label class="label">{{ editing.type === 'product' ? 'قیمت فروش' : 'اجرت پیش‌فرض' }} ({{ currencyLabel }})</label>
           <input v-model.number="editing.value" type="number" min="0" class="field text-left" dir="ltr" required>
-          <p class="mb-0 mt-1 text-left text-xs text-ink/45" dir="rtl">{{ money(editing.value, shopCurrency) }}</p>
+          <p class="mb-0 mt-1 text-left text-xs text-muted" dir="rtl">{{ money(editing.value, shopCurrency) }}</p>
         </div>
         <div v-if="editing.type === 'product'">
           <label class="label">دوره تعویض پیش‌فرض (کیلومتر)</label>
           <input v-model.number="editing.defaultIntervalKm" type="number" min="0" step="500" class="field text-left" dir="ltr" placeholder="مثلاً 5000">
-          <p class="mb-0 mt-2 text-xs leading-5 text-ink/45">هنگام ثبت سفارش خودکار وارد می‌شود و همان‌جا قابل تغییر است.</p>
+          <p class="mb-0 mt-2 text-xs leading-5 text-muted">هنگام ثبت سفارش خودکار وارد می‌شود و همان‌جا قابل تغییر است.</p>
         </div>
-        <label class="flex items-center justify-between rounded-xl border border-black/7 p-3"><span><strong class="block text-sm">فعال در فروشگاه</strong><small class="text-ink/40">برای ثبت سرویس قابل انتخاب باشد</small></span><input v-model="editing.active" type="checkbox" class="h-5 w-5 accent-brand-600"></label>
-        <label class="flex items-center justify-between rounded-xl border border-black/7 p-3"><span><strong class="block text-sm">افزودن به محبوب‌ها</strong><small class="text-ink/40">در ابتدای فهرست نمایش داده شود</small></span><input v-model="editing.favorite" type="checkbox" class="h-5 w-5 accent-brand-600"></label>
+        <label class="flex items-center justify-between rounded-xl border border-black/7 p-3"><span><strong class="block text-sm">فعال در فروشگاه</strong><small class="text-muted">برای ثبت سرویس قابل انتخاب باشد</small></span><input v-model="editing.active" type="checkbox" class="h-5 w-5 accent-brand-600"></label>
+        <label class="flex items-center justify-between rounded-xl border border-black/7 p-3"><span><strong class="block text-sm">افزودن به محبوب‌ها</strong><small class="text-muted">در ابتدای فهرست نمایش داده شود</small></span><input v-model="editing.favorite" type="checkbox" class="h-5 w-5 accent-brand-600"></label>
         <button class="btn-primary w-full" :disabled="saving">ذخیره تنظیمات</button>
       </form>
     </AppModal>

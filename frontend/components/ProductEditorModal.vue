@@ -157,7 +157,7 @@ function submit() {
         <div>
           <label class="label">
             مدل محصول
-            <span class="font-400 text-ink/40">
+            <span class="font-400 text-muted">
               (اختیاری)
             </span>
           </label>
@@ -172,7 +172,7 @@ function submit() {
         <div>
           <label class="label">
             حجم
-            <span class="font-400 text-ink/40">
+            <span class="font-400 text-muted">
               (اختیاری)
             </span>
           </label>
@@ -211,7 +211,7 @@ function submit() {
             </span>
             <span>
               <strong class="block text-sm">همه خودروها</strong>
-              <small class="mt-0.5 block text-ink/45">برای تمام مدل‌ها قابل استفاده است</small>
+              <small class="mt-0.5 block text-muted">برای تمام مدل‌ها قابل استفاده است</small>
             </span>
           </button>
 
@@ -230,7 +230,7 @@ function submit() {
             </span>
             <span class="min-w-0">
               <strong class="block text-sm">خودروهای مشخص</strong>
-              <small class="mt-0.5 block text-ink/45">
+              <small class="mt-0.5 block text-muted">
                 {{ form.vehicleModelIds.length ? `${form.vehicleModelIds.length} مدل انتخاب شده` : 'یک یا چند مدل را انتخاب کنید' }}
               </small>
             </span>
@@ -274,7 +274,7 @@ function submit() {
               <button
                 v-if="vehicleSearch"
                 type="button"
-                class="absolute left-2 top-1/2 grid h-7 w-7 -translate-y-1/2 place-items-center rounded-full border-0 bg-black/5 text-lg leading-none text-ink/45"
+                class="absolute left-2 top-1/2 grid h-7 w-7 -translate-y-1/2 place-items-center rounded-full border-0 bg-black/5 text-lg leading-none text-muted"
                 aria-label="پاک‌کردن جستجو"
                 @click="vehicleSearch = ''"
               >
@@ -283,7 +283,7 @@ function submit() {
             </div>
 
             <div v-if="filteredVehicleModels.length" class="mt-2 flex items-center justify-between gap-3 text-xs">
-              <span class="text-ink/45">{{ filteredVehicleModels.length }} مدل پیدا شد</span>
+              <span class="text-muted">{{ filteredVehicleModels.length }} مدل پیدا شد</span>
               <button type="button" class="border-0 bg-transparent p-0 font-700 text-brand-700" @click="toggleFilteredVehicles">
                 {{ allFilteredVehiclesSelected ? 'لغو انتخاب نتایج' : 'انتخاب همه نتایج' }}
               </button>
@@ -307,7 +307,7 @@ function submit() {
               </span>
               <span class="min-w-0 flex-1">
                 <strong class="block truncate text-sm">{{ model.nameFa }}</strong>
-                <small class="mt-0.5 block truncate text-ink/40">
+                <small class="mt-0.5 block truncate text-muted">
                   {{ model.brand?.nameFa || model.nameEn || 'برند نامشخص' }}
                 </small>
               </span>
@@ -317,8 +317,8 @@ function submit() {
             </button>
 
             <div v-if="!filteredVehicleModels.length" class="px-3 py-8 text-center">
-              <strong class="block text-sm text-ink/60">مدلی پیدا نشد</strong>
-              <span class="mt-1 block text-xs text-ink/40">نام برند یا مدل دیگری را جستجو کنید.</span>
+              <strong class="block text-sm text-muted">مدلی پیدا نشد</strong>
+              <span class="mt-1 block text-xs text-muted">نام برند یا مدل دیگری را جستجو کنید.</span>
             </div>
           </div>
 

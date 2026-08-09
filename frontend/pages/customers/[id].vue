@@ -120,13 +120,13 @@ async function createVehicle() {
 
         <span
           v-if="customer.vehicles?.length"
-          class="text-xs font-700 text-ink/40"
+          class="text-xs font-700 text-muted"
         >
           {{ customer.vehicles.length }} خودرو
         </span>
       </div>
 
-      <div class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink/45 sm:text-sm">
+      <div class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted sm:text-sm">
         <a
           :href="`tel:${customer.mobileNormalized}`"
           class="inline-flex items-center gap-1 text-inherit no-underline hover:text-brand-700"
@@ -172,7 +172,7 @@ async function createVehicle() {
       هنوز خودرویی ثبت نشده
     </h2>
 
-    <p class="mb-4 mt-1 text-xs text-ink/40">
+    <p class="mb-4 mt-1 text-xs text-muted">
       اولین خودرو را برای این مشتری اضافه کنید.
     </p>
 
@@ -215,7 +215,7 @@ async function createVehicle() {
 
               <span
                 v-if="vehicle.year"
-                class="mt-0.5 block text-xs text-ink/35"
+                class="mt-0.5 block text-xs text-muted"
               >
                 مدل {{ vehicle.year }}
               </span>
@@ -226,7 +226,7 @@ async function createVehicle() {
 
       <!-- Plate -->
       <div class="mt-4">
-        <span class="text-[11px] text-ink/35">
+        <span class="text-[11px] text-muted">
           پلاک
         </span>
 
@@ -242,7 +242,7 @@ async function createVehicle() {
       <!-- Bottom -->
       <div class="mt-auto flex items-end justify-between gap-3 pt-4">
         <div class="min-w-0">
-          <span class="block text-[11px] text-ink/35">
+          <span class="block text-[11px] text-muted">
             کیلومتر
           </span>
 
@@ -271,7 +271,7 @@ async function createVehicle() {
         border border-dashed border-black/10
         bg-transparent
         p-4
-        text-sm font-700 text-ink/35
+        text-sm font-700 text-muted
         transition
         hover:border-brand-300
         hover:bg-brand-50
@@ -307,11 +307,11 @@ async function createVehicle() {
         </div>
       </div>
       <div>
-        <label class="label">نام و نام خانوادگی <span class="font-400 text-ink/40">(اختیاری)</span></label>
+        <label class="label">نام و نام خانوادگی <span class="font-400 text-muted">(اختیاری)</span></label>
         <input v-model="customerForm.name" class="field" autocomplete="name">
       </div>
       <div>
-        <label class="label">یادداشت <span class="font-400 text-ink/40">(اختیاری)</span></label>
+        <label class="label">یادداشت <span class="font-400 text-muted">(اختیاری)</span></label>
         <textarea v-model="customerForm.note" class="field min-h-20 resize-y" />
       </div>
       <div class="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
@@ -356,7 +356,7 @@ async function createVehicle() {
 
         <p
           v-if="formattedOdometer(vehicleForm.lastOdometer)"
-          class="mb-0 mt-1 text-xs text-ink/45"
+          class="mb-0 mt-1 text-xs text-muted"
         >
           {{ formattedOdometer(vehicleForm.lastOdometer) }}
         </p>
@@ -366,7 +366,7 @@ async function createVehicle() {
         <label class="label">
           پلاک خودرو
 
-          <span class="font-400 text-ink/40">
+          <span class="font-400 text-muted">
             (اختیاری)
           </span>
         </label>

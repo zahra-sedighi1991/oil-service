@@ -35,7 +35,7 @@ watch(() => route.fullPath, () => { mobileMenu.value = false })
         </span>
         <div>
           <strong class="block text-lg font-900">روغن‌یار</strong>
-          <span class="text-xs text-white/45">مدیریت هوشمند سرویس</span>
+          <span class="text-xs text-white/70">مدیریت هوشمند سرویس</span>
         </div>
       </NuxtLink>
 
@@ -59,9 +59,9 @@ watch(() => route.fullPath, () => { mobileMenu.value = false })
           </span>
           <div class="min-w-0 flex-1">
             <p class="m-0 truncate text-sm font-800">{{ user?.name || 'مدیر فروشگاه' }}</p>
-            <p class="m-0 mt-0.5 text-[11px] text-white/40">{{ isAdmin ? 'مدیر سامانه' : 'مدیر فضای کاری' }}</p>
+            <p class="m-0 mt-0.5 text-[11px] text-white/70">{{ isAdmin ? 'مدیر سامانه' : 'مدیر فضای کاری' }}</p>
           </div>
-          <button class="grid h-9 w-9 place-items-center rounded-lg border-0 bg-transparent text-white/45 hover:bg-white/8 hover:text-white" title="خروج" @click="logout">
+          <button class="grid h-9 w-9 place-items-center rounded-lg border-0 bg-transparent text-white/70 hover:bg-white/8 hover:text-white" title="خروج" @click="logout">
             <span class="i-lucide-log-out h-4.5 w-4.5" />
           </button>
         </div>
@@ -92,7 +92,7 @@ watch(() => route.fullPath, () => { mobileMenu.value = false })
       :class="mobileNav.length === 3 ? 'grid-cols-3' : 'grid-cols-4'"
       style="bottom: max(0.75rem, env(safe-area-inset-bottom));"
     >
-      <NuxtLink v-for="item in mobileNav" :key="item.to" :to="item.to" class="flex flex-col items-center gap-1 rounded-xl py-2 text-[10px] font-700 text-ink/45 no-underline" active-class="!bg-brand-50 !text-brand-700">
+      <NuxtLink v-for="item in mobileNav" :key="item.to" :to="item.to" class="flex flex-col items-center gap-1 rounded-xl py-2 text-[10px] font-700 text-muted no-underline" active-class="!bg-brand-50 !text-brand-700">
         <span class="h-5 w-5" :class="item.icon" />
         {{ item.label.replace(' و خودروها', '') }}
       </NuxtLink>

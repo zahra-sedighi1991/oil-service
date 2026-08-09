@@ -193,7 +193,7 @@ async function exportCustomers() {
                 :href="`tel:${customer.mobileNormalized}`"
                 class="
                   mt-0.5 block w-fit
-                  text-xs text-ink/45
+                  text-xs text-muted
                   no-underline
                   transition
                   hover:text-brand-700
@@ -211,7 +211,7 @@ async function exportCustomers() {
                 <span
                   v-for="vehicle in customer.vehicles.filter(item => item.plateDisplay || item.temporaryIdentifier)"
                   :key="vehicle.id"
-                  class="inline-flex items-center gap-1 rounded-lg bg-black/[.035] px-2 py-1 text-[11px] font-700 text-ink/60"
+                  class="inline-flex items-center gap-1 rounded-lg bg-black/[.035] px-2 py-1 text-[11px] font-700 text-muted"
                 >
                   <span class="i-lucide-car-front h-3.5 w-3.5 text-brand-600" />
                   {{ vehicle.plateDisplay || vehicle.temporaryIdentifier }}
@@ -375,7 +375,7 @@ async function exportCustomers() {
       <label class="label">
         نام و نام خانوادگی
 
-        <span class="font-400 text-ink/40">
+        <span class="font-400 text-muted">
           (اختیاری)
         </span>
       </label>

@@ -275,7 +275,7 @@ async function saveProduct(value: ProductEditorValue) {
     <header class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
       <div>
         <h1 class="mb-0 mt-1 text-2xl font-800">کاتالوگ سراسری</h1>
-        <p class="mb-0 mt-2 text-sm text-ink/45">
+        <p class="mb-0 mt-2 text-sm text-muted">
           ابتدا دسته‌بندی و سپس محصول واقعی را بسازید تا در پنل فروشنده نمایش داده شود.
         </p>
       </div>
@@ -290,7 +290,7 @@ async function saveProduct(value: ProductEditorValue) {
         v-for="item in tabs"
         :key="item.key"
         class="rounded-lg border-0 px-3 py-2 text-sm font-700"
-        :class="tab === item.key ? 'bg-white shadow-sm' : 'bg-transparent text-ink/45'"
+        :class="tab === item.key ? 'bg-white shadow-sm' : 'bg-transparent text-muted'"
         @click="selectTab(item.key)"
       >
         {{ item.label }}
@@ -306,13 +306,13 @@ async function saveProduct(value: ProductEditorValue) {
         <div v-for="item in items" :key="item.id" class="flex items-center justify-between gap-4 px-5 py-4">
           <div class="min-w-0">
             <strong class="block truncate text-sm">{{ itemTitle(item) }}</strong>
-            <span class="mt-1 block truncate text-xs text-ink/40">{{ itemSubtitle(item) }}</span>
+            <span class="mt-1 block truncate text-xs text-muted">{{ itemSubtitle(item) }}</span>
           </div>
           <button
             v-if="tab === 'models'"
             type="button"
             class="flex shrink-0 items-center gap-2 rounded-xl border px-3 py-2 text-xs font-700 transition"
-            :class="item.isPopular ? 'border-brand-300 bg-brand-50 text-brand-700' : 'border-black/8 bg-white text-ink/45 hover:border-brand-200'"
+            :class="item.isPopular ? 'border-brand-300 bg-brand-50 text-brand-700' : 'border-black/8 bg-white text-muted hover:border-brand-200'"
             :disabled="updatingPopularity === item.id"
             @click="toggleModelPopularity(item)"
           >
@@ -478,7 +478,7 @@ async function saveProduct(value: ProductEditorValue) {
               مدل پراستفاده
             </strong>
 
-            <small class="text-ink/40">
+            <small class="text-muted">
               به‌صورت چیپ در فرم افزودن خودرو نمایش داده شود
             </small>
           </span>
@@ -523,7 +523,7 @@ async function saveProduct(value: ProductEditorValue) {
         <div>
           <label class="label">
             قالب عنوان
-            <span class="font-400 text-ink/40">
+            <span class="font-400 text-muted">
               (اختیاری)
             </span>
           </label>

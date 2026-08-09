@@ -66,7 +66,7 @@ function switchMode(nextMode: 'login' | 'register') {
       <h1 class="m-0 text-2xl font-800">
         {{ mode === 'login' ? 'به روغن‌یار خوش آمدید' : 'فروشگاه خود را بسازید' }}
       </h1>
-      <p class="mb-0 mt-2 text-sm leading-6 text-ink/50">
+      <p class="mb-0 mt-2 text-sm leading-6 text-muted">
         {{ mode === 'login'
           ? 'شماره موبایل و رمز عبور حساب خود را وارد کنید.'
           : 'اطلاعات اولیه را وارد کنید؛ پس از ثبت‌نام مستقیماً وارد پنل می‌شوید.' }}
@@ -77,7 +77,7 @@ function switchMode(nextMode: 'login' | 'register') {
       <button
         type="button"
         class="rounded-lg border-0 px-3 py-2.5 text-sm font-800 transition"
-        :class="mode === 'login' ? 'bg-white text-ink shadow-sm' : 'bg-transparent text-ink/45'"
+        :class="mode === 'login' ? 'bg-white text-ink shadow-sm' : 'bg-transparent text-muted'"
         @click="switchMode('login')"
       >
         ورود
@@ -85,7 +85,7 @@ function switchMode(nextMode: 'login' | 'register') {
       <button
         type="button"
         class="rounded-lg border-0 px-3 py-2.5 text-sm font-800 transition"
-        :class="mode === 'register' ? 'bg-white text-ink shadow-sm' : 'bg-transparent text-ink/45'"
+        :class="mode === 'register' ? 'bg-white text-ink shadow-sm' : 'bg-transparent text-muted'"
         @click="switchMode('register')"
       >
         ثبت‌نام اولیه
@@ -121,7 +121,7 @@ function switchMode(nextMode: 'login' | 'register') {
           >
           <button
             type="button"
-            class="absolute left-2 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-lg border-0 bg-transparent text-ink/35 hover:bg-black/5 hover:text-ink"
+            class="absolute left-2 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-lg border-0 bg-transparent text-muted hover:bg-black/5 hover:text-ink"
             :aria-label="showPassword ? 'پنهان کردن رمز' : 'نمایش رمز'"
             @click="showPassword = !showPassword"
           >
@@ -195,7 +195,7 @@ function switchMode(nextMode: 'login' | 'register') {
         >
       </div>
 
-      <label class="flex cursor-pointer items-center gap-2 text-xs text-ink/50">
+      <label class="flex cursor-pointer items-center gap-2 text-xs text-muted">
         <input v-model="showPassword" type="checkbox" class="h-4 w-4 accent-brand-600">
         نمایش رمزهای عبور
       </label>

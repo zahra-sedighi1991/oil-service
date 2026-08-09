@@ -9,7 +9,7 @@
         </span>
         <div>
           <strong class="block text-xl font-700">روغن‌یار</strong>
-          <span class="text-xs text-ink/45">دفترچه سرویس دیجیتال</span>
+          <span class="text-xs text-muted">دفترچه سرویس دیجیتال</span>
         </div>
       </NuxtLink>
       <slot />
