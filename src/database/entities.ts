@@ -186,7 +186,7 @@ export class Vehicle extends BaseEntity {
   @Column({ nullable: true }) plateDisplay?: string;
   @Column({ nullable: true }) temporaryIdentifier?: string;
   @Column({ nullable: true }) year?: number;
-  @Column({ nullable: true }) lastOdometer?: number;
+  @Column({ nullable: true }) lastOdometer?: number | null;
 }
 
 @Entity('service_orders')

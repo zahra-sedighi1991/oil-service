@@ -178,6 +178,17 @@ export class ServiceOrdersService {
           orderId: order.id,
           status: InvoiceStatus.ISSUED,
         }, { status: InvoiceStatus.VOID });
+        const latest = await manager.createQueryBuilder(ServiceOrder, 'remainingOrder')
+          .select('MAX(remainingOrder.odometer)', 'odometer')
+          .where('remainingOrder.shopId = :shopId', { shopId })
+          .andWhere('remainingOrder.vehicleId = :vehicleId', { vehicleId: order.vehicleId })
+          .andWhere('remainingOrder.status = :status', { status: ServiceOrderStatus.COMPLETED })
+          .getRawOne<{ odometer: string | null }>();
+        const vehicle = await manager.findOneByOrFail(Vehicle, { id: order.vehicleId, shopId });
+        vehicle.lastOdometer = latest?.odometer === null || latest?.odometer === undefined
+          ? null
+          : Number(latest.odometer);
+        await manager.save(vehicle);
       }
       await this.audit(
         manager,
