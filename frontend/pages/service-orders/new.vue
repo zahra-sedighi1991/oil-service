@@ -33,7 +33,12 @@ interface PendingSuggestion {
 interface PreviousOrder {
   status: 'draft' | 'completed' | 'canceled'
   odometer: number
-  productLines: Array<{ productId?: string; intervalKm?: number; dueOdometer?: number }>
+  productLines: Array<{
+    productId?: string
+    intervalKm?: number
+    dueOdometer?: number
+    snapshot?: { displayName?: string; description?: string }
+  }>
 }
 interface CompletionResult {
   invoiceNo: string
@@ -183,16 +188,24 @@ watch(selectedVehicle, async (vehicle) => {
   try {
     const orders = await api.get<PreviousOrder[]>('/service-orders', { vehicleId: vehicle.id })
     if (request !== odometerRequest) return
-    let dueValues: number[] = []
+    const dueValues: number[] = []
+    const latestProductTypes = new Set<string>()
     for (const order of orders) {
       if (order.status !== 'completed') continue
-      dueValues = order.productLines.map((line) => {
-        if (line.dueOdometer !== undefined && line.dueOdometer !== null) return Number(line.dueOdometer)
+      for (const line of order.productLines) {
         const product = catalogProducts.value?.find(item => item.id === line.productId)
+        const temporaryName = line.snapshot?.displayName || line.snapshot?.description || 'بدون‌نام'
+        const productTypeKey = product?.productTypeId || line.productId || `temporary:${temporaryName.trim().toLocaleLowerCase('fa')}`
+        if (latestProductTypes.has(productTypeKey)) continue
+        latestProductTypes.add(productTypeKey)
+        if (line.dueOdometer !== undefined && line.dueOdometer !== null) {
+          const dueOdometer = Number(line.dueOdometer)
+          if (Number.isFinite(dueOdometer) && dueOdometer > 0) dueValues.push(dueOdometer)
+          continue
+        }
         const interval = Number(line.intervalKm ?? (product ? productDefaultIntervalKm(product) : 0))
-        return interval > 0 ? order.odometer + interval : 0
-      }).filter(value => Number.isFinite(value) && value > 0)
-      if (dueValues.length) break
+        if (Number.isFinite(interval) && interval > 0) dueValues.push(order.odometer + interval)
+      }
     }
     if (!dueValues.length) return
     suggestedOdometer.value = Math.min(...dueValues)
