@@ -438,8 +438,12 @@ function addPendingService(item: PendingSuggestion) {
 
 function goToItems() {
   if (!selectedCustomer.value || !selectedVehicle.value) return toast.error('مشتری و خودرو را انتخاب کنید.')
-  if (odometer.value === undefined || odometer.value < 0) return toast.error('کیلومتر فعلی خودرو را وارد کنید.')
-  if (selectedVehicle.value.lastOdometer && odometer.value < selectedVehicle.value.lastOdometer) {
+  if (!Number.isInteger(odometer.value) || odometer.value! < 0) return toast.error('کیلومتر فعلی خودرو را به‌صورت عدد صحیح وارد کنید.')
+  if (
+    selectedVehicle.value.lastOdometer !== undefined
+    && selectedVehicle.value.lastOdometer !== null
+    && odometer.value! < selectedVehicle.value.lastOdometer
+  ) {
     return toast.error('کیلومتر فعلی نمی‌تواند کمتر از آخرین کیلومتر ثبت‌شده باشد.')
   }
   step.value = 2
@@ -448,7 +452,21 @@ function goToItems() {
 function goToReview() {
   if (!products.value.length && !services.value.length) return toast.error('حداقل یک محصول یا خدمت اضافه کنید.')
   if ([...products.value, ...services.value].some(line => !line.description.trim())) return toast.error('نام همه محصولات و خدمات الزامی است.')
-  if ([...products.value, ...services.value].some(line => line.quantity <= 0)) return toast.error('تعداد اقلام باید بیشتر از صفر باشد.')
+  if ([...products.value, ...services.value].some(line => !Number.isFinite(line.quantity) || line.quantity <= 0)) {
+    return toast.error('تعداد اقلام باید یک عدد معتبر و بیشتر از صفر باشد.')
+  }
+  if (products.value.some(line => !Number.isInteger(line.unitPrice) || line.unitPrice < 0)) {
+    return toast.error('قیمت محصولات را به‌صورت عدد صحیح وارد کنید.')
+  }
+  if (services.value.some(line => !Number.isInteger(line.unitFee) || line.unitFee < 0)) {
+    return toast.error('اجرت خدمات را به‌صورت عدد صحیح وارد کنید.')
+  }
+  for (const line of products.value) {
+    if ((line.intervalKm as unknown) === '') line.intervalKm = undefined
+    if (line.intervalKm !== undefined && (!Number.isInteger(line.intervalKm) || line.intervalKm < 0)) {
+      return toast.error('بازه تعویض را به‌صورت عدد صحیح وارد کنید.')
+    }
+  }
   step.value = 3
 }
 
