@@ -183,7 +183,7 @@ async function createVehicle() {
           </span>
 
           <strong class="text-sm font-800 text-ink/70">
-            {{ number(vehicle.lastOdometer) }}
+            {{ vehicle.lastOdometer === undefined || vehicle.lastOdometer === null ? 'ثبت نشده' : number(vehicle.lastOdometer) }}
           </strong>
         </div>
 
