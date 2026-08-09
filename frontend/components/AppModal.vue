@@ -26,7 +26,7 @@ function onKey(event: KeyboardEvent) {
         @click.self="emit('close')"
       >
         <section
-          class="flex max-h-[92vh] w-full min-h-0 flex-col rounded-t-3xl bg-surface p-5 shadow-2xl sm:max-w-lg sm:rounded-3xl sm:p-6"
+          class="flex max-h-[92dvh] w-full min-h-0 flex-col rounded-t-3xl bg-surface p-5 shadow-2xl sm:max-w-lg sm:rounded-3xl sm:p-6"
         >
           <header class="mb-5 shrink-0 flex items-start justify-between gap-4">
             <div>
@@ -51,7 +51,7 @@ function onKey(event: KeyboardEvent) {
             </button>
           </header>
 
-          <div class="flex min-h-0 flex-1 flex-col">
+          <div class="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain">
             <slot />
           </div>
         </section>
