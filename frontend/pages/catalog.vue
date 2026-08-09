@@ -211,14 +211,21 @@ async function submitProductSuggestion(value: ProductEditorValue) {
       </div>
       <div v-else class="flex min-h-0 flex-1 flex-col">
         <div v-if="services?.length" class="scroll-container list-scroll divide-y divide-black/5">
-          <div v-for="(service, index) in services" :key="service.id" class="flex items-center gap-4 px-5 py-4">
-            <span class="grid h-11 w-11 place-items-center rounded-xl bg-blue-50 text-blue-700"><span class="i-lucide-wrench h-5 w-5" /></span>
-            <div class="flex-1"><strong class="text-sm">{{ service.name }}</strong><span class="mt-1 block text-xs text-ink/40">{{ service.category || 'خدمت عمومی' }}</span></div>
-            <div class="flex flex-col">
-              <button class="btn-ghost h-6 w-7 p-0" :disabled="movingCard || !canMove(services || [], index, -1)" title="انتقال به بالا" aria-label="انتقال به بالا" @click="moveCard('service', index, -1)"><span class="i-lucide-chevron-up h-4 w-4" /></button>
-              <button class="btn-ghost h-6 w-7 p-0" :disabled="movingCard || !canMove(services || [], index, 1)" title="انتقال به پایین" aria-label="انتقال به پایین" @click="moveCard('service', index, 1)"><span class="i-lucide-chevron-down h-4 w-4" /></button>
+          <div v-for="(service, index) in services" :key="service.id" class="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:px-5">
+            <div class="flex min-w-0 flex-1 items-center gap-3">
+              <span class="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-blue-50 text-blue-700"><span class="i-lucide-wrench h-5 w-5" /></span>
+              <div class="min-w-0 flex-1"><strong class="block truncate text-sm">{{ service.name }}</strong><span class="mt-1 block truncate text-xs text-ink/40">{{ service.category || 'خدمت عمومی' }}</span></div>
             </div>
-            <button class="btn-secondary px-3 py-2" @click="editService(service)">تعیین اجرت</button>
+            <div class="flex items-center justify-between gap-2 sm:justify-end">
+              <strong :class="service.shopConfiguration?.fee ? 'text-ink' : 'text-amber-600'">
+                {{ service.shopConfiguration?.fee ? money(service.shopConfiguration.fee) : 'بدون اجرت' }}
+              </strong>
+              <div class="flex flex-col">
+                <button class="btn-ghost h-6 w-7 p-0" :disabled="movingCard || !canMove(services || [], index, -1)" title="انتقال به بالا" aria-label="انتقال به بالا" @click="moveCard('service', index, -1)"><span class="i-lucide-chevron-up h-4 w-4" /></button>
+                <button class="btn-ghost h-6 w-7 p-0" :disabled="movingCard || !canMove(services || [], index, 1)" title="انتقال به پایین" aria-label="انتقال به پایین" @click="moveCard('service', index, 1)"><span class="i-lucide-chevron-down h-4 w-4" /></button>
+              </div>
+              <button class="btn-secondary px-3 py-2" @click="editService(service)">تنظیم اجرت</button>
+            </div>
           </div>
         </div>
         <AppEmptyState v-else title="خدمتی در کاتالوگ نیست" />
