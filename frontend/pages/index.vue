@@ -56,7 +56,8 @@ const stats = computed(() => [
             <span class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-black/4 text-ink/55"><span class="i-lucide-receipt h-5 w-5" /></span>
             <div class="min-w-0 flex-1">
               <strong class="block truncate text-sm">{{ invoice.invoiceNo }}</strong>
-              <span class="mt-1 block text-xs text-ink/40">{{ dateTime(invoice.issuedAt) }}</span>
+              <span class="mt-0.5 block truncate text-xs text-ink/55">{{ invoice.order?.customer?.name || 'مشتری بدون نام' }}</span>
+              <span class="mt-0.5 block text-[11px] text-ink/35">{{ dateTime(invoice.issuedAt) }}</span>
             </div>
             <strong class="text-sm">{{ money(invoice.totalAmount, invoice.currency) }}</strong>
           </NuxtLink>
