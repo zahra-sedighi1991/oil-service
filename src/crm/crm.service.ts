@@ -1,7 +1,7 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import ExcelJS from 'exceljs';
-import { DataSource, ILike, Repository } from 'typeorm';
+import { Brackets, DataSource, ILike, Repository } from 'typeorm';
 import { AuditLog, Customer, Vehicle, VehicleModel, VehiclePublicLink } from '../database/entities';
 import { PublicLinkStatus, RecordStatus } from '../common/enums';
 import { normalizeMobile, normalizePlate } from '../common/normalizers';
@@ -22,7 +22,19 @@ export class CrmService {
       .leftJoinAndSelect('vehicle.model', 'model')
       .where('customer.shopId = :shopId', { shopId });
     if (mobile) qb.andWhere('customer.mobileNormalized LIKE :mobile', { mobile: `%${normalizeMobile(mobile)}%` });
-    if (search) qb.andWhere('customer.name ILIKE :search', { search: `%${search}%` });
+    if (search) {
+      const normalizedMobile = normalizeMobile(search);
+      const normalizedPlate = normalizePlate(search);
+      qb.andWhere(new Brackets((where) => {
+        where.where('customer.name ILIKE :search', { search: `%${search.trim()}%` });
+        if (normalizedMobile) {
+          where.orWhere('customer.mobileNormalized LIKE :searchMobile', { searchMobile: `%${normalizedMobile}%` });
+        }
+        if (normalizedPlate) {
+          where.orWhere('vehicle.plateNormalized ILIKE :searchPlate', { searchPlate: `%${normalizedPlate}%` });
+        }
+      }));
+    }
     return qb.orderBy('customer.updatedAt', 'DESC').take(50).getMany();
   }
 

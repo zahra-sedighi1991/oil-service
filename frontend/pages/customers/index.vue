@@ -15,7 +15,7 @@ const form = reactive({ name: '', mobile: '', gender: 'male' as 'male' | 'female
 const searchQuery = computed(() => {
   const value = search.value.trim()
   if (!value) return undefined
-  return /^[\d۰-۹٠-٩+\-\s]+$/.test(value) ? { mobile: value } : { search: value }
+  return { search: value }
 })
 
 const { data: customers, pending, refresh } = await useAsyncData(

@@ -86,7 +86,7 @@ const vehicleForm = reactive({
 const customerQuery = computed(() => {
   const value = customerSearch.value.trim()
   if (!value) return undefined
-  return /^[\d۰-۹٠-٩+\-\s]+$/.test(value) ? { mobile: value } : { search: value }
+  return { search: value }
 })
 
 const { data: customers, refresh: refreshCustomers } = await useAsyncData(
