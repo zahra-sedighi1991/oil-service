@@ -145,15 +145,44 @@ function openTelegramCustomer() {
   }, 2500)
 }
 
-function openEitaaCustomer() {
+async function writeClipboardText(text: string) {
+  if (navigator.clipboard && window.isSecureContext) {
+    try {
+      await navigator.clipboard.writeText(text)
+      return
+    } catch {
+      // Some browsers expose the Clipboard API but deny access to it.
+      // Fall through to the synchronous copy method in that case.
+    }
+  }
+
+  const input = document.createElement('textarea')
+  input.value = text
+  input.setAttribute('readonly', '')
+  input.style.position = 'fixed'
+  input.style.opacity = '0'
+  document.body.appendChild(input)
+  input.select()
+  const copied = document.execCommand('copy')
+  input.remove()
+  if (!copied) throw new Error('Copy command failed')
+}
+
+async function openEitaaCustomer() {
   if (!isEitaaUsernameValid.value || openingMessenger.value) return
   openingMessenger.value = 'eitaa'
   const username = encodeURIComponent(eitaaUsername.value)
-  const text = encodeURIComponent(`${props.message}\n${props.url}`)
+
+  try {
+    await writeClipboardText(`${props.message}\n${props.url}`)
+    toast.success('متن و لینک کپی شد؛ آن را در گفت‌وگوی ایتا جای‌گذاری کنید.')
+  } catch {
+    toast.error('کپی متن انجام نشد؛ پس از باز شدن ایتا از دکمه «کپی لینک» استفاده کنید.')
+  }
 
   openMessengerWithFallback(
-    `eitaa://resolve?domain=${username}&text=${text}`,
-    `https://eitaa.com/${username}?text=${text}`
+    `eitaa://resolve?domain=${username}`,
+    `https://eitaa.com/${username}`
   )
 
   window.setTimeout(() => {
@@ -169,7 +198,20 @@ function openSmsComposer() {
 }
 
 async function shareImage() {
-  if (!imageBlob.value || !supportsImageShare.value) return
+  if (!imageBlob.value) return
+
+  if (!supportsImageShare.value) {
+    downloadImage(false)
+    try {
+      await writeClipboardText(`${props.message}\n${props.url}`)
+      toast.success('تصویر دانلود و متن و لینک کپی شد؛ آن‌ها را در پیام‌رسان ارسال کنید.')
+    } catch {
+      toast.success('تصویر دانلود شد؛ آن را در پیام‌رسان پیوست کنید.')
+    }
+
+    return
+  }
+
   sharing.value = true
   try {
     await navigator.share({
@@ -189,33 +231,20 @@ async function shareImage() {
 async function copyLink() {
   if (!props.url) return
   try {
-    if (navigator.clipboard && window.isSecureContext) {
-      await navigator.clipboard.writeText(props.url)
-    } else {
-      const input = document.createElement('textarea')
-      input.value = props.url
-      input.setAttribute('readonly', '')
-      input.style.position = 'fixed'
-      input.style.opacity = '0'
-      document.body.appendChild(input)
-      input.select()
-      const copied = document.execCommand('copy')
-      input.remove()
-      if (!copied) throw new Error('Copy command failed')
-    }
+    await writeClipboardText(props.url)
     toast.success('لینک دفترچه سرویس کپی شد.')
   } catch {
     toast.error('کپی لینک انجام نشد؛ دوباره تلاش کنید.')
   }
 }
 
-function downloadImage() {
+function downloadImage(showToast = true) {
   if (!imageBlob.value) return
   const link = document.createElement('a')
   link.href = previewUrl.value
   link.download = imageFileName.value
   link.click()
-  toast.success('تصویر کارت سرویس دانلود شد.')
+  if (showToast) toast.success('تصویر کارت سرویس دانلود شد.')
 }
 </script>
 
@@ -260,7 +289,7 @@ function downloadImage() {
         >
           <span v-if="openingMessenger === 'telegram'" class="i-lucide-loader-circle h-5 w-5 animate-spin" />
           <span v-else class="i-lucide-send h-5 w-5" />
-          تلگرام مشتری
+          ارسال با تلگرام
         </button>
         <button
           type="button"
@@ -270,7 +299,7 @@ function downloadImage() {
         >
           <span v-if="openingMessenger === 'eitaa'" class="i-lucide-loader-circle h-5 w-5 animate-spin" />
           <span v-else class="i-lucide-message-square-share h-5 w-5" />
-          ایتا
+          ارسال با ایتا
         </button>
         <button
           type="button"
@@ -304,11 +333,14 @@ function downloadImage() {
           >
             <span v-if="openingMessenger === 'eitaa'" class="i-lucide-loader-circle h-5 w-5 animate-spin" />
             <span v-else class="i-lucide-external-link h-5 w-5" />
-            باز کردن گفت‌وگو
+            کپی و باز کردن گفت‌وگو
           </button>
         </div>
         <p v-if="eitaaUsernameInput && !isEitaaUsernameValid" class="mb-0 mt-1.5 text-xs text-danger">
           نام کاربری باید حداقل ۶ کاراکتر و شامل حروف انگلیسی، عدد یا زیرخط باشد.
+        </p>
+        <p v-else-if="eitaaUsernameInput" class="mb-0 mt-1.5 text-xs leading-5 text-orange-800/75">
+          متن و لینک کپی می‌شود؛ پس از باز شدن گفت‌وگو آن را جای‌گذاری کنید.
         </p>
         <button type="button" class="btn-ghost mt-2 text-xs text-ink/55" @click="openSmsComposer">
           مشتری نام کاربری ایتا ندارد؟ ارسال با پیامک
@@ -316,7 +348,7 @@ function downloadImage() {
       </div>
 
       <p class="mb-0 mt-2 text-xs leading-5 text-brand-900/65">
-        تلگرام با شماره مشتری باز می‌شود. برای ایتا نام کاربری را وارد کنید؛ اگر هیچ‌کدام در دسترس نیست، پیامک را انتخاب کنید.
+        تلگرام با متن و لینک آماده باز می‌شود. برای ایتا نام کاربری را وارد کنید؛ متن و لینک کپی می‌شود تا آن را در گفت‌وگو جای‌گذاری کنید.
       </p>
     </div>
     <p v-else-if="customerMobile" class="mb-4 mt-0 rounded-xl bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-800">
@@ -325,27 +357,39 @@ function downloadImage() {
 
     <div class="mb-3 grid gap-2 sm:grid-cols-2">
       <button
-        v-if="card && supportsImageShare"
+        v-if="card"
         type="button"
         class="btn-primary w-full"
-        :disabled="sharing"
-        @click="shareImage"
+        :disabled="sharing || generatingImage || !imageBlob"
+        @click="shareImage()"
       >
         <span v-if="sharing" class="i-lucide-loader-circle h-5 w-5 animate-spin" />
-        <span v-else class="i-lucide-share-2 h-5 w-5" />
-        {{ sharing ? 'در حال اشتراک…' : 'اشتراک تصویر' }}
+        <span v-else-if="supportsImageShare" class="i-lucide-share-2 h-5 w-5" />
+        <span v-else class="i-lucide-download h-5 w-5" />
+        {{ sharing
+          ? 'در حال اشتراک…'
+          : generatingImage
+            ? 'در حال آماده‌سازی تصویر…'
+            : supportsImageShare
+              ? 'سایر پیام‌رسان‌ها'
+              : 'دانلود تصویر برای ارسال' }}
       </button>
       <button type="button" class="btn-secondary w-full" :disabled="!url" @click="copyLink">
         <span class="i-lucide-copy h-5 w-5" />
         کپی لینک
       </button>
-      <button v-if="card" type="button" class="btn-secondary w-full sm:col-span-2" :disabled="!imageBlob" @click="downloadImage">
+      <button v-if="card" type="button" class="btn-secondary w-full sm:col-span-2" :disabled="!imageBlob" @click="downloadImage()">
         <span class="i-lucide-download h-5 w-5" />
         دانلود تصویر
       </button>
     </div>
-    <p v-if="card && imageBlob && !supportsImageShare" class="mb-3 mt-0 rounded-xl bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-800">
-      مرورگر یا اتصال فعلی ارسال مستقیم فایل را پشتیبانی نمی‌کند؛ تصویر را دانلود و در پیام‌رسان پیوست کنید. این قابلیت روی HTTPS در دسترس است.
+    <p v-if="card && imageBlob" class="mb-3 mt-0 rounded-xl px-3 py-2 text-xs leading-5" :class="supportsImageShare ? 'bg-brand-50 text-brand-800' : 'bg-amber-50 text-amber-800'">
+      <template v-if="supportsImageShare">
+        از فهرست اشتراک‌گذاری گوشی، ایتا، تلگرام یا شبکه اجتماعی موردنظر را انتخاب کنید؛ تصویر همراه متن و لینک ارسال می‌شود.
+      </template>
+      <template v-else>
+        مرورگر فعلی ارسال مستقیم فایل را پشتیبانی نمی‌کند؛ تصویر دانلود و متن و لینک کپی می‌شود تا آن‌ها را در پیام‌رسان پیوست کنید. ارسال مستقیم روی HTTPS و مرورگرهای سازگار در دسترس است.
+      </template>
     </p>
   </AppModal>
 
