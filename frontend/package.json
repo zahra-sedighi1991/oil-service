@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "nuxt dev",
     "build": "nuxt build",
+    "typecheck": "nuxt typecheck",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare"
@@ -22,6 +23,7 @@
     "@iconify-json/lucide": "^1.2.68",
     "@unocss/preset-icons": "^66.5.4",
     "@unocss/preset-wind4": "^66.5.4",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.2",
+    "vue-tsc": "^3.3.9"
   }
 }
