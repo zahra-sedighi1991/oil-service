@@ -35,6 +35,12 @@ interface PreviousOrder {
   odometer: number
   productLines: Array<{ productId?: string; intervalKm?: number; dueOdometer?: number }>
 }
+interface CompletionResult {
+  invoiceNo: string
+  totalAmount: number
+  currency?: string
+  publicToken?: string
+}
 
 const route = useRoute()
 const api = useApi()
@@ -71,6 +77,9 @@ const savingVehicle = ref(false)
 const savingCustomer = ref(false)
 const preparingShare = ref(false)
 const plateIncomplete = ref(false)
+const pendingOrderId = ref('')
+const completionKey = ref('')
+const pendingOrderSnapshot = ref('')
 const success = ref<{
   invoiceNo: string
   totalAmount: number
@@ -443,34 +452,65 @@ function goToReview() {
   step.value = 3
 }
 
-async function completeOrder() {
+function orderPayload() {
   if (!selectedCustomer.value || !selectedVehicle.value || odometer.value === undefined) return
+  return {
+    customerId: selectedCustomer.value.id,
+    vehicleId: selectedVehicle.value.id,
+    odometer: odometer.value,
+    note: note.value || undefined,
+    products: products.value.map(({ key, description, ...line }) => ({
+      ...line,
+      ...(!line.productId ? { description } : {})
+    })),
+    services: services.value.map(({ key, description, ...line }) => ({
+      ...line,
+      ...(!line.serviceId ? { description } : {})
+    }))
+  }
+}
+
+function showCompletion(result: CompletionResult) {
+  success.value = { ...result, completedAt: new Date().toISOString() }
+  toast.success('سرویس و فاکتور با موفقیت ثبت شدند.')
+}
+
+async function finalizePendingOrder() {
+  const result = await api.post<CompletionResult>(
+    `/service-orders/${pendingOrderId.value}/complete`,
+    { discountAmount: 0 },
+    { 'Idempotency-Key': completionKey.value }
+  )
+  showCompletion(result)
+}
+
+async function completeOrder() {
+  const payload = orderPayload()
+  if (!payload) return
   submitting.value = true
   try {
-    const draft = await api.post<{ id: string }>('/service-orders', {
-      customerId: selectedCustomer.value.id,
-      vehicleId: selectedVehicle.value.id,
-      odometer: odometer.value,
-      note: note.value || undefined,
-      products: products.value.map(({ key, description, ...line }) => ({
-        ...line,
-        ...(!line.productId ? { description } : {})
-      })),
-      services: services.value.map(({ key, description, ...line }) => ({
-        ...line,
-        ...(!line.serviceId ? { description } : {})
-      }))
-    })
-    const result = await api.post<{
-      invoiceNo: string
-      totalAmount: number
-      currency?: string
-      publicToken?: string
-    }>(`/service-orders/${draft.id}/complete`, { discountAmount: 0 }, {
-      'Idempotency-Key': createRandomId()
-    })
-    success.value = { ...result, completedAt: new Date().toISOString() }
-    toast.success('سرویس و فاکتور با موفقیت ثبت شدند.')
+    const snapshot = JSON.stringify(payload)
+    if (!pendingOrderId.value) {
+      const draft = await api.post<{ id: string }>('/service-orders', payload)
+      pendingOrderId.value = draft.id
+      pendingOrderSnapshot.value = snapshot
+    } else if (pendingOrderSnapshot.value !== snapshot) {
+      try {
+        await api.patch(`/service-orders/${pendingOrderId.value}`, payload)
+        pendingOrderSnapshot.value = snapshot
+        completionKey.value = ''
+      } catch (error: any) {
+        // If the previous response was lost after the server completed the order,
+        // the draft is no longer editable. Reusing the same key recovers its invoice.
+        if ((error?.statusCode === 409 || error?.status === 409) && completionKey.value) {
+          await finalizePendingOrder()
+          return
+        }
+        throw error
+      }
+    }
+    if (!completionKey.value) completionKey.value = createRandomId()
+    await finalizePendingOrder()
   } catch (error) {
     toast.error(errorMessage(error))
   } finally {
@@ -558,6 +598,9 @@ async function startNextService() {
   showCustomer.value = false
   showShare.value = false
   success.value = null
+  pendingOrderId.value = ''
+  completionKey.value = ''
+  pendingOrderSnapshot.value = ''
 }
 </script>
 
