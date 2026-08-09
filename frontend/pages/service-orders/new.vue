@@ -684,7 +684,7 @@ async function startNextService() {
         <h2 class="m-0 text-base font-700">۱. مشتری را پیدا کنید</h2>
         <div class="relative mt-4">
           <span class="i-lucide-search absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-ink/30" />
-          <input v-model="customerSearch" class="field px-10" placeholder="نام یا شماره موبایل">
+          <input v-model="customerSearch" class="field px-10" placeholder="نام، شماره موبایل یا پلاک">
           <button
             v-if="customerSearch"
             type="button"
