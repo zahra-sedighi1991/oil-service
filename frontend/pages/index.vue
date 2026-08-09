@@ -72,12 +72,16 @@ const stats = computed(() => [
           <span class="i-lucide-chart-no-axes-combined h-5 w-5 text-brand-600" />
         </div>
         <div class="rounded-2xl bg-ink p-5 text-white">
-          <p class="m-0 text-xs text-white/50">مشتریان یکتای ماه</p>
-          <strong class="mt-2 block text-4xl font-800">{{ number(dashboard?.month.uniqueCustomers) }}</strong>
-          <div class="mt-5 h-1.5 overflow-hidden rounded-full bg-white/10">
-            <div class="h-full w-2/3 rounded-full bg-brand-400" />
+          <div class="grid grid-cols-2 divide-x divide-x-reverse divide-white/10">
+            <div class="pl-4">
+              <p class="m-0 text-xs text-white/50">مشتریان یکتای ماه</p>
+              <strong class="mt-2 block text-3xl font-800">{{ number(dashboard?.month.uniqueCustomers) }}</strong>
+            </div>
+            <div class="pr-4">
+              <p class="m-0 text-xs text-white/50">فاکتورهای صادرشده</p>
+              <strong class="mt-2 block text-3xl font-800">{{ number(dashboard?.month.invoices) }}</strong>
+            </div>
           </div>
-          <p class="mb-0 mt-3 text-xs text-white/45">{{ number(dashboard?.month.invoices) }} فاکتور صادرشده</p>
         </div>
         <div class="mt-4 grid grid-cols-2 gap-3">
           <NuxtLink to="/customers" class="rounded-xl border border-black/7 p-3 text-ink no-underline transition hover:bg-brand-50">
