@@ -41,6 +41,7 @@ interface PreviousOrder {
   }>
 }
 interface CompletionResult {
+  invoiceId: string
   invoiceNo: string
   totalAmount: number
   currency?: string
@@ -86,6 +87,7 @@ const pendingOrderId = ref('')
 const completionKey = ref('')
 const pendingOrderSnapshot = ref('')
 const success = ref<{
+  invoiceId: string
   invoiceNo: string
   totalAmount: number
   currency?: string
@@ -666,7 +668,7 @@ async function startNextService() {
           <div class="rounded-xl bg-black/3 p-4"><span class="block text-xs text-ink/40">مبلغ نهایی</span><strong class="mt-1 block">{{ money(success.totalAmount) }}</strong></div>
         </div>
         <div class="grid gap-2 sm:grid-cols-3">
-          <NuxtLink to="/invoices" class="btn-primary no-underline">مشاهده فاکتور</NuxtLink>
+          <NuxtLink :to="`/invoices/${success.invoiceId}`" class="btn-primary no-underline">مشاهده فاکتور</NuxtLink>
           <button class="btn-secondary" :disabled="preparingShare" @click="openShare">
             <span v-if="preparingShare" class="i-lucide-loader-circle h-4.5 w-4.5 animate-spin" />
             <span v-else class="i-lucide-share-2 h-4.5 w-4.5" />
