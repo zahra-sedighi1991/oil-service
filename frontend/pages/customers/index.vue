@@ -72,6 +72,7 @@ async function exportCustomers() {
 
 <template>
 <div class="list-page">
+  <h1 class="mb-3 mt-1 text-xl font-800">مشتریان و خودروها</h1>
   <!-- Search -->
 <section class="card mb-4 p-2">
   <div class="flex flex-col gap-2 sm:flex-row">
