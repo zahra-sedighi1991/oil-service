@@ -176,10 +176,9 @@ watch(step, async () => {
 watch(selectedVehicle, async (vehicle) => {
   const request = ++odometerRequest
   suggestedOdometer.value = undefined
-  odometer.value = vehicle?.lastOdometer
+  odometer.value = undefined
   if (!vehicle) return
 
-  const initialOdometer = vehicle.lastOdometer
   loadingSuggestedOdometer.value = true
   try {
     const orders = await api.get<PreviousOrder[]>('/service-orders', { vehicleId: vehicle.id })
@@ -196,12 +195,7 @@ watch(selectedVehicle, async (vehicle) => {
       if (dueValues.length) break
     }
     if (!dueValues.length) return
-    const nextOdometer = Math.min(...dueValues)
-    suggestedOdometer.value = nextOdometer
-    if (
-      odometer.value === initialOdometer
-      && (initialOdometer === undefined || nextOdometer >= initialOdometer)
-    ) odometer.value = nextOdometer
+    suggestedOdometer.value = Math.min(...dueValues)
   } catch (error) {
     toast.error(errorMessage(error))
   } finally {
@@ -726,6 +720,9 @@ async function startNextService() {
             <input v-model.number="odometer" type="number" min="0" class="field text-left" dir="ltr" placeholder="126500">
             <p v-if="formattedOdometer(odometer)" class="mb-0 mt-1 text-xs text-ink/45">
               {{ formattedOdometer(odometer) }}
+            </p>
+            <p v-if="selectedVehicle?.lastOdometer !== undefined && selectedVehicle?.lastOdometer !== null" class="mb-0 mt-2 text-xs text-ink/40">
+              آخرین کیلومتر ثبت‌شده: <strong>{{ number(selectedVehicle.lastOdometer) }}</strong>
             </p>
             <p v-if="loadingSuggestedOdometer" class="mb-0 mt-2 text-xs text-ink/40">در حال دریافت موعد سرویس قبلی…</p>
             <div v-else-if="suggestedOdometer" class="mt-2 rounded-xl bg-emerald-50 px-3 py-2 text-xs leading-6 text-emerald-800">
