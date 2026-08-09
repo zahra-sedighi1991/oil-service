@@ -1,4 +1,4 @@
-import { IsEnum, IsIn, IsOptional, IsString } from 'class-validator';
+import { IsEnum, IsIn, IsOptional, IsString, IsTimeZone } from 'class-validator';
 import { ShopStatus } from '../common/enums';
 
 export class UpdateShopDto {
@@ -8,7 +8,7 @@ export class UpdateShopDto {
   @IsString() @IsOptional() city?: string;
   @IsString() @IsOptional() address?: string;
   @IsIn(['TOMAN', 'IRR']) @IsOptional() currency?: string;
-  @IsString() @IsOptional() timezone?: string;
+  @IsTimeZone({ message: 'منطقه زمانی معتبر نیست.' }) @IsOptional() timezone?: string;
   @IsString() @IsOptional() invoiceNumberTemplate?: string;
 }
 

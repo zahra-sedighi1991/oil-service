@@ -36,7 +36,12 @@ async function save() {
         <div><label class="label">شهر</label><input v-model="form.city" class="field" required></div>
         <div class="sm:col-span-2"><label class="label">آدرس</label><textarea v-model="form.address" class="field min-h-24" /></div>
         <div><label class="label">واحد پول</label><select v-model="form.currency" class="field"><option value="TOMAN">تومان</option><option value="IRR">ریال</option></select></div>
-        <div><label class="label">منطقه زمانی</label><input v-model="form.timezone" class="field text-left" dir="ltr"></div>
+        <div>
+          <label class="label">منطقه زمانی</label>
+          <select v-model="form.timezone" class="field">
+            <option value="Asia/Tehran">زمان ایران (تهران)</option>
+          </select>
+        </div>
       </div>
       <div class="mt-7 flex items-center justify-between border-t border-black/6 pt-5">
         <span class="badge" :class="shop?.status === 'active' ? 'bg-brand-50 text-brand-700' : 'bg-amber-50 text-amber-700'">وضعیت: {{ shop?.status === 'active' ? 'فعال' : shop?.status }}</span>
