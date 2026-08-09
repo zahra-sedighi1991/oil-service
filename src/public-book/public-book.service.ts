@@ -1,8 +1,8 @@
 import { GoneException, Injectable, NotFoundException } from '@nestjs/common';
-import { DataSource } from 'typeorm';
+import { DataSource, In } from 'typeorm';
 import { createHash, randomBytes } from 'crypto';
 import {
-  AuditLog, Invoice, ServiceOrder, Shop, Vehicle, VehiclePublicLink,
+  AuditLog, Invoice, Product, ServiceOrder, Shop, Vehicle, VehiclePublicLink,
 } from '../database/entities';
 import {
   InvoiceStatus, PublicLinkStatus, ServiceOrderStatus,
@@ -39,7 +39,27 @@ export class PublicBookService {
     const invoiceByOrder = new Map(invoices.map((invoice) => [invoice.orderId, invoice]));
     link.lastAccessAt = new Date();
     await this.dataSource.getRepository(VehiclePublicLink).save(link);
-    const dueItems = orders.flatMap((order) => order.productLines)
+    const productIds = [...new Set(
+      orders.flatMap((order) => order.productLines.map((line) => line.productId).filter(Boolean)),
+    )] as string[];
+    const products = productIds.length
+      ? await this.dataSource.getRepository(Product).find({
+        select: { id: true, productTypeId: true },
+        where: { id: In(productIds) },
+      })
+      : [];
+    const productTypeById = new Map(products.map((product) => [product.id, product.productTypeId]));
+    const latestLineByProductType = new Map<string, (typeof orders)[number]['productLines'][number]>();
+    for (const order of orders) {
+      for (const line of order.productLines) {
+        const description = String(line.snapshot.displayName ?? line.snapshot.description ?? '').trim().toLowerCase();
+        const key = line.productId
+          ? `type:${productTypeById.get(line.productId) ?? line.productId}`
+          : `temporary:${description}`;
+        if (!latestLineByProductType.has(key)) latestLineByProductType.set(key, line);
+      }
+    }
+    const dueItems = [...latestLineByProductType.values()]
       .filter((line) => line.dueDate || line.dueOdometer);
     const nextByDate = dueItems.filter((line) => line.dueDate)
       .sort((a, b) => a.dueDate!.localeCompare(b.dueDate!))[0];
