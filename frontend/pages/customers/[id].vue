@@ -15,7 +15,7 @@ const vehicleForm = reactive({
   lastOdometer: undefined as number | undefined
 })
 const canCreateVehicle = computed(() => Boolean(
-  vehicleForm.modelId && !plateIncomplete.value
+  vehicleForm.modelId
 ))
 
 const { data: customer, refresh } = await useAsyncData(`customer-${route.params.id}`, () => api.get<Customer>(`/customers/${route.params.id}`))
@@ -34,7 +34,15 @@ function openVehicleModal() {
   showVehicle.value = true
 }
 
+function formattedOdometer(value: unknown) {
+  if (value === '' || value === undefined || value === null) return ''
+  const numericValue = Number(value)
+  return Number.isFinite(numericValue) ? `${number(numericValue)} کیلومتر` : ''
+}
+
 async function createVehicle() {
+  if (!vehicleForm.modelId) return toast.error('مدل خودرو را انتخاب کنید.')
+  if (plateIncomplete.value) return toast.error('پلاک را کامل وارد کنید یا همه بخش‌های آن را خالی بگذارید.')
   saving.value = true
   try {
     await api.post('/vehicles', {
@@ -231,6 +239,27 @@ async function createVehicle() {
 
       <div class="sm:col-span-2">
         <label class="label">
+          کیلومتر فعلی
+        </label>
+
+        <input
+          v-model.number="vehicleForm.lastOdometer"
+          type="number"
+          min="0"
+          inputmode="numeric"
+          class="field w-full"
+        >
+
+        <p
+          v-if="formattedOdometer(vehicleForm.lastOdometer)"
+          class="mb-0 mt-1 text-xs text-ink/45"
+        >
+          {{ formattedOdometer(vehicleForm.lastOdometer) }}
+        </p>
+      </div>
+
+      <div class="sm:col-span-2">
+        <label class="label">
           پلاک خودرو
 
           <span class="font-400 text-ink/40">
@@ -242,20 +271,6 @@ async function createVehicle() {
           v-model="vehicleForm.plate"
           @incomplete-change="plateIncomplete = $event"
         />
-      </div>
-
-      <div class="sm:col-span-2">
-        <label class="label">
-          کیلومتر فعلی
-        </label>
-
-        <input
-          v-model.number="vehicleForm.lastOdometer"
-          type="number"
-          min="0"
-          inputmode="numeric"
-          class="field w-full"
-        >
       </div>
 
       <div
