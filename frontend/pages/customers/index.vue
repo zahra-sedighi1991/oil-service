@@ -86,16 +86,26 @@ async function exportCustomers() {
         placeholder="جستجو با نام، شماره موبایل یا پلاک..."
       >
     </div>
-    <button
-      type="button"
-      class="btn-secondary shrink-0 sm:min-w-36"
-      :disabled="exporting"
-      @click="exportCustomers"
-    >
-      <span v-if="exporting" class="i-lucide-loader-circle h-4.5 w-4.5 animate-spin" />
-      <span v-else class="i-lucide-file-spreadsheet h-4.5 w-4.5" />
-      {{ exporting ? 'در حال ساخت…' : 'خروجی Excel' }}
-    </button>
+    <div class="grid grid-cols-2 gap-2 sm:flex sm:shrink-0">
+      <button
+        type="button"
+        class="btn-primary sm:min-w-36"
+        @click="openCustomerModal"
+      >
+        <span class="i-lucide-user-plus h-4.5 w-4.5" />
+        <span>مشتری جدید</span>
+      </button>
+      <button
+        type="button"
+        class="btn-secondary sm:min-w-36"
+        :disabled="exporting"
+        @click="exportCustomers"
+      >
+        <span v-if="exporting" class="i-lucide-loader-circle h-4.5 w-4.5 animate-spin" />
+        <span v-else class="i-lucide-file-spreadsheet h-4.5 w-4.5" />
+        {{ exporting ? 'در حال ساخت…' : 'خروجی Excel' }}
+      </button>
+    </div>
   </div>
 </section>
 
