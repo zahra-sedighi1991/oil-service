@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { CatalogService, Product, VehicleModelOption } from '~/types/api'
+import type { CatalogService, Product, Shop, VehicleModelOption } from '~/types/api'
 import type { ProductEditorValue } from '~/types/product-editor'
 
 interface ProductTypeOption { id: string; title: string }
@@ -29,6 +29,9 @@ const suggestionValue = ref<Partial<ProductEditorValue>>({})
 
 const { data: products, refresh: refreshProducts } = await useAsyncData('catalog-products', () => api.get<Product[]>('/catalog/products', search.value ? { search: search.value } : undefined), { watch: [search] })
 const { data: services, refresh: refreshServices } = await useAsyncData('catalog-services', () => api.get<CatalogService[]>('/catalog/services'))
+const { data: shop } = await useAsyncData('shop-profile', () => api.get<Shop>('/shop/profile'))
+const shopCurrency = computed(() => shop.value?.currency || 'TOMAN')
+const currencyLabel = computed(() => shopCurrency.value === 'IRR' ? 'ریال' : 'تومان')
 const { data: productTypes } = await useAsyncData(
   'shop-product-suggestion-types',
   () => api.get<ProductTypeOption[]>('/catalog/product-types')
@@ -193,7 +196,7 @@ async function submitProductSuggestion(value: ProductEditorValue) {
             </div>
             <div class="flex items-center justify-between gap-2 sm:justify-end">
               <strong :class="product.shopConfiguration?.salePrice ? 'text-ink' : 'text-amber-600'">
-                {{ product.shopConfiguration?.salePrice ? money(product.shopConfiguration.salePrice) : 'بدون قیمت' }}
+                {{ product.shopConfiguration?.salePrice ? money(product.shopConfiguration.salePrice, shopCurrency) : 'بدون قیمت' }}
               </strong>
               <div class="flex flex-col">
                 <button class="btn-ghost h-6 w-7 p-0" :disabled="movingCard || !canMove(products || [], index, -1)" title="انتقال به بالا" aria-label="انتقال به بالا" @click="moveCard('product', index, -1)"><span class="i-lucide-chevron-up h-4 w-4" /></button>
@@ -218,7 +221,7 @@ async function submitProductSuggestion(value: ProductEditorValue) {
             </div>
             <div class="flex items-center justify-between gap-2 sm:justify-end">
               <strong :class="service.shopConfiguration?.fee ? 'text-ink' : 'text-amber-600'">
-                {{ service.shopConfiguration?.fee ? money(service.shopConfiguration.fee) : 'بدون اجرت' }}
+                {{ service.shopConfiguration?.fee ? money(service.shopConfiguration.fee, shopCurrency) : 'بدون اجرت' }}
               </strong>
               <div class="flex flex-col">
                 <button class="btn-ghost h-6 w-7 p-0" :disabled="movingCard || !canMove(services || [], index, -1)" title="انتقال به بالا" aria-label="انتقال به بالا" @click="moveCard('service', index, -1)"><span class="i-lucide-chevron-up h-4 w-4" /></button>
@@ -235,9 +238,9 @@ async function submitProductSuggestion(value: ProductEditorValue) {
     <AppModal :open="Boolean(editing)" :title="editing?.title || ''" description="قیمت، دوره تعویض و وضعیت این قلم فقط برای فروشگاه شما اعمال می‌شود." @close="editing = null">
       <form v-if="editing" class="space-y-5" @submit.prevent="saveSetting">
         <div>
-          <label class="label">{{ editing.type === 'product' ? 'قیمت فروش' : 'اجرت پیش‌فرض' }} (تومان)</label>
+          <label class="label">{{ editing.type === 'product' ? 'قیمت فروش' : 'اجرت پیش‌فرض' }} ({{ currencyLabel }})</label>
           <input v-model.number="editing.value" type="number" min="0" class="field text-left" dir="ltr" required>
-          <p class="mb-0 mt-1 text-left text-xs text-ink/45" dir="rtl">{{ money(editing.value) }}</p>
+          <p class="mb-0 mt-1 text-left text-xs text-ink/45" dir="rtl">{{ money(editing.value, shopCurrency) }}</p>
         </div>
         <div v-if="editing.type === 'product'">
           <label class="label">دوره تعویض پیش‌فرض (کیلومتر)</label>
