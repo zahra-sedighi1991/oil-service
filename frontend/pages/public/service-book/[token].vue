@@ -31,8 +31,8 @@ useHead({
           <div class="mt-3 flex flex-wrap gap-2 text-sm text-white/55"><span>{{ book.vehicle.plate }}</span><span>•</span><span>{{ number(book.vehicle.lastOdometer) }} کیلومتر</span></div>
         </div>
         <div v-if="book.nextDue" class="grid gap-3 p-5 sm:grid-cols-2">
-          <div class="rounded-xl bg-amber-50 p-4"><span class="block text-xs text-amber-700">سررسید کیلومتری بعدی</span><strong class="mt-1 block">{{ book.nextDue.dueOdometer ? `${number(book.nextDue.dueOdometer)} کیلومتر` : '—' }}</strong><small class="text-ink/40">{{ book.nextDue.dueOdometerItem }}</small></div>
-          <div class="rounded-xl bg-brand-50 p-4"><span class="block text-xs text-brand-700">سررسید زمانی بعدی</span><strong class="mt-1 block">{{ date(book.nextDue.dueDate) }}</strong><small class="text-ink/40">{{ book.nextDue.dueDateItem }}</small></div>
+          <div v-if="book.nextDue.dueOdometer" class="rounded-xl bg-amber-50 p-4"><span class="block text-xs text-amber-700">سررسید کیلومتری بعدی</span><strong class="mt-1 block">{{ number(book.nextDue.dueOdometer) }} کیلومتر</strong><small class="text-ink/40">{{ book.nextDue.dueOdometerItem }}</small></div>
+          <div v-if="book.nextDue.dueDate" class="rounded-xl bg-brand-50 p-4"><span class="block text-xs text-brand-700">سررسید زمانی بعدی</span><strong class="mt-1 block">{{ date(book.nextDue.dueDate) }}</strong><small class="text-ink/40">{{ book.nextDue.dueDateItem }}</small></div>
         </div>
       </header>
 
@@ -53,7 +53,11 @@ useHead({
 
       <footer class="mt-7 rounded-2xl bg-ink p-5 text-center text-white">
         <strong class="block">{{ book.shop.name }}</strong>
-        <p class="mb-0 mt-2 text-xs text-white/50">{{ book.shop.city }} {{ book.shop.address }} • {{ book.shop.phone }}</p>
+        <p class="mb-0 mt-2 text-xs text-white/50">{{ [book.shop.city, book.shop.address].filter(Boolean).join('، ') }}</p>
+        <a :href="`tel:${book.shop.phone}`" class="mt-3 inline-flex items-center gap-1.5 text-sm font-700 text-brand-200 no-underline" dir="ltr">
+          <span class="i-lucide-phone h-4 w-4" />
+          <span>{{ book.shop.phone }}</span>
+        </a>
       </footer>
     </div>
   </main>
