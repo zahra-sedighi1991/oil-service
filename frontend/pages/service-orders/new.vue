@@ -142,10 +142,12 @@ const pendingProductSuggestions = computed(() => {
     return item.entityType === 'product'
       && Boolean(description)
       && (!search || description!.toLocaleLowerCase('fa').includes(search))
+      && !products.value.some(line => line.description.trim().toLocaleLowerCase('fa') === description!.toLocaleLowerCase('fa'))
   })
 })
 const selectableProducts = computed(() => (catalogProducts.value || []).filter(
   product => product.compatibility?.status !== 'incompatible'
+    && !products.value.some(line => line.productId === product.id)
 ))
 const compatibleProductCount = computed(() => selectableProducts.value.filter(
   product => product.compatibility?.status === 'compatible'
@@ -155,7 +157,14 @@ const selectedProductCount = computed(
 )
 const customerForm = reactive({ name: '', mobile: '', gender: 'male' as 'male' | 'female', note: '' })
 const pendingServiceSuggestions = computed(() => (pendingSuggestions.value || []).filter(
-  item => item.entityType === 'service' && Boolean(item.payload.description?.trim())
+  item => item.entityType === 'service'
+    && Boolean(item.payload.description?.trim())
+    && !services.value.some(
+      line => line.description.trim().toLocaleLowerCase('fa') === item.payload.description!.trim().toLocaleLowerCase('fa')
+    )
+))
+const selectableServices = computed(() => (catalogServices.value || []).filter(
+  service => !services.value.some(line => line.serviceId === service.id)
 ))
 const canCreateVehicle = computed(() => Boolean(
   selectedCustomer.value
@@ -420,7 +429,7 @@ function openServiceModal() {
 }
 
 function confirmServices() {
-  for (const service of catalogServices.value || []) {
+  for (const service of selectableServices.value) {
     if (selectedServiceIds.value.includes(service.id)) addService(service)
   }
   for (const item of pendingServiceSuggestions.value) {
@@ -1096,7 +1105,7 @@ async function startNextService() {
 
     <AppModal :open="showService" title="افزودن خدمت" description="خدمت استاندارد را انتخاب کنید یا نام خدمت خارج از کاتالوگ را بنویسید." @close="showService = false">
       <div class="max-h-80 space-y-2 overflow-y-auto">
-        <button v-for="service in catalogServices" :key="service.id" class="flex w-full items-center justify-between rounded-xl border p-3 text-right hover:border-brand-300 hover:bg-brand-50" :class="selectedServiceIds.includes(service.id) ? 'border-brand-500 bg-brand-50' : 'border-black/7'" @click="toggleSelection(selectedServiceIds, service.id)">
+        <button v-for="service in selectableServices" :key="service.id" class="flex w-full items-center justify-between rounded-xl border p-3 text-right hover:border-brand-300 hover:bg-brand-50" :class="selectedServiceIds.includes(service.id) ? 'border-brand-500 bg-brand-50' : 'border-black/7'" @click="toggleSelection(selectedServiceIds, service.id)">
           <div><strong class="block text-sm">{{ service.name }}</strong><span class="mt-1 block text-xs text-ink/40">{{ service.category || 'خدمت عمومی' }}</span></div>
           <span :class="selectedServiceIds.includes(service.id) ? 'i-lucide-check text-brand-700' : 'i-lucide-plus text-brand-600'" class="h-5 w-5" />
         </button>
