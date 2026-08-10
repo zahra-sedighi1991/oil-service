@@ -5,6 +5,7 @@ import type { ServiceShareCardData } from '~/types/share'
 definePageMeta({ middleware: 'auth' })
 const route = useRoute()
 const api = useApi()
+const config = useRuntimeConfig()
 const toast = useToast()
 const { money, number, dateTime, errorMessage } = useFormat()
 const { data: invoice, refresh } = await useAsyncData(`invoice-${route.params.id}`, () => api.get<Invoice>(`/invoices/${route.params.id}`))
@@ -15,9 +16,7 @@ const preparingShare = ref(false)
 const canceling = ref(false)
 const cancellationReason = ref('')
 const publicToken = ref('')
-const publicBookUrl = computed(() => publicToken.value && import.meta.client
-  ? `${window.location.origin}/public/service-book/${publicToken.value}`
-  : '')
+const publicBookLink = computed(() => publicBookUrl(publicToken.value, config.public.webBase))
 const shareCustomerName = computed(() => {
   const name = invoice.value?.order?.customer?.name?.trim()
   return name && name !== 'مشتری بدون نام' ? name : undefined
@@ -148,7 +147,7 @@ async function cancelInvoice() {
     </article>
     <PublicBookShareModal
       :open="showShare"
-      :url="publicBookUrl"
+      :url="publicBookLink"
       :message="shareMessage"
       :card="invoiceShareCard"
       :customer-mobile="invoice.order?.customer?.mobileNormalized"

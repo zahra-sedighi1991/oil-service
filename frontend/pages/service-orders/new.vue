@@ -50,6 +50,7 @@ interface CompletionResult {
 
 const route = useRoute()
 const api = useApi()
+const config = useRuntimeConfig()
 const toast = useToast()
 const { number, money, errorMessage } = useFormat()
 
@@ -564,9 +565,7 @@ async function completeOrder() {
   }
 }
 
-const publicBookUrl = computed(() => success.value?.publicToken && import.meta.client
-  ? `${window.location.origin}/public/service-book/${success.value.publicToken}`
-  : '')
+const publicBookLink = computed(() => publicBookUrl(success.value?.publicToken || '', config.public.webBase))
 const shareCustomerName = computed(() => {
   const name = selectedCustomer.value?.name?.trim()
   return name && name !== 'مشتری بدون نام' ? name : undefined
@@ -881,7 +880,7 @@ async function startNextService() {
 
     <PublicBookShareModal
       :open="showShare"
-      :url="publicBookUrl"
+      :url="publicBookLink"
       :message="shareMessage"
       :card="serviceShareCard"
       :customer-mobile="selectedCustomer?.mobileNormalized"

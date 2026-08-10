@@ -49,6 +49,13 @@ The frontend listens on `http://localhost:3001` by default and expects the API
 at `http://localhost:3000`. Configure alternate addresses through
 `NUXT_PUBLIC_API_BASE` and `NUXT_PUBLIC_PUBLIC_API_BASE`.
 
+An Android Capacitor project is available under `frontend/android`. Run
+`pnpm android:sync` to generate and copy the mobile SPA, then
+`pnpm android:open` to open it in Android Studio. Release builds must set
+`NUXT_PUBLIC_API_BASE`, `NUXT_PUBLIC_PUBLIC_API_BASE` and
+`NUXT_PUBLIC_WEB_BASE` to deployed HTTPS addresses. See
+[`frontend/README.md`](frontend/README.md) for the complete Android workflow.
+
 `DB_SYNCHRONIZE` must be disabled in production. Generate and review a TypeORM
 migration before the first production deployment.
 

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Capacitor } from '@capacitor/core'
 import type { ServiceShareCardData } from '~/types/share'
 
 const props = defineProps<{
@@ -23,13 +24,15 @@ const generationFailed = ref(false)
 let generationId = 0
 let messengerFallbackTimer: ReturnType<typeof setTimeout> | undefined
 let removeMessengerVisibilityListener: (() => void) | undefined
-const supportsNativeShare = computed(() => import.meta.client && typeof navigator.share === 'function')
+const isNativeApp = computed(() => import.meta.client && Capacitor.isNativePlatform())
+const supportsNativeShare = computed(() => isNativeApp.value || (import.meta.client && typeof navigator.share === 'function'))
 const imageFileName = computed(() => `service-${props.card?.invoiceNo || 'card'}.png`.replace(/[^a-zA-Z0-9._-]/g, '-'))
 const customerPhone = computed(() => normalizeInternationalPhone(props.customerMobile))
 const eitaaUsername = computed(() => eitaaUsernameInput.value.trim().replace(/^@+/, ''))
 const isEitaaUsernameValid = computed(() => /^[a-zA-Z0-9_]{6,}$/.test(eitaaUsername.value))
 const supportsImageShare = computed(() => {
   if (!supportsNativeShare.value || !imageBlob.value) return false
+  if (isNativeApp.value) return true
   if (typeof navigator.canShare !== 'function') return true
   try {
     return navigator.canShare({ files: [createImageFile()] })
@@ -93,6 +96,40 @@ async function generateImage() {
 
 function createImageFile() {
   return new File([imageBlob.value!], imageFileName.value, { type: 'image/png' })
+}
+
+function blobAsBase64(blob: Blob) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onerror = () => reject(reader.error || new Error('Reading image failed'))
+    reader.onload = () => resolve(String(reader.result).split(',', 2)[1] || '')
+    reader.readAsDataURL(blob)
+  })
+}
+
+async function shareImageNatively() {
+  const [{ Directory, Filesystem }, { Share }] = await Promise.all([
+    import('@capacitor/filesystem'),
+    import('@capacitor/share')
+  ])
+  const path = `share/${imageFileName.value}`
+  const savedImage = await Filesystem.writeFile({
+    path,
+    data: await blobAsBase64(imageBlob.value!),
+    directory: Directory.Cache,
+    recursive: true
+  })
+
+  try {
+    await Share.share({
+      title: props.message,
+      text: `${props.message}\n${props.url}`,
+      files: [savedImage.uri],
+      dialogTitle: 'اشتراک‌گذاری سرویس'
+    })
+  } finally {
+    await Filesystem.deleteFile({ path, directory: Directory.Cache }).catch(() => undefined)
+  }
 }
 
 function normalizeInternationalPhone(value?: string) {
@@ -214,14 +251,19 @@ async function shareImage() {
 
   sharing.value = true
   try {
-    await navigator.share({
-      title: props.message,
-      text: `${props.message}\n${props.url}`,
-      files: [createImageFile()]
-    })
+    if (isNativeApp.value) {
+      await shareImageNatively()
+    } else {
+      await navigator.share({
+        title: props.message,
+        text: `${props.message}\n${props.url}`,
+        files: [createImageFile()]
+      })
+    }
     emit('close')
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') return
+    if (error instanceof Error && /cancel/i.test(error.message)) return
     toast.error('ارسال مستقیم تصویر انجام نشد؛ تصویر را دانلود و در پیام‌رسان پیوست کنید.')
   } finally {
     sharing.value = false

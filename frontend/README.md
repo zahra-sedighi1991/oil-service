@@ -25,3 +25,39 @@ Nuxt 4 + TypeScript + UnoCSS frontend for the Oil Service API.
 
 The API base URL is configured through `NUXT_PUBLIC_API_BASE`. Authentication
 uses the JWT returned by the backend and stores it in a same-site cookie.
+
+## Android app
+
+The Android app uses Capacitor and the same Nuxt codebase. Install Android
+Studio with Android SDK 36 and use the JDK bundled with Android Studio.
+
+For an emulator build, start the API on port `3000` and run from the repository
+root:
+
+```powershell
+pnpm android:sync
+pnpm android:open
+```
+
+The default mobile development build reaches the host machine through
+`http://10.0.2.2:3000`. Before a release build, configure the deployed HTTPS API
+and public web app. The public web URL is required because links sent to
+customers must open in a browser rather than inside the installed application.
+
+```powershell
+$env:NUXT_PUBLIC_API_BASE='https://api.example.com/api/v1'
+$env:NUXT_PUBLIC_PUBLIC_API_BASE='https://api.example.com'
+$env:NUXT_PUBLIC_WEB_BASE='https://app.example.com'
+$env:CAPACITOR_ALLOW_MIXED_CONTENT='false'
+pnpm android:sync
+```
+
+Also include `https://localhost` in the API's production `CORS_ORIGINS`; this is
+the local origin used by the packaged Android WebView. To create a debug APK:
+
+```powershell
+pnpm android:build:debug
+```
+
+The resulting file is written to
+`frontend/android/app/build/outputs/apk/debug/app-debug.apk`.

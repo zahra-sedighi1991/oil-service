@@ -7,10 +7,22 @@
     "build": "nuxt build",
     "typecheck": "nuxt typecheck",
     "generate": "nuxt generate",
+    "mobile:generate": "node ./scripts/generate-mobile.mjs",
+    "mobile:add:android": "cap add android",
+    "mobile:sync": "pnpm mobile:generate && cap sync android",
+    "mobile:open": "cap open android",
+    "mobile:run": "pnpm mobile:sync && cap run android",
+    "mobile:build:debug": "pnpm mobile:sync && cd android && gradlew.bat assembleDebug",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
+    "@capacitor/android": "^8.5.0",
+    "@capacitor/app": "^8.1.1",
+    "@capacitor/core": "^8.5.0",
+    "@capacitor/filesystem": "^8.1.2",
+    "@capacitor/share": "^8.0.1",
+    "@capacitor/status-bar": "^8.0.3",
     "@nuxtjs/color-mode": "^3.5.2",
     "@unocss/nuxt": "^66.5.4",
     "modern-screenshot": "4.6.6",
@@ -20,6 +32,7 @@
     "vue-router": "^4.5.1"
   },
   "devDependencies": {
+    "@capacitor/cli": "8.5.0",
     "@iconify-json/lucide": "^1.2.68",
     "@unocss/preset-icons": "^66.5.4",
     "@unocss/preset-wind4": "^66.5.4",
