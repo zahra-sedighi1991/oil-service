@@ -4,7 +4,7 @@ const { user, isAdmin, restoreUser, logout } = useAuth()
 const mobileMenu = ref(false)
 
 const shopNav = [
-  { label: 'نمای کلی', to: '/', icon: 'i-lucide-layout-dashboard' },
+  { label: 'نمای کلی', to: '/dashboard', icon: 'i-lucide-layout-dashboard' },
   { label: 'ثبت سرویس', to: '/service-orders/new', icon: 'i-lucide-circle-plus' },
   { label: 'یادآوری سرویس', to: '/reminders', icon: 'i-lucide-bell-ring' },
   { label: 'مشتریان و خودروها', to: '/customers', icon: 'i-lucide-users' },
@@ -21,7 +21,7 @@ const adminNav = [
 const nav = computed(() => isAdmin.value ? adminNav : shopNav)
 const mobileNav = computed(() => isAdmin.value
   ? adminNav
-  : shopNav.filter(item => ['/', '/service-orders/new', '/customers', '/reminders'].includes(item.to)))
+  : shopNav.filter(item => ['/dashboard', '/service-orders/new', '/customers', '/reminders'].includes(item.to)))
 
 onMounted(restoreUser)
 watch(() => route.fullPath, () => { mobileMenu.value = false })
@@ -30,7 +30,7 @@ watch(() => route.fullPath, () => { mobileMenu.value = false })
 <template>
   <div class="h-dvh overflow-hidden">
     <aside class="fixed bottom-4 right-4 top-4 z-50 hidden w-68 overflow-hidden rounded-[1.75rem] border border-black/6 bg-white/96 px-3.5 py-4 text-ink shadow-[0_18px_55px_rgba(0,0,0,.10)] backdrop-blur-xl lg:flex lg:flex-col">
-      <NuxtLink to="/" class="mb-6 flex items-center gap-3 rounded-2xl px-2 py-1 text-ink no-underline">
+      <NuxtLink to="/dashboard" class="mb-6 flex items-center gap-3 rounded-2xl px-2 py-1 text-ink no-underline">
         <span class="grid h-11 w-11 place-items-center rounded-2xl bg-brand-500 text-xl text-ink shadow-[0_8px_20px_rgba(250,189,50,.24)]">
           <span class="i-lucide-droplets h-6 w-6" />
         </span>
@@ -75,7 +75,7 @@ watch(() => route.fullPath, () => { mobileMenu.value = false })
       <button class="btn-ghost h-10 w-10 p-0" :aria-label="mobileMenu ? 'بستن منو' : 'نمایش منو'" :aria-expanded="mobileMenu" @click="mobileMenu = !mobileMenu">
         <span class="h-6 w-6" :class="mobileMenu ? 'i-lucide-x' : 'i-lucide-menu'" />
       </button>
-      <NuxtLink to="/" class="flex items-center gap-2 text-ink no-underline">
+      <NuxtLink to="/dashboard" class="flex items-center gap-2 text-ink no-underline">
         <span class="i-lucide-droplets h-5 w-5 text-brand-600" />
         <strong>روغن‌یار</strong>
       </NuxtLink>

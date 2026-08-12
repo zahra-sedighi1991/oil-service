@@ -1,110 +1,90 @@
 <script setup lang="ts">
-import type { Dashboard, Invoice } from '~/types/api'
+definePageMeta({ layout: false })
+useHead({
+  title: 'روغن‌یار | مدیریت ساده تعویض‌روغنی',
+  meta: [{ name: 'description', content: 'ثبت سرویس، صدور فاکتور و پیگیری موعد مشتریان برای تعویض‌روغنی‌ها' }]
+})
 
-definePageMeta({ middleware: 'auth' })
-useHead({ title: 'نمای کلی' })
+const { isAuthenticated } = useAuth()
+const primaryLink = computed(() => isAuthenticated.value ? '/dashboard' : '/login?mode=register')
+const primaryLabel = computed(() => isAuthenticated.value ? 'ورود به پنل' : 'شروع رایگان')
 
-const api = useApi()
-const { number, money, dateTime } = useFormat()
-const { data: dashboard, pending } = await useAsyncData('dashboard', () => api.get<Dashboard>('/dashboard'))
-const { data: invoices } = await useAsyncData('dashboard-invoices', () => api.get<Invoice[]>('/invoices'))
-
-const stats = computed(() => [
-  { label: 'سرویس‌های امروز', value: dashboard.value?.today.services ?? 0, icon: 'i-lucide-wrench', tone: 'bg-brand-50 text-brand-700' },
-  { label: 'مشتری جدید امروز', value: dashboard.value?.today.newCustomers ?? 0, icon: 'i-lucide-user-plus', tone: 'bg-blue-50 text-blue-700' },
-  { label: 'مشتری بازگشتی', value: dashboard.value?.today.returningCustomers ?? 0, icon: 'i-lucide-rotate-ccw', tone: 'bg-amber-50 text-amber-700' },
-  { label: 'سرویس ماه', value: dashboard.value?.month.services ?? 0, icon: 'i-lucide-calendar-range', tone: 'bg-violet-50 text-violet-700' }
-])
+const benefits = [
+  { icon: 'i-lucide-file-plus-2', title: 'سرویس را سریع ثبت کنید', text: 'مشخصات خودرو، کیلومتر و خدمات انجام‌شده را یک‌جا ثبت کنید.' },
+  { icon: 'i-lucide-receipt-text', title: 'فاکتور مرتب تحویل دهید', text: 'فاکتور دیجیتال بسازید و لینک دفترچه سرویس را برای مشتری بفرستید.' },
+  { icon: 'i-lucide-bell-ring', title: 'مشتری را برگردانید', text: 'موعد بعدی را پیدا کنید و با پیامک سیم‌کارت خودتان پیگیری کنید.' }
+]
 </script>
 
 <template>
-  <div>
-    <header class="mb-7 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-      <div>
-        <h1 class="m-0 text-xl font-800">نمای کلی فروشگاه</h1>
-        <p class="mb-0 mt-2 text-sm text-muted">وضعیت سرویس‌ها و مشتری‌ها در یک نگاه</p>
-      </div>
-      <NuxtLink to="/service-orders/new" class="btn-primary no-underline">
-        <span class="i-lucide-plus h-5 w-5" />ثبت سرویس جدید
+  <main class="min-h-dvh overflow-hidden bg-canvas text-ink">
+    <header class="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
+      <NuxtLink to="/" class="flex items-center gap-2.5 text-ink no-underline">
+        <span class="grid h-10 w-10 place-items-center rounded-xl bg-brand-500 shadow-[0_8px_20px_rgba(250,189,50,.25)]"><span class="i-lucide-droplets h-5 w-5" /></span>
+        <strong class="text-lg font-900">روغن‌یار</strong>
       </NuxtLink>
+      <NuxtLink :to="isAuthenticated ? '/dashboard' : '/login'" class="btn-primary min-h-11 px-6 text-sm no-underline">{{ isAuthenticated ? 'پنل من' : 'ورود' }}</NuxtLink>
     </header>
 
-    <div class="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
-      <article v-for="stat in stats" :key="stat.label" class="card p-2 sm:p-3">
-        <div class="mb-4 flex items-center justify-between">
-          <span class="grid h-10 w-10 place-items-center rounded-xl" :class="stat.tone">
-            <span class="h-5 w-5" :class="stat.icon" />
-          </span>
-          <span v-if="pending" class="h-5 w-12 animate-pulse rounded bg-black/6" />
-          <strong v-else class="block text-2xl font-800 sm:text-3xl">{{ number(stat.value) }}</strong>
+    <section class="relative mx-auto grid max-w-6xl items-center gap-7 px-4 pb-10 pt-5 sm:px-6 sm:pt-9 lg:grid-cols-[1.05fr_.95fr] lg:pb-14 lg:pt-10">
+      <div class="relative z-1 text-center lg:text-right">
+        <h1 class="mx-auto mb-0 mt-2 max-w-2xl text-[1.75rem] font-900 leading-[1.45] sm:text-[2.65rem] sm:leading-[1.35] lg:mx-0">
+          سرویس خودرو را ثبت کنید؛
+          <span class="relative whitespace-nowrap"><span class="relative z-1">مشتری را فراموش نکنید.</span><span class="absolute inset-x-0 bottom-1 h-3 -rotate-1 rounded-full bg-brand-300/55" /></span>
+        </h1>
+        <p class="mx-auto mb-0 mt-4 max-w-xl text-sm leading-7 text-muted sm:text-base sm:leading-8 lg:mx-0">روغن‌یار دفتر کار دیجیتال تعویض‌روغنی شماست؛ از ثبت سرویس و فاکتور تا یادآوری موعد بعدی مشتری.</p>
+        <div class="mt-5 flex flex-col gap-2.5 sm:flex-row sm:justify-center lg:justify-start">
+          <NuxtLink :to="primaryLink" class="btn-primary min-h-12 px-6 no-underline"><span class="i-lucide-arrow-left h-5 w-5" />{{ primaryLabel }}</NuxtLink>
+          <a href="#how-it-works" class="btn-secondary min-h-12 px-6 no-underline">ببینید چطور کار می‌کند</a>
         </div>
-        <span class="mt-1 block text-xs leading-5 text-muted sm:text-sm">{{ stat.label }}</span>
-      </article>
-    </div>
+        <div class="mt-4 flex flex-wrap justify-center gap-x-5 gap-y-2 text-[11px] text-muted lg:justify-start">
+          <span class="flex items-center gap-1.5"><span class="i-lucide-check h-4 w-4 text-emerald-600" />مناسب موبایل</span>
+          <span class="flex items-center gap-1.5"><span class="i-lucide-check h-4 w-4 text-emerald-600" />بدون پنل پیامک</span>
+          <span class="flex items-center gap-1.5"><span class="i-lucide-check h-4 w-4 text-emerald-600" />راه‌اندازی سریع</span>
+        </div>
+      </div>
 
-    <div class="mt-6 grid gap-5 xl:grid-cols-[1.5fr_1fr]">
-      <section>
-        <header class="mb-3 flex items-center justify-between px-1">
-          <div>
-            <h2 class="m-0 text-base font-700">آخرین فاکتورها</h2>
-            <p class="m-0 mt-1 text-xs text-muted">تازه‌ترین فعالیت‌های ثبت‌شده</p>
+      <div class="relative mx-auto w-full max-w-md lg:max-w-none">
+        <div class="absolute -inset-8 rounded-full bg-brand-300/20 blur-3xl" />
+        <div class="relative rounded-[2rem] border border-black/8 bg-white p-3 shadow-[0_30px_80px_rgba(0,0,0,.12)] sm:p-4">
+          <div class="mb-4 flex items-center justify-between px-1"><div><strong class="text-sm">کارهای امروز</strong><span class="mt-0.5 block text-[10px] text-muted">همه چیز برای پیگیری آماده است</span></div><span class="grid h-9 w-9 place-items-center rounded-xl bg-brand-100"><span class="i-lucide-layout-dashboard h-4.5 w-4.5" /></span></div>
+          <div class="grid grid-cols-3 gap-2">
+            <div class="rounded-2xl bg-red-50 p-3"><strong class="block text-xl text-red-700">۳</strong><span class="text-[9px] text-red-700/70">موعد گذشته</span></div>
+            <div class="rounded-2xl bg-blue-50 p-3"><strong class="block text-xl text-blue-700">۲</strong><span class="text-[9px] text-blue-700/70">نیازمند تماس</span></div>
+            <div class="rounded-2xl bg-brand-50 p-3"><strong class="block text-xl text-brand-800">۵</strong><span class="text-[9px] text-brand-800/70">موعد نزدیک</span></div>
           </div>
-          <NuxtLink to="/invoices" class="btn-ghost no-underline">مشاهده همه</NuxtLink>
-        </header>
-        <div v-if="invoices?.length" class="grid gap-3">
-          <NuxtLink v-for="invoice in invoices.slice(0, 5)" :key="invoice.id" :to="`/invoices/${invoice.id}`" class="card-interactive flex items-center gap-4 px-4 py-3.5 text-ink no-underline sm:px-5">
-            <span class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-black/4 text-muted"><span class="i-lucide-receipt h-5 w-5" /></span>
-            <div class="min-w-0 flex-1">
-              <strong class="block truncate text-sm">{{ invoice.invoiceNo }}</strong>
-              <span class="mt-0.5 block truncate text-xs text-muted">{{ invoice.order?.customer?.name || 'مشتری بدون نام' }}</span>
-              <span class="mt-0.5 block text-[11px] text-muted">{{ dateTime(invoice.issuedAt) }}</span>
-            </div>
-            <strong class="text-sm">{{ money(invoice.totalAmount, invoice.currency) }}</strong>
-          </NuxtLink>
-        </div>
-        <AppEmptyState v-else class="card" title="هنوز فاکتوری ثبت نشده" description="اولین سرویس را ثبت کنید تا اینجا نمایش داده شود.">
-          <NuxtLink to="/service-orders/new" class="btn-secondary no-underline">ثبت اولین سرویس</NuxtLink>
-        </AppEmptyState>
-      </section>
-
-      <section class="card p-5">
-        <div class="mb-5 flex items-center justify-between">
-          <h2 class="m-0 text-base font-700">عملکرد ماه جاری</h2>
-          <span class="i-lucide-chart-no-axes-combined h-5 w-5 text-brand-600" />
-        </div>
-        <div class="rounded-2xl bg-ink p-5 text-white">
-          <div class="grid grid-cols-2 divide-x divide-x-reverse divide-white/10">
-            <div class="pl-4">
-              <p class="m-0 text-xs text-white/70">مشتریان یکتای ماه</p>
-              <strong class="mt-2 block text-3xl font-800">{{ number(dashboard?.month.uniqueCustomers) }}</strong>
-            </div>
-            <div class="pr-4">
-              <p class="m-0 text-xs text-white/70">فاکتورهای صادرشده</p>
-              <strong class="mt-2 block text-3xl font-800">{{ number(dashboard?.month.invoices) }}</strong>
+          <div class="mt-3 grid gap-2">
+            <div v-for="item in [{ name: 'علی رضایی', car: 'پژو ۲۰۶', action: 'آماده ارسال پیامک', tone: 'bg-brand-50 text-brand-800', icon: 'i-lucide-message-square-text' }, { name: 'مهدی احمدی', car: 'پراید', action: 'نیازمند تماس', tone: 'bg-blue-50 text-blue-800', icon: 'i-lucide-phone-call' }]" :key="item.name" class="flex items-center gap-3 rounded-2xl border border-black/6 p-3">
+              <span class="grid h-9 w-9 shrink-0 place-items-center rounded-xl" :class="item.tone"><span class="h-4.5 w-4.5" :class="item.icon" /></span>
+              <div class="min-w-0 flex-1"><strong class="block text-xs">{{ item.name }}</strong><span class="mt-0.5 block text-[10px] text-muted">{{ item.car }}</span></div>
+              <span class="rounded-lg px-2 py-1 text-[9px] font-800" :class="item.tone">{{ item.action }}</span>
             </div>
           </div>
+          <div class="mt-3 flex items-center justify-center gap-2 rounded-2xl bg-ink px-4 py-3 text-xs font-800 text-white"><span class="i-lucide-plus h-4 w-4 text-brand-400" />ثبت سرویس جدید</div>
         </div>
-        <div class="mt-4 grid grid-cols-2 gap-3">
-          <NuxtLink to="/customers" class="rounded-xl border border-black/7 p-3 text-ink no-underline transition hover:bg-brand-50">
-            <span class="i-lucide-search mb-2 block h-5 w-5 text-brand-600" />
-            <strong class="text-sm">یافتن مشتری</strong>
-          </NuxtLink>
-          <NuxtLink to="/catalog" class="rounded-xl border border-black/7 p-3 text-ink no-underline transition hover:bg-brand-50">
-            <span class="i-lucide-tags mb-2 block h-5 w-5 text-brand-600" />
-            <strong class="text-sm">قیمت‌گذاری</strong>
-          </NuxtLink>
-          <NuxtLink to="/reminders" class="col-span-2 flex items-center gap-3 rounded-xl border border-brand-200 bg-brand-50/60 p-3 text-ink no-underline transition hover:bg-brand-50">
-            <span class="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-white text-brand-800 shadow-sm">
-              <span class="i-lucide-bell-ring h-5 w-5" />
-            </span>
-            <span class="min-w-0 flex-1">
-              <strong class="block text-sm">پیگیری موعدهای سرویس</strong>
-              <span class="mt-0.5 block text-[11px] text-muted">مشاهده مشتریان امروز و آماده‌کردن پیامک</span>
-            </span>
-            <span class="i-lucide-chevron-left h-4 w-4 text-muted" />
-          </NuxtLink>
+      </div>
+    </section>
+
+    <section id="how-it-works" class="border-y border-black/6 bg-white/65 px-4 py-10 sm:px-6 sm:py-12">
+      <div class="mx-auto max-w-6xl">
+        <div class="mx-auto max-w-xl text-center"><span class="text-xs font-800 text-brand-700">ساده و کاربردی</span><h2 class="mb-0 mt-2 text-2xl font-900 sm:text-3xl">سه کاری که هر روز انجام می‌دهید</h2></div>
+        <div class="mt-6 grid gap-3 md:grid-cols-3 md:gap-4">
+          <article v-for="(benefit, index) in benefits" :key="benefit.title" class="rounded-[1.5rem] border border-black/6 bg-white p-4 shadow-[0_8px_30px_rgba(0,0,0,.04)]">
+            <div class="mb-3 flex items-center justify-between"><span class="grid h-10 w-10 place-items-center rounded-xl bg-brand-100 text-brand-900"><span class="h-5 w-5" :class="benefit.icon" /></span><span class="text-xs font-900 text-black/15">۰{{ index + 1 }}</span></div>
+            <h3 class="m-0 text-base font-900">{{ benefit.title }}</h3><p class="mb-0 mt-2 text-xs leading-6 text-muted">{{ benefit.text }}</p>
+          </article>
         </div>
-      </section>
-    </div>
-  </div>
+      </div>
+    </section>
+
+    <section class="px-4 py-10 sm:px-6 sm:py-12">
+      <div class="mx-auto flex max-w-4xl flex-col items-center gap-4 rounded-[2rem] bg-ink px-5 py-7 text-center text-white shadow-xl sm:px-10 sm:py-9">
+        <span class="grid h-12 w-12 place-items-center rounded-2xl bg-brand-500 text-ink"><span class="i-lucide-droplets h-6 w-6" /></span>
+        <div><h2 class="m-0 text-2xl font-900">دفتر تعویض‌روغنی را دیجیتال کنید</h2><p class="mb-0 mt-2 text-sm leading-7 text-white/65">اولین مشتری و خودرو را ثبت کنید؛ ادامه کار را روغن‌یار مرتب نگه می‌دارد.</p></div>
+        <NuxtLink :to="primaryLink" class="btn-primary min-h-12 px-7 no-underline">{{ primaryLabel }}</NuxtLink>
+      </div>
+    </section>
+
+    <footer class="border-t border-black/6 px-4 py-6 sm:px-6"><div class="mx-auto flex max-w-6xl items-center justify-between text-xs text-muted"><span>روغن‌یار؛ مدیریت ساده سرویس خودرو</span><NuxtLink :to="isAuthenticated ? '/dashboard' : '/login'" class="font-800 text-ink no-underline">{{ isAuthenticated ? 'ورود به پنل' : 'ورود' }}</NuxtLink></div></footer>
+  </main>
 </template>

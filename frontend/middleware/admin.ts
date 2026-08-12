@@ -6,5 +6,5 @@ export default defineNuxtRouteMiddleware(() => {
       try { user.value = JSON.parse(stored) } catch {}
     }
   }
-  if (user.value && user.value.role !== 'super_admin') return navigateTo('/')
+  if (user.value && user.value.role !== 'super_admin') return navigateTo('/dashboard')
 })

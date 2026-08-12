@@ -5,11 +5,12 @@ definePageMeta({ layout: 'auth', middleware: 'guest' })
 useHead({ title: 'ورود و ثبت‌نام' })
 
 const api = useApi()
+const route = useRoute()
 const auth = useAuth()
 const toast = useToast()
 const { errorMessage } = useFormat()
 
-const mode = ref<'login' | 'register'>('login')
+const mode = ref<'login' | 'register'>(route.query.mode === 'register' ? 'register' : 'login')
 const loading = ref(false)
 const showPassword = ref(false)
 const loginForm = reactive({ mobile: '', password: '' })
@@ -28,7 +29,7 @@ async function login() {
     const response = await api.post<AuthResponse>('/auth/password/login', loginForm)
     auth.setSession(response)
     toast.success('با موفقیت وارد شدید.')
-    await navigateTo(response.user.role === 'super_admin' ? '/admin' : '/')
+    await navigateTo(response.user.role === 'super_admin' ? '/admin' : '/dashboard')
   } catch (error) {
     toast.error(errorMessage(error))
   } finally {
@@ -46,7 +47,7 @@ async function register() {
     const response = await api.post<AuthResponse>('/auth/password/register', body)
     auth.setSession(response)
     toast.success('فروشگاه شما ساخته شد؛ خوش آمدید.')
-    await navigateTo('/')
+    await navigateTo('/dashboard')
   } catch (error) {
     toast.error(errorMessage(error))
   } finally {
