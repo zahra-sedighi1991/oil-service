@@ -31,6 +31,7 @@ export default defineNuxtConfig({
       apiBase: process.env.NUXT_PUBLIC_API_BASE ?? `${defaultApiOrigin}/api/v1`,
       publicApiBase: process.env.NUXT_PUBLIC_PUBLIC_API_BASE ?? defaultApiOrigin,
       webBase: process.env.NUXT_PUBLIC_WEB_BASE ?? (capacitorBuild ? 'http://10.0.2.2:3001' : ''),
+      webBuildNumber: Number(process.env.NUXT_PUBLIC_WEB_BUILD_NUMBER ?? 0),
       debugServerPicker
     }
   },

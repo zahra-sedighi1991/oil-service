@@ -59,6 +59,17 @@ try {
   Copy-Item -LiteralPath (Join-Path $projectRoot 'deploy/server-start.sh') -Destination $bundlePath
   Copy-Item -LiteralPath (Join-Path $projectRoot 'deploy/backup-db.sh') -Destination $bundlePath
 
+  $androidUpdatesPath = Join-Path $releaseRoot 'android-updates'
+  $hasWebUpdate = Test-Path -LiteralPath (Join-Path $androidUpdatesPath 'web-latest.json')
+  $hasNativeUpdate = Test-Path -LiteralPath (Join-Path $androidUpdatesPath 'native-latest.json')
+  if ($hasWebUpdate -or $hasNativeUpdate) {
+    Copy-Item -LiteralPath $androidUpdatesPath -Destination (Join-Path $bundlePath 'android-updates') -Recurse
+    Write-Host 'Latest Android update package was included in the server release.'
+  } else {
+    New-Item -ItemType Directory -Path (Join-Path $bundlePath 'android-updates') -Force | Out-Null
+    Write-Host 'No Android update package exists yet; an empty android-updates directory was included.'
+  }
+
   $environmentTemplate = Get-Content -Raw -LiteralPath (Join-Path $projectRoot 'deploy/.env.production.example')
   $environmentTemplate = $environmentTemplate -replace 'APP_VERSION=latest', "APP_VERSION=$Version"
   [System.IO.File]::WriteAllText(

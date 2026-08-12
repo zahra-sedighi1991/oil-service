@@ -15,7 +15,9 @@
     "mobile:open": "cap open android",
     "mobile:run": "pnpm mobile:sync:debug && cap run android",
     "mobile:build:debug": "pnpm mobile:sync:debug && cd android && gradlew.bat assembleDebug",
-    "mobile:build:release": "pnpm mobile:sync && cd android && gradlew.bat assembleRelease",
+    "mobile:assemble:release": "pnpm mobile:sync && cd android && gradlew.bat assembleRelease",
+    "mobile:build:release": "powershell -NoProfile -ExecutionPolicy Bypass -File ../scripts/build-android-release.ps1",
+    "mobile:build:web-update": "powershell -NoProfile -ExecutionPolicy Bypass -File ../scripts/build-web-update.ps1",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare"
   },

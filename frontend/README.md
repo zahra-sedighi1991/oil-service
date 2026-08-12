@@ -64,35 +64,38 @@ The resulting file is written to
 
 ## Android app updates
 
-The packaged Android app checks the public API for a newer version when it
-starts. Directly installed APK files cannot update silently: Android asks the
-user to allow installs from this app once and confirms every installation.
+There are two independent update channels.
 
-For every release:
+For Vue/JavaScript/CSS-only changes, build an OTA web bundle without changing
+the native Android version:
 
-1. Increase both `versionCode` and `versionName` in
-   `android/app/build.gradle`. `versionCode` must always increase.
-2. Build and sign the APK with the same release keystore used for every older
-   version. Android rejects an update signed by another key.
-3. Upload the APK to a stable HTTPS URL.
-4. Configure and restart the API:
-
-```dotenv
-ANDROID_LATEST_VERSION_CODE=3
-ANDROID_LATEST_VERSION_NAME=1.2.0
-ANDROID_MIN_SUPPORTED_VERSION_CODE=0
-ANDROID_APK_URL=https://downloads.example.com/roghanyar-1.2.0.apk
-ANDROID_RELEASE_NOTES=بهبود ثبت سرویس|رفع خطاهای گزارش‌شده
+```powershell
+pnpm android:build:web-update -- -Version '2026.08.13-1' -ReleaseNotes 'UI improvements|Bug fixes'
 ```
 
-Set `ANDROID_MIN_SUPPORTED_VERSION_CODE` to the minimum usable build only when
-an update must be mandatory. Keep it `0` for an optional update that users can
-dismiss for 24 hours. The APK URL must be HTTPS in release builds.
+Upload `web-latest.json` and its ZIP from `.release/android-updates/` to the
+server's `android-updates` directory. The app downloads the ZIP, verifies its
+SHA-256, activates it in private storage, and reloads without installing an APK.
 
-The first update-aware APK (`versionCode 2`) must be installed manually once.
-Later versions are detected by the app. If the app is eventually distributed
-through Google Play, use Play's managed in-app updates instead of direct APK
-installation.
+For Java, Manifest, Gradle, Capacitor plugin, or native dependency changes,
+build a native release and direct users to app stores:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-android-release.ps1 `
+  -VersionName '1.2.0' `
+  -ReleaseNotes 'Native improvements' `
+  -BazaarUrl 'https://cafebazaar.ir/app/ir.roghanyar.app' `
+  -MyketUrl 'https://myket.ir/app/ir.roghanyar.app' `
+  -GooglePlayUrl 'https://play.google.com/store/apps/details?id=ir.roghanyar.app'
+```
+
+Upload the APK/AAB to the stores, then publish `native-latest.json` from
+`.release/android-updates/` on the server. The dialog offers the configured
+store links. Add `-Mandatory` only when the native update must block dismissal.
+
+The first APK containing this dual updater must be installed normally or through
+a store once. Later web releases are installed inside the app, while native
+releases direct the user to the configured stores.
 
 Configure the permanent release key before building. Keep the keystore and its
 passwords outside Git and back them up securely; losing this key means existing
@@ -106,5 +109,5 @@ $env:ANDROID_KEY_PASSWORD='your-key-password'
 pnpm android:build:release
 ```
 
-The signed release APK is generated under
-`frontend/android/app/build/outputs/apk/release/`.
+The native APK is generated under `.release/android-native/`; web and native
+manifests are generated under `.release/android-updates/`.

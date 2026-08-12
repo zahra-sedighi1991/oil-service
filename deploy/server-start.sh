@@ -13,6 +13,8 @@ if [ ! -f oil-service-images.tar ]; then
   exit 1
 fi
 
+mkdir -p android-updates
+
 if grep -Eq '^(DOMAIN=example\.ir|DB_PASSWORD=REPLACE_WITH_|JWT_SECRET=REPLACE_WITH_)' .env.production; then
   echo "Replace the example domain and secrets in .env.production before starting." >&2
   exit 1

@@ -69,6 +69,10 @@ services:
       ADMIN_MOBILE: ${ADMIN_MOBILE:-}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
       ADMIN_NAME: ${ADMIN_NAME:-System Admin}
+      PUBLIC_BASE_URL: https://${DOMAIN}
+      ANDROID_UPDATE_DIR: /app/updates/android
+    volumes:
+      - ./android-updates:/app/updates/android:ro
     expose:
       - "3000"
     networks:

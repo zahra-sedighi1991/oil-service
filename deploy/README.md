@@ -55,6 +55,12 @@ Build a new release locally, upload the new directory, copy the existing
 and run `sh server-start.sh`. Database and TLS data live in named Docker volumes
 and are not removed by an application update.
 
+For a web-only Android update, run `scripts/build-web-update.ps1` and upload its
+ZIP plus `web-latest.json` into `android-updates/`. For a native Android update,
+publish the APK/AAB to the stores and upload `native-latest.json` to the same
+directory. The API reads both manifests automatically, so updating this folder
+does not require rebuilding the Docker images or restarting the API.
+
 ## Backup
 
 Run this command from cron every day and copy the resulting dump to storage on

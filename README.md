@@ -122,9 +122,15 @@ $env:ANDROID_KEYSTORE_PATH='C:\secure\roghanyar-release.jks'
 $env:ANDROID_KEYSTORE_PASSWORD='رمز-keystore'
 $env:ANDROID_KEY_ALIAS='roghanyar'
 $env:ANDROID_KEY_PASSWORD='رمز-key'
+$env:ANDROID_BAZAAR_URL='https://cafebazaar.ir/app/ir.roghanyar.app'
+$env:ANDROID_MYKET_URL='https://myket.ir/app/ir.roghanyar.app'
+$env:ANDROID_GOOGLE_PLAY_URL='https://play.google.com/store/apps/details?id=ir.roghanyar.app'
 
 pnpm android:build:release
 ```
+
+همین سه متغیر `NUXT_PUBLIC_*` برای ساخت آپدیت سبک وب نیز لازم‌اند تا بستهٔ
+منتشرشده به API و دامنهٔ واقعی متصل شود.
 
 فایل Release امضاشده در این پوشه ساخته می‌شود:
 
@@ -132,8 +138,8 @@ pnpm android:build:release
 frontend/android/app/build/outputs/apk/release/
 ```
 
-فایل معمولاً `app-release.apk` نام دارد. همین فایل برای نصب مشتری و انتشار روی
-سرور دانلود مناسب است.
+فایل معمولاً `app-release.apk` نام دارد. نسخه نهایی را در بازار، مایکت یا
+Google Play منتشر کنید؛ اپ کاربران را برای آپدیت نیتیو به همین صفحه‌ها می‌فرستد.
 
 ### خروجی Release از داخل Android Studio
 
@@ -150,34 +156,57 @@ frontend/android/app/build/outputs/apk/release/
 `app > Tasks > build > assembleRelease` را اجرا کنید یا از دستور PowerShell
 `pnpm android:build:release` استفاده کنید.
 
-### آماده‌سازی هر نسخه جدید
+> برای انتشار نسخه نیتیو، دستور `pnpm android:build:release` پیشنهاد می‌شود؛ چون
+> علاوه بر APK، فایل `native-latest.json` موردنیاز دیالوگ مارکت را تولید می‌کند.
 
-قبل از گرفتن هر خروجی جدید، در فایل
-`frontend/android/app/build.gradle` این دو مقدار را تغییر دهید:
+### نوع اول: آپدیت سبک Vue، JavaScript و CSS
 
-```gradle
-versionCode 3
-versionName "1.2.0"
+اگر فقط فایل‌های فرانت‌اند تغییر کرده‌اند و هیچ فایل Java، Manifest، Gradle،
+پلاگین Capacitor یا dependency نیتیو تغییر نکرده است، APK جدید نسازید. بسته وب
+را با این دستور تولید کنید:
+
+```powershell
+pnpm android:build:web-update -- `
+  -Version '2026.08.13-1' `
+  -ReleaseNotes 'بهبود ثبت سرویس|رفع خطاهای گزارش‌شده'
 ```
 
-- `versionCode` باید در هر انتشار حتماً یک عدد بیشتر شود.
-- `versionName` نسخه‌ای است که کاربر می‌بیند.
-- همه نسخه‌ها باید با همان Keystore نسخه اول امضا شوند.
+دو فایل در `.release/android-updates/` ساخته می‌شود:
 
-بعد از ساخت و بارگذاری APK روی یک آدرس HTTPS، تنظیمات API را به نسخه جدید تغییر
-دهید و API را دوباره راه‌اندازی کنید:
+- `web-<build-number>.zip`: خروجی Nuxt شامل JS، CSS و HTML
+- `web-latest.json`: نسخه، SHA-256 و اطلاعات نمایش دیالوگ
 
-```dotenv
-ANDROID_LATEST_VERSION_CODE=3
-ANDROID_LATEST_VERSION_NAME=1.2.0
-ANDROID_MIN_SUPPORTED_VERSION_CODE=0
-ANDROID_APK_URL=https://downloads.example.com/roghanyar-1.2.0.apk
-ANDROID_RELEASE_NOTES=بهبود ثبت سرویس|رفع خطاهای گزارش‌شده
+این دو فایل را داخل پوشه `android-updates` سرور آپلود کنید. کاربران نسخه قبلی
+دیالوگ آپدیت می‌بینند؛ با تأیید، ZIP دانلود، هش آن بررسی، در فضای امن اپ استخراج
+و بدون نصب APK فعال می‌شود. اگر بسته جدید سالم بالا نیاید، اجرای بعدی به نسخه
+قبلی برمی‌گردد.
+
+### نوع دوم: آپدیت نیتیو اندروید
+
+اگر Java، Manifest، Gradle، پلاگین Capacitor یا dependency نیتیو تغییر کرده،
+نسخه Release جدید بسازید و لینک مارکت‌ها را مشخص کنید:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-android-release.ps1 `
+  -VersionName '1.2.0' `
+  -ReleaseNotes 'بهبود بخش اندروید' `
+  -BazaarUrl 'https://cafebazaar.ir/app/ir.roghanyar.app' `
+  -MyketUrl 'https://myket.ir/app/ir.roghanyar.app' `
+  -GooglePlayUrl 'https://play.google.com/store/apps/details?id=ir.roghanyar.app'
 ```
 
-مقدار `ANDROID_MIN_SUPPORTED_VERSION_CODE=0` آپدیت را اختیاری نگه می‌دارد. برای
-اجباری‌شدن آپدیت، آن را برابر حداقل `versionCode` قابل استفاده قرار دهید. نصب
-نهایی APK همیشه باید توسط کاربر در صفحه نصب اندروید تأیید شود.
+APK داخل `.release/android-native/` و فایل اعلان نسخه داخل
+`.release/android-updates/native-latest.json` قرار می‌گیرد. ابتدا APK/AAB را در
+مارکت‌ها منتشر کنید و بعد `native-latest.json` را روی سرور بگذارید. در این حالت
+دیالوگ اپ به‌جای دانلود فایل، کاربر را به بازار، مایکت یا Google Play می‌برد.
+برای نسخه ضروری سوییچ `-Mandatory` را اضافه کنید.
+
+Build محلی به‌تنهایی هیچ اعلانی برای کاربران ایجاد نمی‌کند؛ فایل Manifest مربوط
+به هر نوع آپدیت باید در پوشه `android-updates` سرور منتشر شود.
+
+اولین APK که این سازوکار دوگانه را دارد باید یک‌بار به روش معمول یا از طریق
+مارکت روی گوشی کاربران نصب شود. بعد از آن، تغییرات وب از داخل برنامه و تغییرات
+نیتیو از طریق همان مارکت‌ها به‌روزرسانی می‌شوند.
 
 ### اگر خروجی ساخته نشد
 
@@ -187,8 +216,8 @@ ANDROID_RELEASE_NOTES=بهبود ثبت سرویس|رفع خطاهای گزار�
   کنید.
 - خط `Deprecated Gradle features` به‌تنهایی علت شکست Build نیست؛ چند خط بالاتر
   از `BUILD FAILED` خطای اصلی نوشته می‌شود.
-- اگر APK جدید روی نسخه قبلی نصب نشد، معمولاً `versionCode` افزایش نیافته یا
-  فایل با Keystore متفاوتی امضا شده است.
+- اگر APK جدید روی نسخه قبلی نصب نشد، معمولاً فایل با Keystore متفاوتی امضا شده
+  است؛ اسکریپت شماره نسخه را خودکار افزایش می‌دهد.
 
 `DB_SYNCHRONIZE` must be disabled in production. Generate and review a TypeORM
 migration before the first production deployment.
