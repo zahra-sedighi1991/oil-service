@@ -1,5 +1,5 @@
 import { IsEnum, IsIn, IsOptional, IsString, IsTimeZone } from 'class-validator';
-import { ShopStatus } from '../common/enums';
+import { RecordStatus, ShopStatus } from '../common/enums';
 
 export class UpdateShopDto {
   @IsString() @IsOptional() name?: string;
@@ -14,4 +14,8 @@ export class UpdateShopDto {
 
 export class UpdateShopStatusDto {
   @IsEnum(ShopStatus) status: ShopStatus;
+}
+
+export class UpdateShopUserStatusDto {
+  @IsEnum(RecordStatus) status: RecordStatus;
 }

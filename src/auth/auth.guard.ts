@@ -11,8 +11,8 @@ import { Request } from 'express';
 import { DataSource } from 'typeorm';
 import { IS_PUBLIC_KEY, ROLES_KEY } from './auth.decorators';
 import type { AuthUser } from './auth.types';
-import { ShopStatus, UserRole } from '../common/enums';
-import { Shop } from '../database/entities';
+import { RecordStatus, ShopStatus, UserRole } from '../common/enums';
+import { Shop, User } from '../database/entities';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
@@ -49,8 +49,14 @@ export class AuthGuard implements CanActivate {
       throw new ForbiddenException('فضای کاری کاربر مشخص نیست.');
     }
     if (request.user.role !== UserRole.SUPER_ADMIN) {
-      const shop = await this.dataSource.getRepository(Shop).findOneBy({ id: request.user.shopId! });
-      if (!shop || [ShopStatus.SUSPENDED, ShopStatus.CLOSED].includes(shop.status)) {
+      const [user, shop] = await Promise.all([
+        this.dataSource.getRepository(User).findOneBy({ id: request.user.sub }),
+        this.dataSource.getRepository(Shop).findOneBy({ id: request.user.shopId! }),
+      ]);
+      if (!user || user.status !== RecordStatus.ACTIVE) {
+        throw new ForbiddenException('دسترسی این حساب کاربری غیرفعال شده است.');
+      }
+      if (!shop || shop.status !== ShopStatus.ACTIVE) {
         throw new ForbiddenException('فروشگاه غیرفعال یا تعلیق شده است.');
       }
     }

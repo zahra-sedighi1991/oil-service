@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { VehicleModelOption } from '~/types/api'
 import type { ProductEditorValue } from '~/types/product-editor'
+import type { AdminShopListItem } from '~/types/admin'
 
 definePageMeta({ middleware: ['auth', 'admin'] })
 useHead({ title: 'بررسی پیشنهادها' })
@@ -37,6 +38,10 @@ const { data: suggestions, pending, refresh } = await useAsyncData(
   'admin-suggestions',
   () => api.get<Suggestion[]>('/admin/suggestions'),
 )
+const { data: shops } = await useAsyncData(
+  'admin-suggestion-shops',
+  () => api.get<AdminShopListItem[]>('/admin/shops'),
+)
 const { data: catalogProducts, refresh: refreshProducts } = await useAsyncData(
   'suggestion-catalog-products',
   () => api.get<CatalogOption[]>('/catalog/products'),
@@ -58,6 +63,7 @@ const filteredSuggestions = computed(() => {
   if (statusFilter.value === 'all') return suggestions.value || []
   return (suggestions.value || []).filter(item => item.status === statusFilter.value)
 })
+const shopNames = computed(() => Object.fromEntries((shops.value || []).map(item => [item.id, item.name])))
 
 const counts = computed(() => ({
   all: suggestions.value?.length || 0,
@@ -249,6 +255,10 @@ async function submitDecision() {
               <span class="mt-2 block text-xs text-muted">
                 {{ entityLabel(item.entityType) }} · ثبت‌شده در {{ dateTime(item.createdAt) }}
               </span>
+              <NuxtLink :to="`/admin/shops/${item.shopId}`" class="mt-1.5 inline-flex items-center gap-1 text-xs font-700 text-ink/70 no-underline hover:text-brand-700">
+                <span class="i-lucide-store h-3.5 w-3.5" />
+                {{ shopNames[item.shopId] || 'فروشگاه نامشخص' }}
+              </NuxtLink>
               <div v-if="productSuggestionMeta(item).length" class="mt-2 flex flex-wrap gap-1.5">
                 <span v-for="meta in productSuggestionMeta(item)" :key="String(meta)" class="badge bg-black/4 text-[10px] text-muted">{{ meta }}</span>
               </div>

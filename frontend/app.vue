@@ -4,4 +4,5 @@
     <NuxtPage />
   </NuxtLayout>
   <AppToast />
+  <DebugServerSetup />
 </template>

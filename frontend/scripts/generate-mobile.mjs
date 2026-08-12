@@ -4,7 +4,8 @@ import { fileURLToPath } from 'node:url'
 const nuxtCli = fileURLToPath(new URL('../node_modules/nuxt/bin/nuxt.mjs', import.meta.url))
 const environment = {
   ...process.env,
-  CAPACITOR_BUILD: 'true'
+  CAPACITOR_BUILD: 'true',
+  CAPACITOR_DEBUG_SERVER_PICKER: process.argv.includes('--debug') ? 'true' : 'false'
 }
 
 if (!environment.NUXT_PUBLIC_API_BASE) {

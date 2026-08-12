@@ -110,6 +110,7 @@ export class AuthService implements OnModuleInit {
     ) {
       throw new UnauthorizedException('شماره موبایل یا رمز عبور صحیح نیست.');
     }
+    await this.assertAccountAccess(user);
     return this.issueToken(user);
   }
 
@@ -158,6 +159,7 @@ export class AuthService implements OnModuleInit {
         }));
       });
     }
+    await this.assertAccountAccess(user);
     this.otpStore.delete(mobile);
 
     return this.issueToken(user);
@@ -181,6 +183,21 @@ export class AuthService implements OnModuleInit {
       throw new BadRequestException('شماره موبایل را به‌صورت ۱۱ رقمی وارد کنید.');
     }
     return mobile;
+  }
+
+  private async assertAccountAccess(user: User) {
+    if (user.status !== RecordStatus.ACTIVE) {
+      throw new UnauthorizedException('دسترسی این حساب کاربری غیرفعال شده است.');
+    }
+    if (user.role === UserRole.SUPER_ADMIN) return;
+    const shop = user.shopId ? await this.dataSource.getRepository(Shop).findOneBy({ id: user.shopId }) : null;
+    if (!shop) throw new UnauthorizedException('فروشگاه این حساب کاربری یافت نشد.');
+    if (shop.status === ShopStatus.PENDING) {
+      throw new UnauthorizedException('فروشگاه هنوز توسط مدیر سامانه تأیید نشده است.');
+    }
+    if (shop.status !== ShopStatus.ACTIVE) {
+      throw new UnauthorizedException('دسترسی فروشگاه غیرفعال یا تعلیق شده است.');
+    }
   }
 
   private ensureOtpEnabled() {

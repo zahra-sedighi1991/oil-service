@@ -17,6 +17,7 @@ import { BillingModule } from './billing/billing.module';
 import { ShopsModule } from './shops/shops.module';
 import { AuditModule } from './audit/audit.module';
 import { join } from 'node:path';
+import { AppUpdateController } from './app-update.controller';
 
 @Module({
   imports: [
@@ -62,7 +63,7 @@ import { join } from 'node:path';
     ShopsModule,
     AuditModule,
   ],
-  controllers: [HealthController],
+  controllers: [HealthController, AppUpdateController],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_GUARD, useClass: AuthGuard },

@@ -1,12 +1,13 @@
-import { Body, Controller, Get, NotFoundException, Param, Patch } from '@nestjs/common';
+import { Body, Controller, Get, NotFoundException, Param, Patch, Query } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CurrentUser, Roles } from '../auth/auth.decorators';
 import type { AuthUser } from '../auth/auth.types';
-import { UserRole } from '../common/enums';
+import { ShopStatus, UserRole } from '../common/enums';
 import { AuditLog, Shop } from '../database/entities';
-import { UpdateShopDto, UpdateShopStatusDto } from './dto';
+import { UpdateShopDto, UpdateShopStatusDto, UpdateShopUserStatusDto } from './dto';
+import { AdminShopsService } from './admin-shops.service';
 
 @ApiTags('shop')
 @Controller('shop')
@@ -50,11 +51,23 @@ export class AdminShopsController {
   constructor(
     @InjectRepository(Shop) private readonly shops: Repository<Shop>,
     @InjectRepository(AuditLog) private readonly audits: Repository<AuditLog>,
+    private readonly adminShops: AdminShopsService,
   ) {}
 
+  @Get('overview')
+  overview() { return this.adminShops.overview(); }
+
   @Get()
-  list() {
-    return this.shops.find({ order: { createdAt: 'DESC' }, take: 100 });
+  list(@Query('search') search?: string, @Query('status') status?: ShopStatus) {
+    return this.adminShops.list(search, status);
+  }
+
+  @Get(':id')
+  get(@Param('id') id: string) { return this.adminShops.detail(id); }
+
+  @Patch(':id')
+  update(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: UpdateShopDto) {
+    return this.adminShops.update(id, user.sub, dto);
   }
 
   @Patch(':id/status')
@@ -78,5 +91,15 @@ export class AdminShopsController {
       after: { status: shop.status },
     }));
     return result;
+  }
+
+  @Patch(':id/users/:userId/status')
+  updateUserStatus(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Param('userId') userId: string,
+    @Body() dto: UpdateShopUserStatusDto,
+  ) {
+    return this.adminShops.updateUserStatus(id, userId, user.sub, dto.status);
   }
 }

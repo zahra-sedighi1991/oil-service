@@ -14,23 +14,28 @@ const shopNav = [
   { label: 'تنظیمات فروشگاه', to: '/settings', icon: 'i-lucide-settings-2' }
 ]
 const adminNav = [
-  { label: 'مدیریت سامانه', to: '/admin', icon: 'i-lucide-shield-check' },
+  { label: 'نمای کلی سامانه', to: '/admin', icon: 'i-lucide-layout-dashboard' },
+  { label: 'فروشگاه‌ها', to: '/admin/shops', icon: 'i-lucide-store' },
   { label: 'کاتالوگ سراسری', to: '/admin/catalog', icon: 'i-lucide-library-big' },
-  { label: 'پیشنهادها', to: '/admin/suggestions', icon: 'i-lucide-lightbulb' }
+  { label: 'پیشنهادها', to: '/admin/suggestions', icon: 'i-lucide-lightbulb' },
+  { label: 'رویدادهای سامانه', to: '/admin/activity', icon: 'i-lucide-scroll-text' }
 ]
 const nav = computed(() => isAdmin.value ? adminNav : shopNav)
 const mobileNav = computed(() => isAdmin.value
-  ? adminNav
+  ? adminNav.filter(item => ['/admin', '/admin/shops', '/admin/catalog', '/admin/suggestions'].includes(item.to))
   : shopNav.filter(item => ['/dashboard', '/service-orders/new', '/customers', '/reminders'].includes(item.to)))
 
 onMounted(restoreUser)
 watch(() => route.fullPath, () => { mobileMenu.value = false })
+function isNavActive(path: string) {
+  return route.path === path || (path !== '/admin' && route.path.startsWith(`${path}/`))
+}
 </script>
 
 <template>
   <div class="h-dvh overflow-hidden">
     <aside class="fixed bottom-4 right-4 top-4 z-50 hidden w-68 overflow-hidden rounded-[1.75rem] border border-black/6 bg-white/96 px-3.5 py-4 text-ink shadow-[0_18px_55px_rgba(0,0,0,.10)] backdrop-blur-xl lg:flex lg:flex-col">
-      <NuxtLink to="/dashboard" class="mb-6 flex items-center gap-3 rounded-2xl px-2 py-1 text-ink no-underline">
+      <NuxtLink :to="isAdmin ? '/admin' : '/dashboard'" class="mb-6 flex items-center gap-3 rounded-2xl px-2 py-1 text-ink no-underline">
         <span class="grid h-11 w-11 place-items-center rounded-2xl bg-brand-500 text-xl text-ink shadow-[0_8px_20px_rgba(250,189,50,.24)]">
           <span class="i-lucide-droplets h-6 w-6" />
         </span>
@@ -46,7 +51,7 @@ watch(() => route.fullPath, () => { mobileMenu.value = false })
           :key="item.to"
           :to="item.to"
           class="group flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-650 text-muted no-underline transition hover:bg-black/[.035] hover:text-ink"
-          active-class="!bg-brand-50 !text-ink !ring-1 !ring-brand-200"
+          :class="isNavActive(item.to) ? '!bg-brand-50 !text-ink !ring-1 !ring-brand-200' : ''"
         >
           <span class="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-black/[.035] text-muted transition group-hover:bg-brand-100 group-hover:text-ink">
             <span class="h-4.5 w-4.5" :class="item.icon" />
@@ -75,12 +80,12 @@ watch(() => route.fullPath, () => { mobileMenu.value = false })
       <button class="btn-ghost h-10 w-10 p-0" :aria-label="mobileMenu ? 'بستن منو' : 'نمایش منو'" :aria-expanded="mobileMenu" @click="mobileMenu = !mobileMenu">
         <span class="h-6 w-6" :class="mobileMenu ? 'i-lucide-x' : 'i-lucide-menu'" />
       </button>
-      <NuxtLink to="/dashboard" class="flex items-center gap-2 text-ink no-underline">
+      <NuxtLink :to="isAdmin ? '/admin' : '/dashboard'" class="flex items-center gap-2 text-ink no-underline">
         <span class="i-lucide-droplets h-5 w-5 text-brand-600" />
         <strong>روغن‌یار</strong>
       </NuxtLink>
-      <NuxtLink to="/service-orders/new" class="btn-primary h-10 w-10 p-0" aria-label="سرویس جدید">
-        <span class="i-lucide-plus h-5 w-5" />
+      <NuxtLink :to="isAdmin ? '/admin/shops' : '/service-orders/new'" class="btn-primary h-10 w-10 p-0" :aria-label="isAdmin ? 'فروشگاه‌ها' : 'سرویس جدید'">
+        <span class="h-5 w-5" :class="isAdmin ? 'i-lucide-store' : 'i-lucide-plus'" />
       </NuxtLink>
     </header>
 
@@ -95,7 +100,7 @@ watch(() => route.fullPath, () => { mobileMenu.value = false })
       :class="mobileNav.length === 3 ? 'grid-cols-3' : 'grid-cols-4'"
       style="bottom: max(1rem, env(safe-area-inset-bottom));"
     >
-      <NuxtLink v-for="item in mobileNav" :key="item.to" :to="item.to" class="flex flex-col items-center gap-1 rounded-2xl px-1 py-2 text-[10px] font-800 text-ink/65 no-underline transition" active-class="!bg-brand-100 !text-brand-900 !ring-1 !ring-brand-300 !shadow-sm">
+      <NuxtLink v-for="item in mobileNav" :key="item.to" :to="item.to" class="flex flex-col items-center gap-1 rounded-2xl px-1 py-2 text-[10px] font-800 text-ink/65 no-underline transition" :class="isNavActive(item.to) ? '!bg-brand-100 !text-brand-900 !ring-1 !ring-brand-300 !shadow-sm' : ''">
         <span class="h-5 w-5" :class="item.icon" />
         <span class="whitespace-nowrap">{{ item.label.replace(' و خودروها', '') }}</span>
       </NuxtLink>
@@ -111,7 +116,7 @@ watch(() => route.fullPath, () => { mobileMenu.value = false })
               </button>
             </div>
             <nav class="mobile-menu-scroll grid max-h-[min(65dvh,28rem)] grid-cols-3 gap-1.5 overflow-y-auto overscroll-contain pb-0.5">
-              <NuxtLink v-for="item in nav" :key="item.to" :to="item.to" class="group flex min-w-0 flex-col items-center justify-center gap-1.5 rounded-xl border border-black/5 bg-black/[.018] px-1 py-2.5 text-center text-[11px] font-800 text-ink/80 no-underline transition active:scale-[.97]" active-class="!border-brand-300 !bg-brand-100 !text-brand-950 !shadow-[0_4px_12px_rgba(250,189,50,.16)]">
+              <NuxtLink v-for="item in nav" :key="item.to" :to="item.to" class="group flex min-w-0 flex-col items-center justify-center gap-1.5 rounded-xl border border-black/5 bg-black/[.018] px-1 py-2.5 text-center text-[11px] font-800 text-ink/80 no-underline transition active:scale-[.97]" :class="isNavActive(item.to) ? '!border-brand-300 !bg-brand-100 !text-brand-950 !shadow-[0_4px_12px_rgba(250,189,50,.16)]' : ''">
                 <span class="grid h-8 w-8 shrink-0 place-items-center rounded-xl border border-brand-200/70 bg-brand-50 text-brand-900 shadow-[0_2px_7px_rgba(250,189,50,.10)] transition group-hover:border-brand-300 group-hover:bg-brand-100">
                   <span class="h-4.5 w-4.5" :class="item.icon" />
                 </span>

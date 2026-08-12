@@ -1,4 +1,5 @@
 const capacitorBuild = process.env.CAPACITOR_BUILD === 'true'
+const debugServerPicker = capacitorBuild && process.env.CAPACITOR_DEBUG_SERVER_PICKER === 'true'
 const defaultApiOrigin = capacitorBuild ? 'http://10.0.2.2:3000' : 'http://localhost:3000'
 
 export default defineNuxtConfig({
@@ -29,7 +30,8 @@ export default defineNuxtConfig({
     public: {
       apiBase: process.env.NUXT_PUBLIC_API_BASE ?? `${defaultApiOrigin}/api/v1`,
       publicApiBase: process.env.NUXT_PUBLIC_PUBLIC_API_BASE ?? defaultApiOrigin,
-      webBase: process.env.NUXT_PUBLIC_WEB_BASE ?? (capacitorBuild ? 'http://10.0.2.2:3001' : '')
+      webBase: process.env.NUXT_PUBLIC_WEB_BASE ?? (capacitorBuild ? 'http://10.0.2.2:3001' : ''),
+      debugServerPicker
     }
   },
   hooks: capacitorBuild
