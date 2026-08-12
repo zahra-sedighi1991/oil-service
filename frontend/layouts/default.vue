@@ -117,6 +117,10 @@ watch(() => route.fullPath, () => { mobileMenu.value = false })
                 <span class="w-full truncate">{{ item.label }}</span>
               </NuxtLink>
             </nav>
+            <button type="button" class="mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-danger/12 bg-danger/5 px-3 py-2 text-xs font-700 text-danger transition active:scale-[.99]" @click="logout">
+              <span class="i-lucide-log-out h-4 w-4" />
+              خروج از حساب کاربری
+            </button>
           </section>
         </div>
       </Transition>
