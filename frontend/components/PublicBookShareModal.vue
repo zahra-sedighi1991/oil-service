@@ -14,13 +14,11 @@ const emit = defineEmits<{ close: [] }>()
 const toast = useToast()
 const cardElement = ref<HTMLElement | null>(null)
 const imageBlob = shallowRef<Blob | null>(null)
-const previewUrl = ref('')
 const generatingImage = ref(false)
 const sharing = ref(false)
-const openingMessenger = ref<'telegram' | 'eitaa' | null>(null)
-const showEitaaUsername = ref(false)
-const eitaaUsernameInput = ref('')
-const generationFailed = ref(false)
+const openingMessenger = ref<'telegram' | 'eitaa' | 'rubika' | null>(null)
+const usernameMessenger = ref<'eitaa' | 'rubika' | null>(null)
+const messengerUsernameInput = ref('')
 let generationId = 0
 let messengerFallbackTimer: ReturnType<typeof setTimeout> | undefined
 let removeMessengerVisibilityListener: (() => void) | undefined
@@ -28,8 +26,10 @@ const isNativeApp = computed(() => import.meta.client && Capacitor.isNativePlatf
 const supportsNativeShare = computed(() => isNativeApp.value || (import.meta.client && typeof navigator.share === 'function'))
 const imageFileName = computed(() => `service-${props.card?.invoiceNo || 'card'}.png`.replace(/[^a-zA-Z0-9._-]/g, '-'))
 const customerPhone = computed(() => normalizeInternationalPhone(props.customerMobile))
-const eitaaUsername = computed(() => eitaaUsernameInput.value.trim().replace(/^@+/, ''))
-const isEitaaUsernameValid = computed(() => /^[a-zA-Z0-9_]{6,}$/.test(eitaaUsername.value))
+const messengerUsername = computed(() => messengerUsernameInput.value.trim().replace(/^@+/, ''))
+const usernameMinimumLength = computed(() => usernameMessenger.value === 'eitaa' ? 6 : 4)
+const isMessengerUsernameValid = computed(() => new RegExp(`^[a-zA-Z0-9_]{${usernameMinimumLength.value},64}$`).test(messengerUsername.value))
+const usernameMessengerLabel = computed(() => usernameMessenger.value === 'rubika' ? 'روبیکا' : 'ایتا')
 const supportsImageShare = computed(() => {
   if (!supportsNativeShare.value || !imageBlob.value) return false
   if (isNativeApp.value) return true
@@ -44,8 +44,8 @@ const supportsImageShare = computed(() => {
 watch(() => props.open, async (open) => {
   if (!open) {
     clearGeneratedImage()
-    showEitaaUsername.value = false
-    eitaaUsernameInput.value = ''
+    usernameMessenger.value = null
+    messengerUsernameInput.value = ''
     return
   }
   if (props.card) await generateImage()
@@ -58,11 +58,8 @@ onBeforeUnmount(() => {
 
 function clearGeneratedImage() {
   generationId += 1
-  if (previewUrl.value) URL.revokeObjectURL(previewUrl.value)
-  previewUrl.value = ''
   imageBlob.value = null
   generatingImage.value = false
-  generationFailed.value = false
 }
 
 async function generateImage() {
@@ -84,10 +81,8 @@ async function generateImage() {
     })
     if (currentGeneration !== generationId) return
     imageBlob.value = blob
-    previewUrl.value = URL.createObjectURL(blob)
   } catch {
     if (currentGeneration !== generationId) return
-    generationFailed.value = true
     toast.error('ساخت تصویر کارت انجام نشد؛ دوباره تلاش کنید.')
   } finally {
     if (currentGeneration === generationId) generatingImage.value = false
@@ -205,22 +200,38 @@ async function writeClipboardText(text: string) {
   if (!copied) throw new Error('Copy command failed')
 }
 
-async function openEitaaCustomer() {
-  if (!isEitaaUsernameValid.value || openingMessenger.value) return
-  openingMessenger.value = 'eitaa'
-  const username = encodeURIComponent(eitaaUsername.value)
+function selectUsernameMessenger(messenger: 'eitaa' | 'rubika') {
+  if (openingMessenger.value) return
+  if (usernameMessenger.value === messenger) {
+    usernameMessenger.value = null
+    messengerUsernameInput.value = ''
+    return
+  }
+  usernameMessenger.value = messenger
+  messengerUsernameInput.value = ''
+}
+
+async function openUsernameMessenger() {
+  const messenger = usernameMessenger.value
+  if (!messenger || !isMessengerUsernameValid.value || openingMessenger.value) return
+  openingMessenger.value = messenger
+  const username = encodeURIComponent(messengerUsername.value)
 
   try {
     await writeClipboardText(`${props.message}\n${props.url}`)
-    toast.success('متن و لینک کپی شد؛ آن را در گفت‌وگوی ایتا جای‌گذاری کنید.')
+    toast.success(`متن و لینک کپی شد؛ آن را در گفت‌وگوی ${usernameMessengerLabel.value} جای‌گذاری کنید.`)
   } catch {
-    toast.error('کپی متن انجام نشد؛ پس از باز شدن ایتا از دکمه «کپی لینک» استفاده کنید.')
+    toast.error(`کپی متن انجام نشد؛ پس از باز شدن ${usernameMessengerLabel.value} از دکمه «کپی لینک» استفاده کنید.`)
   }
 
-  openMessengerWithFallback(
-    `eitaa://resolve?domain=${username}`,
-    `https://eitaa.com/${username}`
-  )
+  if (messenger === 'eitaa') {
+    openMessengerWithFallback(
+      `eitaa://resolve?domain=${username}`,
+      `https://eitaa.com/${username}`
+    )
+  } else {
+    window.location.href = `https://rubika.ir/${username}`
+  }
 
   window.setTimeout(() => {
     openingMessenger.value = null
@@ -235,36 +246,40 @@ function openSmsComposer() {
 }
 
 async function shareImage() {
-  if (!imageBlob.value) return
-
-  if (!supportsImageShare.value) {
-    downloadImage(false)
-    try {
-      await writeClipboardText(`${props.message}\n${props.url}`)
-      toast.success('تصویر دانلود و متن و لینک کپی شد؛ آن‌ها را در پیام‌رسان ارسال کنید.')
-    } catch {
-      toast.success('تصویر دانلود شد؛ آن را در پیام‌رسان پیوست کنید.')
-    }
-
-    return
-  }
-
   sharing.value = true
   try {
-    if (isNativeApp.value) {
+    if (isNativeApp.value && imageBlob.value) {
       await shareImageNatively()
-    } else {
+    } else if (supportsImageShare.value) {
       await navigator.share({
         title: props.message,
         text: `${props.message}\n${props.url}`,
         files: [createImageFile()]
       })
+    } else if (isNativeApp.value) {
+      const { Share } = await import('@capacitor/share')
+      await Share.share({
+        title: props.message,
+        text: props.message,
+        url: props.url,
+        dialogTitle: 'اشتراک‌گذاری سرویس'
+      })
+    } else if (typeof navigator.share === 'function') {
+      await navigator.share({
+        title: props.message,
+        text: props.message,
+        url: props.url
+      })
+    } else {
+      await writeClipboardText(`${props.message}\n${props.url}`)
+      toast.success('متن و لینک برای ارسال کپی شد.')
+      return
     }
     emit('close')
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') return
     if (error instanceof Error && /cancel/i.test(error.message)) return
-    toast.error('ارسال مستقیم تصویر انجام نشد؛ تصویر را دانلود و در پیام‌رسان پیوست کنید.')
+    toast.error('اشتراک‌گذاری انجام نشد؛ دوباره تلاش کنید.')
   } finally {
     sharing.value = false
   }
@@ -280,159 +295,130 @@ async function copyLink() {
   }
 }
 
-function downloadImage(showToast = true) {
-  if (!imageBlob.value) return
-  const link = document.createElement('a')
-  link.href = previewUrl.value
-  link.download = imageFileName.value
-  link.click()
-  if (showToast) toast.success('تصویر کارت سرویس دانلود شد.')
-}
 </script>
 
 <template>
   <AppModal
     :open="open"
-    title="اشتراک‌گذاری سرویس"
-    :description="card ? 'تصویر کارت سرویس را همراه لینک دفترچه برای مشتری ارسال کنید.' : 'پیام‌رسان یا برنامه موردنظر را برای ارسال لینک به مشتری انتخاب کنید.'"
+    title="ارسال برای مشتری"
+    description="روش ارسال دفترچه سرویس را انتخاب کنید."
     @close="emit('close')"
   >
-    <div v-if="card" class="mb-4 overflow-hidden rounded-2xl border border-black/8 bg-black/[.025]">
-      <div class="aspect-[7/4] bg-ink/5">
-        <img v-if="previewUrl" :src="previewUrl" class="h-full w-full object-cover" alt="پیش‌نمایش کارت سرویس">
-        <div v-else class="grid h-full place-items-center p-8 text-center text-sm text-muted">
-          <div v-if="generatingImage">
-            <span class="i-lucide-loader-circle mx-auto mb-3 block h-8 w-8 animate-spin text-brand-600" />
-            در حال ساخت تصویر کارت…
-          </div>
-          <div v-else-if="generationFailed">
-            <span class="i-lucide-image-off mx-auto mb-3 block h-8 w-8 text-danger" />
-            <p class="m-0">ساخت تصویر ناموفق بود.</p>
-            <button class="btn-ghost mt-2 text-brand-700" @click="generateImage">تلاش دوباره</button>
-          </div>
-        </div>
+    <div class="rounded-2xl border border-black/7 bg-canvas/55 p-3">
+      <div class="mb-3 flex items-center justify-between gap-3 px-0.5">
+        <strong class="text-xs font-800 text-ink/75">ارسال مستقیم</strong>
+        <span v-if="customerPhone" class="text-[11px] text-muted" dir="ltr">+{{ customerPhone }}</span>
       </div>
-    </div>
-
-    <div v-if="customerPhone" class="mb-4 rounded-2xl border border-brand-200 bg-brand-50/70 p-3">
-      <div class="mb-2 flex items-center justify-between gap-3">
-        <div>
-          <strong class="block text-sm text-brand-900">ارسال به همین مشتری</strong>
-          <span class="mt-0.5 block text-xs text-brand-800/65" dir="ltr">+{{ customerPhone }}</span>
-        </div>
-        <span class="i-lucide-message-circle h-5 w-5 shrink-0 text-brand-700" />
-      </div>
-      <div class="grid gap-2 sm:grid-cols-3">
+      <div class="grid grid-cols-2 gap-2">
         <button
           type="button"
-          class="btn-secondary w-full border-sky-200 bg-white text-sky-700"
-          :disabled="Boolean(openingMessenger)"
+          class="flex min-h-14 items-center gap-2.5 rounded-xl border border-sky-200/80 bg-white px-3 text-sm font-800 text-sky-700 transition active:scale-[.98] disabled:opacity-50"
+          :disabled="!customerPhone || Boolean(openingMessenger)"
           @click="openTelegramCustomer"
         >
-          <span v-if="openingMessenger === 'telegram'" class="i-lucide-loader-circle h-5 w-5 animate-spin" />
-          <span v-else class="i-lucide-send h-5 w-5" />
-          ارسال با تلگرام
+          <span class="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-sky-50">
+            <span v-if="openingMessenger === 'telegram'" class="i-lucide-loader-circle h-4.5 w-4.5 animate-spin" />
+            <span v-else class="i-lucide-send h-4.5 w-4.5" />
+          </span>
+          تلگرام
         </button>
         <button
           type="button"
-          class="btn-secondary w-full border-orange-200 bg-white text-orange-700"
+          class="flex min-h-14 items-center gap-2.5 rounded-xl border border-orange-200/80 bg-white px-3 text-sm font-800 text-orange-700 transition active:scale-[.98] disabled:opacity-50"
           :disabled="Boolean(openingMessenger)"
-          @click="showEitaaUsername = !showEitaaUsername"
+          @click="selectUsernameMessenger('eitaa')"
         >
-          <span v-if="openingMessenger === 'eitaa'" class="i-lucide-loader-circle h-5 w-5 animate-spin" />
-          <span v-else class="i-lucide-message-square-share h-5 w-5" />
-          ارسال با ایتا
+          <span class="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-orange-50">
+            <span v-if="openingMessenger === 'eitaa'" class="i-lucide-loader-circle h-4.5 w-4.5 animate-spin" />
+            <span v-else class="i-lucide-message-square-share h-4.5 w-4.5" />
+          </span>
+          ایتا
         </button>
         <button
           type="button"
-          class="btn-secondary w-full border-emerald-200 bg-white text-emerald-700"
+          class="flex min-h-14 items-center gap-2.5 rounded-xl border border-violet-200/80 bg-white px-3 text-sm font-800 text-violet-700 transition active:scale-[.98] disabled:opacity-50"
           :disabled="Boolean(openingMessenger)"
+          @click="selectUsernameMessenger('rubika')"
+        >
+          <span class="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-violet-50">
+            <span v-if="openingMessenger === 'rubika'" class="i-lucide-loader-circle h-4.5 w-4.5 animate-spin" />
+            <span v-else class="i-lucide-message-circle-more h-4.5 w-4.5" />
+          </span>
+          روبیکا
+        </button>
+        <button
+          type="button"
+          class="flex min-h-14 items-center gap-2.5 rounded-xl border border-emerald-200/80 bg-white px-3 text-sm font-800 text-emerald-700 transition active:scale-[.98] disabled:opacity-50"
+          :disabled="!customerPhone || Boolean(openingMessenger)"
           @click="openSmsComposer"
         >
-          <span class="i-lucide-message-square-text h-5 w-5" />
+          <span class="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-emerald-50">
+            <span class="i-lucide-message-square-text h-4.5 w-4.5" />
+          </span>
           پیامک
         </button>
       </div>
 
-      <div v-if="showEitaaUsername" class="mt-3 rounded-xl border border-orange-200 bg-white p-3">
-        <label for="eitaa-username" class="mb-1.5 block text-xs font-700 text-orange-900">نام کاربری ایتای مشتری</label>
-        <div class="flex flex-col gap-2 sm:flex-row">
+      <div v-if="usernameMessenger" class="mt-2 rounded-xl border border-black/8 bg-white p-3 shadow-sm">
+        <label for="messenger-username" class="mb-1.5 block text-xs font-800 text-ink">نام کاربری {{ usernameMessengerLabel }} مشتری</label>
+        <div class="flex gap-2">
           <input
-            id="eitaa-username"
-            v-model="eitaaUsernameInput"
-            class="field flex-1"
+            id="messenger-username"
+            v-model="messengerUsernameInput"
+            class="field min-w-0 flex-1 py-2.5"
             dir="ltr"
             maxlength="64"
             placeholder="username یا @username"
             autocomplete="off"
-            @keyup.enter="openEitaaCustomer"
+            @keyup.enter="openUsernameMessenger"
           >
           <button
             type="button"
-            class="btn-secondary border-orange-200 text-orange-700"
-            :disabled="!isEitaaUsernameValid || Boolean(openingMessenger)"
-            @click="openEitaaCustomer"
+            class="btn-primary shrink-0 px-3"
+            :disabled="!isMessengerUsernameValid || Boolean(openingMessenger)"
+            @click="openUsernameMessenger"
           >
-            <span v-if="openingMessenger === 'eitaa'" class="i-lucide-loader-circle h-5 w-5 animate-spin" />
-            <span v-else class="i-lucide-external-link h-5 w-5" />
-            کپی و باز کردن گفت‌وگو
+            <span v-if="openingMessenger === usernameMessenger" class="i-lucide-loader-circle h-4 w-4 animate-spin" />
+            <span v-else class="i-lucide-external-link h-4 w-4" />
+            باز کردن
           </button>
         </div>
-        <p v-if="eitaaUsernameInput && !isEitaaUsernameValid" class="mb-0 mt-1.5 text-xs text-danger">
-          نام کاربری باید حداقل ۶ کاراکتر و شامل حروف انگلیسی، عدد یا زیرخط باشد.
+        <p v-if="messengerUsernameInput && !isMessengerUsernameValid" class="mb-0 mt-1.5 text-[11px] text-danger">
+          نام کاربری باید حداقل {{ usernameMinimumLength }} کاراکتر و شامل حروف انگلیسی، عدد یا زیرخط باشد.
         </p>
-        <p v-else-if="eitaaUsernameInput" class="mb-0 mt-1.5 text-xs leading-5 text-orange-800/75">
-          متن و لینک کپی می‌شود؛ پس از باز شدن گفت‌وگو آن را جای‌گذاری کنید.
+        <p v-else class="mb-0 mt-1.5 text-[11px] leading-5 text-muted">
+          متن و لینک کپی می‌شود؛ پس از باز شدن {{ usernameMessengerLabel }} آن را جای‌گذاری کنید.
         </p>
-        <button type="button" class="btn-ghost mt-2 text-xs text-muted" @click="openSmsComposer">
-          مشتری نام کاربری ایتا ندارد؟ ارسال با پیامک
-        </button>
       </div>
-
-      <p class="mb-0 mt-2 text-xs leading-5 text-brand-900/65">
-        تلگرام با متن و لینک آماده باز می‌شود. برای ایتا نام کاربری را وارد کنید؛ متن و لینک کپی می‌شود تا آن را در گفت‌وگو جای‌گذاری کنید.
+      <p v-if="customerMobile && !customerPhone" class="mb-0 mt-2 px-1 text-[11px] leading-5 text-amber-800">
+        شماره مشتری معتبر نیست؛ ایتا و روبیکا همچنان با نام کاربری قابل استفاده‌اند.
       </p>
     </div>
-    <p v-else-if="customerMobile" class="mb-4 mt-0 rounded-xl bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-800">
-      شماره موبایل مشتری معتبر نیست؛ ارسال مستقیم به گفت‌وگوی او در دسترس نیست.
-    </p>
 
-    <div class="mb-3 grid gap-2 sm:grid-cols-2">
+    <div class="my-4 flex items-center gap-3 text-[11px] text-muted before:h-px before:flex-1 before:bg-black/7 after:h-px after:flex-1 after:bg-black/7">
+      روش‌های دیگر
+    </div>
+
+    <div class="grid grid-cols-2 gap-2">
       <button
-        v-if="card"
         type="button"
         class="btn-primary w-full"
-        :disabled="sharing || generatingImage || !imageBlob"
+        :disabled="sharing"
         @click="shareImage()"
       >
         <span v-if="sharing" class="i-lucide-loader-circle h-5 w-5 animate-spin" />
-        <span v-else-if="supportsImageShare" class="i-lucide-share-2 h-5 w-5" />
-        <span v-else class="i-lucide-download h-5 w-5" />
+        <span v-else class="i-lucide-share-2 h-5 w-5" />
         {{ sharing
           ? 'در حال اشتراک…'
           : generatingImage
             ? 'در حال آماده‌سازی تصویر…'
-            : supportsImageShare
-              ? 'سایر پیام‌رسان‌ها'
-              : 'دانلود تصویر برای ارسال' }}
+            : 'سایر برنامه‌ها' }}
       </button>
       <button type="button" class="btn-secondary w-full" :disabled="!url" @click="copyLink">
         <span class="i-lucide-copy h-5 w-5" />
         کپی لینک
       </button>
-      <button v-if="card" type="button" class="btn-secondary w-full sm:col-span-2" :disabled="!imageBlob" @click="downloadImage()">
-        <span class="i-lucide-download h-5 w-5" />
-        دانلود تصویر
-      </button>
     </div>
-    <p v-if="card && imageBlob" class="mb-3 mt-0 rounded-xl px-3 py-2 text-xs leading-5" :class="supportsImageShare ? 'bg-brand-50 text-brand-800' : 'bg-amber-50 text-amber-800'">
-      <template v-if="supportsImageShare">
-        از فهرست اشتراک‌گذاری گوشی، ایتا، تلگرام یا شبکه اجتماعی موردنظر را انتخاب کنید؛ تصویر همراه متن و لینک ارسال می‌شود.
-      </template>
-      <template v-else>
-        مرورگر فعلی ارسال مستقیم فایل را پشتیبانی نمی‌کند؛ تصویر دانلود و متن و لینک کپی می‌شود تا آن‌ها را در پیام‌رسان پیوست کنید. ارسال مستقیم روی HTTPS و مرورگرهای سازگار در دسترس است.
-      </template>
-    </p>
   </AppModal>
 
   <div v-if="open && card" class="pointer-events-none fixed left-[-12000px] top-0" aria-hidden="true">

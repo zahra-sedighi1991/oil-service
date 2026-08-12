@@ -39,6 +39,15 @@ export default defineNuxtConfig({
         }
       }
     : {},
+  routeRules: {
+    '/public/service-book/**': {
+      headers: {
+        'cache-control': 'no-store, max-age=0',
+        'referrer-policy': 'no-referrer',
+        'x-robots-tag': 'noindex, nofollow, noarchive'
+      }
+    }
+  },
   colorMode: {
     classSuffix: '',
     preference: 'light',

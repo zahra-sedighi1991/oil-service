@@ -33,10 +33,10 @@ export class PublicBookService {
     ]);
     if (!vehicle || !shop) throw new NotFoundException('اطلاعات دفترچه سرویس یافت نشد.');
     const invoices = await this.dataSource.getRepository(Invoice).find({
+      select: { orderId: true, totalAmount: true, currency: true },
       where: { shopId: link.shopId, status: InvoiceStatus.ISSUED },
-      relations: { lines: true },
     });
-    const invoiceByOrder = new Map(invoices.map((invoice) => [invoice.orderId, invoice]));
+    const invoiceByOrderId = new Map(invoices.map((invoice) => [invoice.orderId, invoice]));
     link.lastAccessAt = new Date();
     await this.dataSource.getRepository(VehiclePublicLink).save(link);
     const productIds = [...new Set(
@@ -66,30 +66,35 @@ export class PublicBookService {
     const nextByOdometer = dueItems.filter((line) => line.dueOdometer !== null && line.dueOdometer !== undefined)
       .sort((a, b) => a.dueOdometer! - b.dueOdometer!)[0];
     return {
-      shop: { name: shop.name, phone: shop.publicPhone, city: shop.city, address: shop.address },
+      shop: {
+        name: shop.name,
+        phone: shop.publicPhone,
+        city: shop.city,
+        address: shop.address,
+      },
       vehicle: {
         brand: vehicle.brand.nameFa, model: vehicle.model.nameFa,
-        plate: this.maskPlate(vehicle.plateDisplay) || 'بدون پلاک', year: vehicle.year,
-        lastOdometer: vehicle.lastOdometer,
+        plate: this.maskPlate(vehicle.plateDisplay) || 'بدون پلاک',
       },
       nextDue: nextByDate || nextByOdometer ? {
         dueDate: nextByDate?.dueDate,
-        dueDateItem: nextByDate?.snapshot.displayName ?? nextByDate?.snapshot.description,
+        dueDateItem: nextByDate ? this.snapshotLabel(nextByDate.snapshot) : undefined,
         dueOdometer: nextByOdometer?.dueOdometer,
-        dueOdometerItem: nextByOdometer?.snapshot.displayName ?? nextByOdometer?.snapshot.description,
+        dueOdometerItem: nextByOdometer ? this.snapshotLabel(nextByOdometer.snapshot) : undefined,
       } : null,
-      services: orders.filter((order) => invoiceByOrder.has(order.id)).map((order) => {
-        const invoice = invoiceByOrder.get(order.id);
+      services: orders.filter((order) => invoiceByOrderId.has(order.id)).map((order) => {
+        const invoice = invoiceByOrderId.get(order.id)!;
         return {
-          id: order.id, serviceDate: order.serviceDate, odometer: order.odometer,
-          products: order.productLines.map((line) => ({
-            ...line.snapshot, quantity: Number(line.quantity), dueDate: line.dueDate, dueOdometer: line.dueOdometer,
-          })),
-          services: order.laborLines.map((line) => ({ ...line.snapshot, quantity: Number(line.quantity) })),
-          invoice: invoice ? {
-            invoiceNo: invoice.invoiceNo, totalAmount: Number(invoice.totalAmount),
-            currency: invoice.currency, issuedAt: invoice.issuedAt,
-          } : null,
+          serviceDate: order.serviceDate,
+          odometer: order.odometer,
+          totalAmount: Number(invoice.totalAmount),
+          currency: invoice.currency,
+          products: order.productLines
+            .map((line) => this.snapshotLabel(line.snapshot))
+            .filter(Boolean),
+          services: order.laborLines
+            .map((line) => this.snapshotLabel(line.snapshot))
+            .filter(Boolean),
         };
       }),
     };
@@ -149,5 +154,10 @@ export class PublicBookService {
   private maskPlate(plate?: string) {
     if (!plate || plate.length < 4) return plate;
     return `${plate.slice(0, 2)}***${plate.slice(-2)}`;
+  }
+
+  private snapshotLabel(snapshot: Record<string, unknown>) {
+    const label = snapshot.displayName ?? snapshot.name ?? snapshot.description;
+    return typeof label === 'string' ? label.trim() : '';
   }
 }
