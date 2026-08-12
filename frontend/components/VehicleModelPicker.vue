@@ -145,7 +145,7 @@ function onFocusOut(event: FocusEvent) {
           :key="`popular-${model.id}`"
           type="button"
           class="rounded-xl border px-3 py-2 text-xs font-700 transition"
-          :class="modelValue === model.id ? 'border-brand-600 bg-brand-600 text-white' : 'border-brand-200 bg-brand-50 text-brand-800 hover:border-brand-400'"
+          :class="modelValue === model.id ? 'border-brand-500 bg-brand-500 text-ink' : 'border-brand-200 bg-brand-50 text-brand-800 hover:border-brand-400'"
           @click="selectModel(model)"
         >
           {{ model.nameFa }}

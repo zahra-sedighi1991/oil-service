@@ -49,13 +49,13 @@ useHead({
   meta: [
     { name: 'robots', content: 'noindex, nofollow, noarchive' },
     { name: 'referrer', content: 'no-referrer' },
-    { name: 'theme-color', content: '#F7F6F1' }
+    { name: 'theme-color', content: '#F4F4F2' }
   ]
 })
 </script>
 
 <template>
-  <main class="min-h-screen bg-[#F7F6F1] px-3.5 py-4 text-ink sm:px-6 sm:py-8">
+  <main class="min-h-screen bg-canvas px-3.5 py-4 text-ink sm:px-6 sm:py-8">
     <section v-if="error" class="mx-auto flex min-h-[70vh] max-w-md items-center justify-center">
       <div class="w-full rounded-3xl border border-black/7 bg-white px-6 py-10 text-center shadow-[0_16px_45px_rgba(24,35,30,.06)]">
         <span class="i-lucide-link-2-off mx-auto block h-10 w-10 text-muted" aria-hidden="true" />

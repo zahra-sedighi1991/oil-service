@@ -24,7 +24,7 @@ function itemKey(prefix: string, item: ServiceShareCardItem, index: number) {
         <span class="service-card__mark">
           <svg viewBox="0 0 64 64" aria-hidden="true">
             <path d="M32 6C25 18 13 30 13 42a19 19 0 0 0 38 0C51 30 39 18 32 6Z" fill="currentColor" />
-            <path d="M39.5 46.5c-2.2 3.4-5.7 5.5-10.2 5.5" fill="none" stroke="#174833" stroke-linecap="round" stroke-width="4" />
+            <path d="M39.5 46.5c-2.2 3.4-5.7 5.5-10.2 5.5" fill="none" stroke="#171717" stroke-linecap="round" stroke-width="4" />
           </svg>
         </span>
         <div class="service-card__brand-copy">
@@ -116,7 +116,7 @@ function itemKey(prefix: string, item: ServiceShareCardItem, index: number) {
   overflow: hidden;
   flex-direction: column;
   color: #fffdf8;
-  background: #102019;
+  background: #171717;
   font-family: "IRANYekan", Tahoma, Arial, sans-serif;
   isolation: isolate;
 }
@@ -132,7 +132,7 @@ function itemKey(prefix: string, item: ServiceShareCardItem, index: number) {
   right: -210px;
   width: 620px;
   height: 620px;
-  background: radial-gradient(circle, rgba(73, 170, 120, .32), rgba(73, 170, 120, 0) 68%);
+  background: radial-gradient(circle, rgba(250, 189, 50, .28), rgba(250, 189, 50, 0) 68%);
 }
 
 .service-card__glow--left {
@@ -171,7 +171,7 @@ function itemKey(prefix: string, item: ServiceShareCardItem, index: number) {
   place-items: center;
   border: 1px solid rgba(255, 255, 255, .15);
   border-radius: 17px;
-  color: #7bc89e;
+  color: #fccd68;
   background: rgba(255, 255, 255, .08);
 }
 
@@ -228,8 +228,8 @@ function itemKey(prefix: string, item: ServiceShareCardItem, index: number) {
 }
 
 .service-card__metric--total {
-  border-color: rgba(123, 200, 158, .28);
-  background: rgba(73, 170, 120, .15);
+  border-color: rgba(250, 189, 50, .3);
+  background: rgba(250, 189, 50, .12);
 }
 
 .service-card__metric span,
@@ -254,7 +254,7 @@ function itemKey(prefix: string, item: ServiceShareCardItem, index: number) {
 }
 
 .service-card__metric--total strong {
-  color: #8bd5ab;
+  color: #fccd68;
   font-size: 20px;
 }
 
@@ -282,8 +282,8 @@ function itemKey(prefix: string, item: ServiceShareCardItem, index: number) {
   padding: 14px 16px 12px;
   overflow: hidden;
   border-radius: 20px;
-  color: #102019;
-  background: #fffdf8;
+  color: #171717;
+  background: #fff;
   box-shadow: 0 14px 40px rgba(0, 0, 0, .14);
 }
 
@@ -291,7 +291,7 @@ function itemKey(prefix: string, item: ServiceShareCardItem, index: number) {
   height: 31px;
   justify-content: space-between;
   padding-bottom: 9px;
-  border-bottom: 1px solid rgba(16, 32, 25, .08);
+  border-bottom: 1px solid rgba(23, 23, 23, .08);
 }
 
 .service-card__group-header strong {
@@ -304,8 +304,8 @@ function itemKey(prefix: string, item: ServiceShareCardItem, index: number) {
   padding: 5px 10px;
   align-items: center;
   border-radius: 999px;
-  color: #195a3e;
-  background: #edf8f1;
+  color: #272620;
+  background: #fff9ec;
   font-size: 11px;
   font-weight: 800;
   line-height: 1;
@@ -320,7 +320,7 @@ function itemKey(prefix: string, item: ServiceShareCardItem, index: number) {
   min-width: 0;
   height: 50px;
   gap: 8px;
-  border-bottom: 1px dashed rgba(16, 32, 25, .08);
+  border-bottom: 1px dashed rgba(23, 23, 23, .08);
 }
 
 .service-card__check {
@@ -330,8 +330,8 @@ function itemKey(prefix: string, item: ServiceShareCardItem, index: number) {
   flex: 0 0 auto;
   place-items: center;
   border-radius: 8px;
-  color: #1e714a;
-  background: #dff3e7;
+  color: #272620;
+  background: #feedc1;
 }
 
 .service-card__check svg {
@@ -358,7 +358,7 @@ function itemKey(prefix: string, item: ServiceShareCardItem, index: number) {
   max-width: 145px;
   flex: 0 0 auto;
   overflow: hidden;
-  color: #195a3e;
+  color: #39362a;
   font-size: 12px;
   font-weight: 900;
   text-overflow: ellipsis;
@@ -367,7 +367,7 @@ function itemKey(prefix: string, item: ServiceShareCardItem, index: number) {
 
 .service-card__more {
   margin: 6px 0 0;
-  color: rgba(16, 32, 25, .45);
+  color: rgba(23, 23, 23, .45);
   font-size: 10px;
   text-align: center;
 }
@@ -377,7 +377,7 @@ function itemKey(prefix: string, item: ServiceShareCardItem, index: number) {
   height: 150px;
   margin: 0;
   place-items: center;
-  color: rgba(16, 32, 25, .35);
+  color: rgba(23, 23, 23, .35);
   font-size: 13px;
 }
 

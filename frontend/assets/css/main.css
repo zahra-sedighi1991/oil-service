@@ -108,8 +108,8 @@
   --font-sans: "IRANYekan", Tahoma, Arial, sans-serif !important;
   --default-font-family: "IRANYekan", Tahoma, Arial, sans-serif !important;
   font-family: "IRANYekan", Tahoma, Arial, sans-serif !important;
-  background: #F3F0E7;
-  color: #18231E;
+  background: #F4F4F2;
+  color: #171717;
 }
 
 * {
@@ -118,7 +118,7 @@
 
 html {
   height: 100%;
-  background: #F3F0E7;
+  background: #F4F4F2;
   scroll-behavior: smooth;
   font-family: "IRANYekan", Tahoma, Arial, sans-serif !important;
 }
@@ -129,9 +129,9 @@ body {
   min-width: 320px;
   min-height: 100%;
   background:
-    radial-gradient(circle at 88% -8%, rgba(63, 125, 101, .11), transparent 30rem),
-    radial-gradient(circle at 5% 105%, rgba(201, 138, 36, .07), transparent 25rem),
-    #F3F0E7;
+    radial-gradient(circle at 88% -8%, rgba(250, 189, 50, .14), transparent 29rem),
+    radial-gradient(circle at 5% 105%, rgba(250, 189, 50, .065), transparent 24rem),
+    #F4F4F2;
   -webkit-font-smoothing: antialiased;
   font-synthesis: none;
   font-family: "IRANYekan", Tahoma, Arial, sans-serif;
@@ -153,7 +153,7 @@ button {
 }
 
 ::selection {
-  background: rgba(201, 138, 36, .28);
+  background: rgba(250, 189, 50, .38);
 }
 
 .page-enter-active,

@@ -301,7 +301,7 @@ function submit() {
             >
               <span
                 class="grid h-5 w-5 shrink-0 place-items-center rounded-md border"
-                :class="form.vehicleModelIds.includes(model.id) ? 'border-brand-600 bg-brand-600 text-white' : 'border-black/20 bg-white'"
+                :class="form.vehicleModelIds.includes(model.id) ? 'border-brand-500 bg-brand-500 text-ink' : 'border-black/20 bg-white'"
               >
                 <span v-if="form.vehicleModelIds.includes(model.id)" class="text-sm font-900 leading-none">✓</span>
               </span>

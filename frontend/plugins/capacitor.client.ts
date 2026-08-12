@@ -7,7 +7,7 @@ export default defineNuxtPlugin((nuxtApp) => {
 
   void Promise.all([
     StatusBar.setStyle({ style: Style.Light }),
-    StatusBar.setBackgroundColor({ color: '#19362D' }),
+    StatusBar.setBackgroundColor({ color: '#171717' }),
     StatusBar.setOverlaysWebView({ overlay: false })
   ])
 

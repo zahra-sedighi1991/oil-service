@@ -16,7 +16,7 @@ export default defineNuxtConfig({
       titleTemplate: '%s | روغن‌یار',
       meta: [
         { name: 'viewport', content: 'width=device-width, initial-scale=1, viewport-fit=cover' },
-        { name: 'theme-color', content: '#19362D' },
+        { name: 'theme-color', content: '#171717' },
         {
           name: 'robots',
           content: process.env.NUXT_PUBLIC_ROBOTS
