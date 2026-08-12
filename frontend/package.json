@@ -15,6 +15,7 @@
     "mobile:open": "cap open android",
     "mobile:run": "pnpm mobile:sync:debug && cap run android",
     "mobile:build:debug": "pnpm mobile:sync:debug && cd android && gradlew.bat assembleDebug",
+    "mobile:build:release": "pnpm mobile:sync && cd android && gradlew.bat assembleRelease",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare"
   },

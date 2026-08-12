@@ -61,3 +61,50 @@ pnpm android:build:debug
 
 The resulting file is written to
 `frontend/android/app/build/outputs/apk/debug/app-debug.apk`.
+
+## Android app updates
+
+The packaged Android app checks the public API for a newer version when it
+starts. Directly installed APK files cannot update silently: Android asks the
+user to allow installs from this app once and confirms every installation.
+
+For every release:
+
+1. Increase both `versionCode` and `versionName` in
+   `android/app/build.gradle`. `versionCode` must always increase.
+2. Build and sign the APK with the same release keystore used for every older
+   version. Android rejects an update signed by another key.
+3. Upload the APK to a stable HTTPS URL.
+4. Configure and restart the API:
+
+```dotenv
+ANDROID_LATEST_VERSION_CODE=3
+ANDROID_LATEST_VERSION_NAME=1.2.0
+ANDROID_MIN_SUPPORTED_VERSION_CODE=0
+ANDROID_APK_URL=https://downloads.example.com/roghanyar-1.2.0.apk
+ANDROID_RELEASE_NOTES=بهبود ثبت سرویس|رفع خطاهای گزارش‌شده
+```
+
+Set `ANDROID_MIN_SUPPORTED_VERSION_CODE` to the minimum usable build only when
+an update must be mandatory. Keep it `0` for an optional update that users can
+dismiss for 24 hours. The APK URL must be HTTPS in release builds.
+
+The first update-aware APK (`versionCode 2`) must be installed manually once.
+Later versions are detected by the app. If the app is eventually distributed
+through Google Play, use Play's managed in-app updates instead of direct APK
+installation.
+
+Configure the permanent release key before building. Keep the keystore and its
+passwords outside Git and back them up securely; losing this key means existing
+installations can no longer be updated.
+
+```powershell
+$env:ANDROID_KEYSTORE_PATH='C:\secure\roghanyar-release.jks'
+$env:ANDROID_KEYSTORE_PASSWORD='your-store-password'
+$env:ANDROID_KEY_ALIAS='roghanyar'
+$env:ANDROID_KEY_PASSWORD='your-key-password'
+pnpm android:build:release
+```
+
+The signed release APK is generated under
+`frontend/android/app/build/outputs/apk/release/`.

@@ -1,4 +1,4 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Header } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Public } from './auth/auth.decorators';
 
@@ -7,6 +7,7 @@ import { Public } from './auth/auth.decorators';
 export class AppUpdateController {
   @Public()
   @Get('android')
+  @Header('Cache-Control', 'no-store, max-age=0')
   android() {
     const versionCode = Number(process.env.ANDROID_LATEST_VERSION_CODE ?? 0);
     const downloadUrl = process.env.ANDROID_APK_URL?.trim() ?? '';
