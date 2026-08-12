@@ -6,6 +6,7 @@ const mobileMenu = ref(false)
 const shopNav = [
   { label: 'نمای کلی', to: '/', icon: 'i-lucide-layout-dashboard' },
   { label: 'ثبت سرویس', to: '/service-orders/new', icon: 'i-lucide-circle-plus' },
+  { label: 'یادآوری سرویس', to: '/reminders', icon: 'i-lucide-bell-ring' },
   { label: 'مشتریان و خودروها', to: '/customers', icon: 'i-lucide-users' },
   { label: 'کاتالوگ و قیمت‌ها', to: '/catalog', icon: 'i-lucide-package-search' },
   { label: 'فاکتورها', to: '/invoices', icon: 'i-lucide-receipt-text' },
@@ -20,7 +21,7 @@ const adminNav = [
 const nav = computed(() => isAdmin.value ? adminNav : shopNav)
 const mobileNav = computed(() => isAdmin.value
   ? adminNav
-  : shopNav.filter(item => ['/', '/service-orders/new', '/customers', '/invoices'].includes(item.to)))
+  : shopNav.filter(item => ['/', '/service-orders/new', '/customers', '/reminders'].includes(item.to)))
 
 onMounted(restoreUser)
 watch(() => route.fullPath, () => { mobileMenu.value = false })

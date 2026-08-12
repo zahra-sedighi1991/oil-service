@@ -1,6 +1,6 @@
 import { Type } from 'class-transformer';
 import {
-  IsArray, IsDateString, IsInt, IsNotEmpty, IsNumber, IsOptional,
+  IsArray, IsDateString, IsIn, IsInt, IsNotEmpty, IsNumber, IsOptional,
   IsPositive, IsString, Min, ValidateNested,
 } from 'class-validator';
 
@@ -34,4 +34,15 @@ export class CompleteOrderDto {
 }
 export class CancelOrderDto {
   @IsString() @IsNotEmpty() reason: string;
+}
+
+export const REMINDER_STATUSES = [
+  'sms_sent', 'not_sent', 'later', 'no_answer', 'called', 'appointment', 'declined',
+] as const;
+
+export type ReminderStatus = typeof REMINDER_STATUSES[number];
+
+export class UpdateReminderStatusDto {
+  @IsIn(REMINDER_STATUSES)
+  status: ReminderStatus;
 }

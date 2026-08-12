@@ -11,7 +11,7 @@ import {
 import {
   InvoiceStatus, PublicLinkStatus, RecordStatus, ServiceOrderStatus, SuggestionStatus,
 } from '../common/enums';
-import { CancelOrderDto, CompleteOrderDto, CreateOrderDto } from './dto';
+import { CancelOrderDto, CompleteOrderDto, CreateOrderDto, type ReminderStatus } from './dto';
 
 @Injectable()
 export class ServiceOrdersService {
@@ -286,6 +286,176 @@ export class ServiceOrdersService {
     }
   }
 
+  async reminders(shopId: string, daysAheadInput?: string) {
+    const parsedDaysAhead = Number.parseInt(daysAheadInput ?? '14', 10);
+    const daysAhead = Number.isFinite(parsedDaysAhead)
+      ? Math.min(Math.max(parsedDaysAhead, 0), 90)
+      : 14;
+    const shop = await this.dataSource.getRepository(Shop).findOneByOrFail({ id: shopId });
+    const rows = await this.dataSource.getRepository(ServiceOrder).query(
+      `WITH ranked_orders AS (
+        SELECT
+          service_order.*,
+          ROW_NUMBER() OVER (
+            PARTITION BY service_order."vehicleId"
+            ORDER BY service_order."serviceDate" DESC, service_order.id DESC
+          ) AS rank
+        FROM service_orders service_order
+        WHERE service_order."shopId" = $1 AND service_order.status = $2
+      )
+      SELECT
+        latest.id AS "serviceOrderId",
+        latest."customerId",
+        latest."vehicleId",
+        latest."serviceDate" AS "lastServiceDate",
+        latest.odometer AS "lastOdometer",
+        customer.name AS "customerName",
+        customer.gender AS "customerGender",
+        customer."mobileNormalized",
+        customer."mobileDisplay",
+        vehicle."plateDisplay",
+        vehicle."temporaryIdentifier",
+        brand."nameFa" AS "brandName",
+        model."nameFa" AS "modelName",
+        due."dueDate" AS "explicitDueDate",
+        due."dueItem",
+        reminder_status.action AS "reminderAction",
+        reminder_status."createdAt" AS "reminderStatusAt",
+        ARRAY(
+          SELECT history."serviceDate"
+          FROM ranked_orders history
+          WHERE history."vehicleId" = latest."vehicleId" AND history.rank <= 4
+          ORDER BY history.rank
+        ) AS "historyDates",
+        EXISTS (
+          SELECT 1
+          FROM audit_logs contact
+          WHERE contact."shopId" = $1
+            AND contact.action = 'service_reminder.sms_composer_opened'
+            AND contact."entityType" = 'vehicle'
+            AND contact."entityId" = latest."vehicleId"::text
+            AND (contact."createdAt" AT TIME ZONE $3)::date =
+              (CURRENT_TIMESTAMP AT TIME ZONE $3)::date
+        ) AS "contactedToday"
+      FROM ranked_orders latest
+      INNER JOIN customers customer ON customer.id = latest."customerId"
+      INNER JOIN vehicles vehicle ON vehicle.id = latest."vehicleId"
+      LEFT JOIN vehicle_brands brand ON brand.id = vehicle."brandId"
+      LEFT JOIN vehicle_models model ON model.id = vehicle."modelId"
+      LEFT JOIN LATERAL (
+        SELECT
+          line."dueDate",
+          COALESCE(line.snapshot->>'displayName', line.snapshot->>'description') AS "dueItem"
+        FROM service_product_lines line
+        WHERE line."orderId" = latest.id AND line."dueDate" IS NOT NULL
+        ORDER BY line."dueDate" ASC
+        LIMIT 1
+      ) due ON true
+      LEFT JOIN LATERAL (
+        SELECT contact.action, contact."createdAt"
+        FROM audit_logs contact
+        WHERE contact."shopId" = $1
+          AND contact."entityType" = 'vehicle'
+          AND contact."entityId" = latest."vehicleId"::text
+          AND contact.action LIKE 'service_reminder.status.%'
+          AND contact."createdAt" > latest."serviceDate"
+        ORDER BY contact."createdAt" DESC, contact.id DESC
+        LIMIT 1
+      ) reminder_status ON true
+      WHERE latest.rank = 1 AND customer.status = $4
+      ORDER BY latest."serviceDate" DESC`,
+      [shopId, ServiceOrderStatus.COMPLETED, shop.timezone, RecordStatus.ACTIVE],
+    );
+
+    const today = this.dateInTimeZone(new Date(), shop.timezone);
+    const items = rows.map((row: Record<string, unknown>) => {
+      const lastServiceDate = new Date(String(row.lastServiceDate));
+      const historyDates = (row.historyDates as Array<string | Date> ?? []).map((value) => new Date(value));
+      const intervals = historyDates.slice(0, -1)
+        .map((value, index) => Math.round((value.getTime() - historyDates[index + 1].getTime()) / 86_400_000))
+        .filter((days) => days >= 30 && days <= 365)
+        .sort((a, b) => a - b);
+      const intervalDays = intervals.length
+        ? intervals[Math.floor(intervals.length / 2)]
+        : undefined;
+      const explicitDueDate = row.explicitDueDate ? String(row.explicitDueDate) : undefined;
+      const reminderStatus = row.reminderAction
+        ? String(row.reminderAction).replace('service_reminder.status.', '') as ReminderStatus
+        : undefined;
+      const reminderStatusAt = row.reminderStatusAt ? new Date(String(row.reminderStatusAt)) : undefined;
+      const dueDate = explicitDueDate
+        ?? (intervalDays
+          ? this.addDays(this.dateInTimeZone(lastServiceDate, shop.timezone), intervalDays)
+          : this.addCalendarMonths(this.dateInTimeZone(lastServiceDate, shop.timezone), 3));
+      return {
+        serviceOrderId: row.serviceOrderId,
+        customerId: row.customerId,
+        vehicleId: row.vehicleId,
+        customerName: row.customerName,
+        customerGender: row.customerGender,
+        mobileNormalized: row.mobileNormalized,
+        mobileDisplay: row.mobileDisplay,
+        plateDisplay: row.plateDisplay,
+        temporaryIdentifier: row.temporaryIdentifier,
+        brandName: row.brandName,
+        modelName: row.modelName,
+        lastServiceDate: lastServiceDate.toISOString(),
+        lastOdometer: Number(row.lastOdometer),
+        dueDate,
+        dueItem: row.dueItem,
+        dueSource: explicitDueDate ? 'registered' : intervalDays ? 'history' : 'default',
+        intervalDays: explicitDueDate
+          ? Math.max(1, this.daysBetween(this.dateInTimeZone(lastServiceDate, shop.timezone), dueDate))
+          : intervalDays ?? this.daysBetween(this.dateInTimeZone(lastServiceDate, shop.timezone), dueDate),
+        daysUntilDue: this.daysBetween(today, dueDate),
+        contactedToday: Boolean(row.contactedToday),
+        reminderStatus,
+        reminderStatusAt: reminderStatusAt?.toISOString(),
+        needsFollowUp: reminderStatus === 'sms_sent' && reminderStatusAt
+          ? Date.now() - reminderStatusAt.getTime() >= 2 * 86_400_000
+          : reminderStatus === 'no_answer',
+      };
+    })
+      .filter((item) => item.daysUntilDue <= daysAhead)
+      .sort((a, b) => a.daysUntilDue - b.daysUntilDue);
+
+    return {
+      generatedAt: new Date().toISOString(),
+      daysAhead,
+      shop: { name: shop.name, phone: shop.publicPhone },
+      items,
+    };
+  }
+
+  async logReminderSmsOpened(shopId: string, actorId: string, vehicleId: string) {
+    const vehicle = await this.dataSource.getRepository(Vehicle).findOneBy({ id: vehicleId, shopId });
+    if (!vehicle) throw new NotFoundException('خودرو یافت نشد.');
+    await this.dataSource.getRepository(AuditLog).save({
+      actorId,
+      shopId,
+      action: 'service_reminder.sms_composer_opened',
+      entityType: 'vehicle',
+      entityId: vehicleId,
+      after: { openedAt: new Date().toISOString() },
+    });
+    return { success: true };
+  }
+
+  async updateReminderStatus(shopId: string, actorId: string, vehicleId: string, status: ReminderStatus) {
+    const vehicle = await this.dataSource.getRepository(Vehicle).findOneBy({ id: vehicleId, shopId });
+    if (!vehicle) throw new NotFoundException('خودرو یافت نشد.');
+    const recordedAt = new Date();
+    await this.dataSource.getRepository(AuditLog).save({
+      actorId,
+      shopId,
+      action: `service_reminder.status.${status}`,
+      entityType: 'vehicle',
+      entityId: vehicleId,
+      after: { status, recordedAt: recordedAt.toISOString() },
+    });
+    return { status, recordedAt: recordedAt.toISOString() };
+  }
+
   private async ensurePendingSuggestion(
     manager: EntityManager,
     shopId: string,
@@ -312,6 +482,35 @@ export class ServiceOrdersService {
     const result = new Date(date);
     result.setUTCMonth(result.getUTCMonth() + months);
     return result.toISOString().slice(0, 10);
+  }
+
+  private dateInTimeZone(date: Date, timeZone: string): string {
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).formatToParts(date);
+    const value = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+    return `${value.year}-${value.month}-${value.day}`;
+  }
+
+  private addDays(date: string, days: number): string {
+    const value = new Date(`${date}T00:00:00.000Z`);
+    value.setUTCDate(value.getUTCDate() + days);
+    return value.toISOString().slice(0, 10);
+  }
+
+  private addCalendarMonths(date: string, months: number): string {
+    const [year, month, day] = date.split('-').map(Number);
+    const value = new Date(Date.UTC(year, month - 1 + months, 1));
+    const lastDay = new Date(Date.UTC(value.getUTCFullYear(), value.getUTCMonth() + 1, 0)).getUTCDate();
+    value.setUTCDate(Math.min(day, lastDay));
+    return value.toISOString().slice(0, 10);
+  }
+
+  private daysBetween(from: string, to: string): number {
+    return Math.round((Date.parse(`${to}T00:00:00.000Z`) - Date.parse(`${from}T00:00:00.000Z`)) / 86_400_000);
   }
 
   private async ensurePublicLink(manager: EntityManager, shopId: string, vehicleId: string) {

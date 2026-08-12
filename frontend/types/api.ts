@@ -94,6 +94,40 @@ export interface Dashboard {
   month: { services: number; uniqueCustomers: number; invoices: number }
 }
 
+export interface ServiceReminder {
+  serviceOrderId: string
+  customerId: string
+  vehicleId: string
+  customerName: string
+  customerGender: 'male' | 'female'
+  mobileNormalized: string
+  mobileDisplay: string
+  plateDisplay?: string
+  temporaryIdentifier?: string
+  brandName?: string
+  modelName?: string
+  lastServiceDate: string
+  lastOdometer: number
+  dueDate: string
+  dueItem?: string
+  dueSource: 'registered' | 'history' | 'default'
+  intervalDays: number
+  daysUntilDue: number
+  contactedToday: boolean
+  reminderStatus?: ReminderStatus
+  reminderStatusAt?: string
+  needsFollowUp: boolean
+}
+
+export type ReminderStatus = 'sms_sent' | 'not_sent' | 'later' | 'no_answer' | 'called' | 'appointment' | 'declined'
+
+export interface ServiceRemindersResponse {
+  generatedAt: string
+  daysAhead: number
+  shop: { name: string; phone: string }
+  items: ServiceReminder[]
+}
+
 export interface Invoice {
   id: string
   invoiceNo: string

@@ -93,6 +93,16 @@ const stats = computed(() => [
             <span class="i-lucide-tags mb-2 block h-5 w-5 text-brand-600" />
             <strong class="text-sm">قیمت‌گذاری</strong>
           </NuxtLink>
+          <NuxtLink to="/reminders" class="col-span-2 flex items-center gap-3 rounded-xl border border-brand-200 bg-brand-50/60 p-3 text-ink no-underline transition hover:bg-brand-50">
+            <span class="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-white text-brand-800 shadow-sm">
+              <span class="i-lucide-bell-ring h-5 w-5" />
+            </span>
+            <span class="min-w-0 flex-1">
+              <strong class="block text-sm">پیگیری موعدهای سرویس</strong>
+              <span class="mt-0.5 block text-[11px] text-muted">مشاهده مشتریان امروز و آماده‌کردن پیامک</span>
+            </span>
+            <span class="i-lucide-chevron-left h-4 w-4 text-muted" />
+          </NuxtLink>
         </div>
       </section>
     </div>
