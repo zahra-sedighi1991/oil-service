@@ -40,7 +40,7 @@ watch(() => route.fullPath, () => { mobileMenu.value = false })
         </div>
       </NuxtLink>
 
-      <nav class="sidebar-nav -mx-1 flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto overscroll-contain px-1 pb-3">
+      <nav class="sidebar-nav -mx-1 flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto overscroll-contain px-1 pb-3 pt-1.5">
         <NuxtLink
           v-for="item in nav"
           :key="item.to"
@@ -95,8 +95,8 @@ watch(() => route.fullPath, () => { mobileMenu.value = false })
       :class="mobileNav.length === 3 ? 'grid-cols-3' : 'grid-cols-4'"
       style="bottom: max(1rem, env(safe-area-inset-bottom));"
     >
-      <NuxtLink v-for="item in mobileNav" :key="item.to" :to="item.to" class="flex flex-col items-center gap-1 rounded-2xl px-1 py-2 text-[10px] font-700 text-muted no-underline transition" active-class="!bg-brand-50 !text-ink !ring-1 !ring-brand-200">
-        <span class="h-4.5 w-4.5" :class="item.icon" />
+      <NuxtLink v-for="item in mobileNav" :key="item.to" :to="item.to" class="flex flex-col items-center gap-1 rounded-2xl px-1 py-2 text-[10px] font-800 text-ink/65 no-underline transition" active-class="!bg-brand-100 !text-brand-900 !ring-1 !ring-brand-300 !shadow-sm">
+        <span class="h-5 w-5" :class="item.icon" />
         <span class="whitespace-nowrap">{{ item.label.replace(' و خودروها', '') }}</span>
       </NuxtLink>
     </nav>
@@ -110,10 +110,10 @@ watch(() => route.fullPath, () => { mobileMenu.value = false })
                 <span class="i-lucide-x h-4 w-4" />
               </button>
             </div>
-            <nav class="mobile-menu-scroll grid max-h-[min(65dvh,28rem)] grid-cols-2 gap-1 overflow-y-auto overscroll-contain pb-0.5">
-              <NuxtLink v-for="item in nav" :key="item.to" :to="item.to" class="group flex min-w-0 flex-col items-center justify-center gap-1 rounded-xl border border-transparent bg-transparent px-1.5 py-2 text-center text-[10px] font-700 text-muted no-underline transition active:scale-[.98]" active-class="!border-brand-200/80 !bg-brand-50 !text-ink">
-                <span class="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-black/7 bg-white text-muted shadow-[0_2px_7px_rgba(0,0,0,.05)] transition group-hover:border-brand-200 group-hover:text-ink">
-                  <span class="h-4 w-4" :class="item.icon" />
+            <nav class="mobile-menu-scroll grid max-h-[min(65dvh,28rem)] grid-cols-3 gap-1.5 overflow-y-auto overscroll-contain pb-0.5">
+              <NuxtLink v-for="item in nav" :key="item.to" :to="item.to" class="group flex min-w-0 flex-col items-center justify-center gap-1.5 rounded-xl border border-black/5 bg-black/[.018] px-1 py-2.5 text-center text-[11px] font-800 text-ink/80 no-underline transition active:scale-[.97]" active-class="!border-brand-300 !bg-brand-100 !text-brand-950 !shadow-[0_4px_12px_rgba(250,189,50,.16)]">
+                <span class="grid h-8 w-8 shrink-0 place-items-center rounded-xl border border-brand-200/70 bg-brand-50 text-brand-900 shadow-[0_2px_7px_rgba(250,189,50,.10)] transition group-hover:border-brand-300 group-hover:bg-brand-100">
+                  <span class="h-4.5 w-4.5" :class="item.icon" />
                 </span>
                 <span class="w-full truncate">{{ item.label }}</span>
               </NuxtLink>
