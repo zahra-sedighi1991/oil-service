@@ -8,13 +8,13 @@ const config: CapacitorConfig = {
   appId: 'ir.roghanyar.app',
   appName: 'روغن‌یار',
   webDir: '.output/public',
-  backgroundColor: '#F3F0E7',
+  backgroundColor: '#F4F4F2',
   loggingBehavior: 'debug',
   server: {
     androidScheme: 'https'
   },
   android: {
-    backgroundColor: '#F3F0E7',
+    backgroundColor: '#F4F4F2',
     allowMixedContent
   }
 }
