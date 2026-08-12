@@ -56,6 +56,140 @@ An Android Capacitor project is available under `frontend/android`. Run
 `NUXT_PUBLIC_WEB_BASE` to deployed HTTPS addresses. See
 [`frontend/README.md`](frontend/README.md) for the complete Android workflow.
 
+## گرفتن خروجی APK اندروید
+
+تمام دستورهای این بخش را در PowerShell و از پوشه اصلی پروژه اجرا کنید.
+
+### پیش‌نیازها
+
+- Node.js و `pnpm`
+- Android Studio
+- Android SDK Platform 36 و Build Tools 36
+- JDK 21؛ ترجیحاً JDK همراه Android Studio
+
+اگر پروژه اندروید را برای اولین بار باز می‌کنید، ابتدا این دو دستور را اجرا
+کنید و صبر کنید Gradle Sync در Android Studio تمام شود:
+
+```powershell
+pnpm android:sync
+pnpm android:open
+```
+
+### خروجی آزمایشی Debug
+
+این نسخه فقط برای نصب روی گوشی خودتان و تست شبکه محلی مناسب است. در نسخه Debug
+پس از بازشدن برنامه می‌توانید IP سیستم اجراکننده API را وارد کنید.
+
+```powershell
+pnpm android:build:debug
+```
+
+فایل خروجی در این مسیر ساخته می‌شود:
+
+```text
+frontend/android/app/build/outputs/apk/debug/app-debug.apk
+```
+
+این فایل را به گوشی منتقل و نصب کنید. اگر نصب مسدود شد، در تنظیمات اندروید اجازه
+`Install unknown apps` را برای برنامه‌ای که APK را باز کرده است فعال کنید.
+
+> نسخه Debug را برای مشتری منتشر نکنید. امضای Debug با Release متفاوت است و
+> نسخه Release بعدی معمولاً روی آن نصب نمی‌شود.
+
+### ساخت اولین نسخه Release
+
+نسخه مشتری باید با یک کلید ثابت امضا شود. این کلید را فقط یک‌بار بسازید و از خود
+فایل و رمزهای آن نسخه پشتیبان امن نگه دارید. گم‌شدن کلید یعنی نسخه‌های نصب‌شده
+دیگر قابل به‌روزرسانی نیستند.
+
+اگر `keytool` در PATH سیستم قرار دارد، نمونه دستور ساخت کلید:
+
+```powershell
+New-Item -ItemType Directory -Force C:\secure
+keytool -genkeypair -v -keystore C:\secure\roghanyar-release.jks -alias roghanyar -keyalg RSA -keysize 2048 -validity 10000
+```
+
+قبل از ساخت Release، آدرس‌های واقعی HTTPS و مشخصات همان کلید را در همان پنجره
+PowerShell تنظیم کنید:
+
+```powershell
+$env:NUXT_PUBLIC_API_BASE='https://api.example.com/api/v1'
+$env:NUXT_PUBLIC_PUBLIC_API_BASE='https://api.example.com'
+$env:NUXT_PUBLIC_WEB_BASE='https://app.example.com'
+$env:CAPACITOR_ALLOW_MIXED_CONTENT='false'
+
+$env:ANDROID_KEYSTORE_PATH='C:\secure\roghanyar-release.jks'
+$env:ANDROID_KEYSTORE_PASSWORD='رمز-keystore'
+$env:ANDROID_KEY_ALIAS='roghanyar'
+$env:ANDROID_KEY_PASSWORD='رمز-key'
+
+pnpm android:build:release
+```
+
+فایل Release امضاشده در این پوشه ساخته می‌شود:
+
+```text
+frontend/android/app/build/outputs/apk/release/
+```
+
+فایل معمولاً `app-release.apk` نام دارد. همین فایل برای نصب مشتری و انتشار روی
+سرور دانلود مناسب است.
+
+### خروجی Release از داخل Android Studio
+
+اگر ترجیح می‌دهید از رابط Android Studio استفاده کنید:
+
+1. دستور `pnpm android:sync` را اجرا کنید.
+2. دستور `pnpm android:open` را اجرا کنید.
+3. صبر کنید Gradle Sync کامل شود.
+4. از منوی `Build` گزینه `Generate Signed App Bundle or APK` را انتخاب کنید.
+5. گزینه `APK` و سپس Keystore ثابت پروژه را انتخاب کنید.
+6. نوع Build را روی `release` قرار دهید و خروجی را بسازید.
+
+اگر گزینه ساخت APK در منوی Build دیده نمی‌شود، از پنجره Gradle مسیر
+`app > Tasks > build > assembleRelease` را اجرا کنید یا از دستور PowerShell
+`pnpm android:build:release` استفاده کنید.
+
+### آماده‌سازی هر نسخه جدید
+
+قبل از گرفتن هر خروجی جدید، در فایل
+`frontend/android/app/build.gradle` این دو مقدار را تغییر دهید:
+
+```gradle
+versionCode 3
+versionName "1.2.0"
+```
+
+- `versionCode` باید در هر انتشار حتماً یک عدد بیشتر شود.
+- `versionName` نسخه‌ای است که کاربر می‌بیند.
+- همه نسخه‌ها باید با همان Keystore نسخه اول امضا شوند.
+
+بعد از ساخت و بارگذاری APK روی یک آدرس HTTPS، تنظیمات API را به نسخه جدید تغییر
+دهید و API را دوباره راه‌اندازی کنید:
+
+```dotenv
+ANDROID_LATEST_VERSION_CODE=3
+ANDROID_LATEST_VERSION_NAME=1.2.0
+ANDROID_MIN_SUPPORTED_VERSION_CODE=0
+ANDROID_APK_URL=https://downloads.example.com/roghanyar-1.2.0.apk
+ANDROID_RELEASE_NOTES=بهبود ثبت سرویس|رفع خطاهای گزارش‌شده
+```
+
+مقدار `ANDROID_MIN_SUPPORTED_VERSION_CODE=0` آپدیت را اختیاری نگه می‌دارد. برای
+اجباری‌شدن آپدیت، آن را برابر حداقل `versionCode` قابل استفاده قرار دهید. نصب
+نهایی APK همیشه باید توسط کاربر در صفحه نصب اندروید تأیید شود.
+
+### اگر خروجی ساخته نشد
+
+- از مسیر `File > Settings > Build Tools > Gradle` مطمئن شوید Gradle JDK روی
+  JDK 21 قرار دارد.
+- در SDK Manager نصب‌بودن Android SDK Platform 36 و Build Tools 36 را بررسی
+  کنید.
+- خط `Deprecated Gradle features` به‌تنهایی علت شکست Build نیست؛ چند خط بالاتر
+  از `BUILD FAILED` خطای اصلی نوشته می‌شود.
+- اگر APK جدید روی نسخه قبلی نصب نشد، معمولاً `versionCode` افزایش نیافته یا
+  فایل با Keystore متفاوتی امضا شده است.
+
 `DB_SYNCHRONIZE` must be disabled in production. Generate and review a TypeORM
 migration before the first production deployment.
 
