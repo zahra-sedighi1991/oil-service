@@ -1,8 +1,9 @@
 FROM node:22-alpine AS build
 WORKDIR /app
-RUN corepack enable && corepack prepare pnpm@10.15.0 --activate
+ARG NPM_REGISTRY=https://registry.npmjs.org/
+RUN npm install --global pnpm@10.15.0 --registry=$NPM_REGISTRY
 COPY package.json pnpm-lock.yaml ./
-RUN pnpm install --frozen-lockfile
+RUN pnpm config set registry $NPM_REGISTRY && pnpm install --frozen-lockfile
 COPY . .
 ENV NODE_ENV=production
 RUN pnpm build

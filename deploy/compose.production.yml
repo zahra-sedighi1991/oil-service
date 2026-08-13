@@ -5,7 +5,7 @@ services:
     image: caddy:2-alpine
     restart: unless-stopped
     environment:
-      DOMAIN: ${DOMAIN:?Set DOMAIN in .env.production}
+      SITE_ADDRESS: ${SITE_ADDRESS:-https://${DOMAIN}}
     ports:
       - "80:80"
       - "443:443"
@@ -30,8 +30,8 @@ services:
       NITRO_HOST: 0.0.0.0
       NITRO_PORT: 3001
       NODE_OPTIONS: --max-old-space-size=256
-      NUXT_PUBLIC_API_BASE: https://${DOMAIN}/api/v1
-      NUXT_PUBLIC_PUBLIC_API_BASE: https://${DOMAIN}
+      NUXT_PUBLIC_API_BASE: ${APP_ORIGIN:-https://${DOMAIN}}/api/v1
+      NUXT_PUBLIC_PUBLIC_API_BASE: ${APP_ORIGIN:-https://${DOMAIN}}
     expose:
       - "3001"
     networks:
@@ -63,13 +63,13 @@ services:
       DB_SYNCHRONIZE: "false"
       DB_LOGGING: "false"
       JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env.production}
-      CORS_ORIGINS: https://${DOMAIN}
+      CORS_ORIGINS: ${APP_ORIGIN:-https://${DOMAIN}}
       SWAGGER_ENABLED: "false"
       OTP_ENABLED: ${OTP_ENABLED:-false}
       ADMIN_MOBILE: ${ADMIN_MOBILE:-}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
       ADMIN_NAME: ${ADMIN_NAME:-System Admin}
-      PUBLIC_BASE_URL: https://${DOMAIN}
+      PUBLIC_BASE_URL: ${APP_ORIGIN:-https://${DOMAIN}}
       ANDROID_UPDATE_DIR: /app/updates/android
       PRODUCT_IMAGE_DIR: /app/uploads/products
     volumes:

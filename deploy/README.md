@@ -41,6 +41,19 @@ sh server-start.sh
 Use long random values for `DB_PASSWORD` and `JWT_SECRET`. The API runs pending
 database migrations before each start. Schema synchronization stays disabled.
 
+For the normal HTTPS setup, set `DOMAIN`, `SITE_ADDRESS`, and `APP_ORIGIN` to
+the public domain as shown in `.env.production.example`. For a temporary
+IP-only setup, use `SITE_ADDRESS=:80` and set `APP_ORIGIN` to the HTTP IP URL.
+Replace the temporary values with the final HTTPS domain before production use.
+
+If Docker Hub or npm is not reachable from an Iranian server, configure a
+Docker registry mirror and pass an npm mirror while building:
+
+```sh
+docker build --build-arg NPM_REGISTRY=https://your-npm-mirror/ \
+  -f Dockerfile.api -t oil-service-api:VERSION .
+```
+
 Verify the deployment:
 
 ```sh
