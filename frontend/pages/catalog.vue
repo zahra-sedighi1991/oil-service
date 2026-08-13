@@ -8,6 +8,7 @@ definePageMeta({ middleware: 'auth' })
 useHead({ title: 'کاتالوگ و قیمت‌ها' })
 
 const api = useApi()
+const productImageUrl = useProductImageUrl()
 const toast = useToast()
 const { money, errorMessage } = useFormat()
 const tab = ref<'products' | 'services'>('products')
@@ -179,8 +180,9 @@ async function submitProductSuggestion(value: ProductEditorValue) {
     <section class="list-panel">
       <div v-if="tab === 'products'" class="flex min-h-0 flex-1 flex-col">
         <div v-if="products?.length" class="scroll-container list-scroll card-stack">
-          <div v-for="(product, index) in products" :key="product.id" class="card flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:px-5">
-            <span class="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-700"><span class="i-lucide-package h-5 w-5" /></span>
+          <div v-for="(product, index) in products" :key="product.id" class="card flex flex-row items-start gap-3 px-4 py-4 sm:items-center sm:px-5">
+            <img v-if="product.imageUrl" :src="productImageUrl(product.imageUrl)" :alt="product.displayName" class="h-18 w-18 shrink-0 object-contain mix-blend-multiply sm:h-20 sm:w-20">
+            <span v-else class="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-700"><span class="i-lucide-package h-5 w-5" /></span>
             <div class="min-w-0 flex-1">
               <div class="flex flex-wrap items-center gap-2">
                 <strong class="block truncate text-sm">{{ product.displayName }}</strong>

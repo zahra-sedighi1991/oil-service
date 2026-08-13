@@ -8,6 +8,7 @@ const props = withDefaults(defineProps<{
   description?: string
   submitLabel?: string
   saving?: boolean
+  enableImage?: boolean
   value?: Partial<ProductEditorValue>
   productTypes: Array<{ id: string; title: string }>
   vehicleModels: VehicleModelOption[]
@@ -15,6 +16,7 @@ const props = withDefaults(defineProps<{
   description: '',
   submitLabel: 'ذخیره محصول',
   saving: false,
+  enableImage: false,
   value: () => ({}),
 })
 
@@ -23,8 +25,14 @@ const emit = defineEmits<{
   submit: [value: ProductEditorValue]
 }>()
 
+const toast = useToast()
 const appliesToAllVehicles = ref(true)
 const vehicleSearch = ref('')
+const imageInput = ref<HTMLInputElement | null>(null)
+const imagePreview = ref('')
+const selectedImage = ref<File | undefined>()
+const removeImage = ref(false)
+let localImageUrl = ''
 const form = reactive({
   productTypeId: '',
   name: '',
@@ -63,7 +71,43 @@ watch(() => [props.open, props.value] as const, ([open]) => {
   })
   appliesToAllVehicles.value = vehicleModelIds.length === 0
   vehicleSearch.value = ''
+  clearLocalImageUrl()
+  selectedImage.value = undefined
+  removeImage.value = false
+  imagePreview.value = props.value.imageUrl || ''
 }, { immediate: true, deep: true })
+
+onBeforeUnmount(clearLocalImageUrl)
+
+function clearLocalImageUrl() {
+  if (!localImageUrl) return
+  URL.revokeObjectURL(localImageUrl)
+  localImageUrl = ''
+}
+
+function selectImage(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+  if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 3 * 1024 * 1024) {
+    input.value = ''
+    toast.error('تصویر باید JPEG، PNG یا WebP و حداکثر ۳ مگابایت باشد.')
+    return
+  }
+  clearLocalImageUrl()
+  selectedImage.value = file
+  removeImage.value = false
+  localImageUrl = URL.createObjectURL(file)
+  imagePreview.value = localImageUrl
+}
+
+function clearImage() {
+  clearLocalImageUrl()
+  selectedImage.value = undefined
+  removeImage.value = Boolean(props.value.imageUrl)
+  imagePreview.value = ''
+  if (imageInput.value) imageInput.value.value = ''
+}
 
 function toggleVehicle(id: string) {
   const index = form.vehicleModelIds.indexOf(id)
@@ -94,6 +138,11 @@ function submit() {
       package_volume: form.packageVolume,
     }).filter(([, value]) => value !== undefined && value !== '')),
     vehicleModelIds: appliesToAllVehicles.value ? [] : [...form.vehicleModelIds],
+    ...(props.enableImage ? {
+      imageUrl: props.value.imageUrl,
+      imageFile: selectedImage.value,
+      removeImage: removeImage.value,
+    } : {}),
   })
 }
 </script>
@@ -138,6 +187,26 @@ function submit() {
             {{ type.title }}
           </option>
         </select>
+      </div>
+
+      <div v-if="enableImage">
+        <label class="label">تصویر محصول <span class="font-400 text-muted">(اختیاری)</span></label>
+        <div class="flex items-center gap-3 rounded-2xl border border-black/7 bg-black/[.015] p-3">
+          <div class="grid h-20 w-20 shrink-0 place-items-center overflow-hidden rounded-xl border border-black/7 bg-white">
+            <img v-if="imagePreview" :src="imagePreview" alt="پیش‌نمایش محصول" class="h-full w-full object-contain p-1">
+            <span v-else class="i-lucide-image h-7 w-7 text-ink/25" />
+          </div>
+          <div class="min-w-0 flex-1">
+            <input ref="imageInput" type="file" accept="image/jpeg,image/png,image/webp" class="hidden" @change="selectImage">
+            <div class="flex flex-wrap gap-2">
+              <button type="button" class="btn-secondary px-3 py-2" @click="imageInput?.click()">
+                <span class="i-lucide-upload h-4 w-4" />{{ imagePreview ? 'تغییر تصویر' : 'انتخاب تصویر' }}
+              </button>
+              <button v-if="imagePreview" type="button" class="btn-ghost px-3 py-2 text-danger" @click="clearImage">حذف</button>
+            </div>
+            <small class="mt-2 block leading-5 text-muted">JPEG، PNG یا WebP، حداکثر ۳ مگابایت</small>
+          </div>
+        </div>
       </div>
 
       <div>

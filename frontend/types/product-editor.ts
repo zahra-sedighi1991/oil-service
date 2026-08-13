@@ -3,4 +3,7 @@ export interface ProductEditorValue {
   name: string
   attributes: Record<string, unknown>
   vehicleModelIds: string[]
+  imageUrl?: string
+  imageFile?: File
+  removeImage?: boolean
 }

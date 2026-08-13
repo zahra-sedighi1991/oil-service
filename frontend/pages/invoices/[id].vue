@@ -5,6 +5,7 @@ import type { ServiceShareCardData } from '~/types/share'
 definePageMeta({ middleware: 'auth' })
 const route = useRoute()
 const api = useApi()
+const productImageUrl = useProductImageUrl()
 const config = useRuntimeConfig()
 const toast = useToast()
 const { money, number, dateTime, errorMessage } = useFormat()
@@ -121,7 +122,10 @@ async function cancelInvoice() {
         <div class="space-y-2 sm:hidden">
           <article v-for="line in invoice.lines" :key="`mobile-${line.id}`" class="rounded-xl border border-black/7 p-3">
             <div class="flex items-start justify-between gap-3">
-              <strong class="text-sm leading-6">{{ line.descriptionSnapshot }}</strong>
+              <div class="flex min-w-0 items-center gap-2">
+                <img v-if="line.itemType === 'product' && line.sourceId" :src="productImageUrl(`/catalog/products/${line.sourceId}/image`)" :alt="line.descriptionSnapshot" class="h-14 w-14 shrink-0 object-contain mix-blend-multiply">
+                <strong class="text-sm leading-6">{{ line.descriptionSnapshot }}</strong>
+              </div>
               <span class="badge shrink-0 bg-black/5 text-[10px] text-muted">{{ line.itemType === 'product' ? 'محصول' : 'خدمت' }}</span>
             </div>
             <div class="mt-3 flex items-end justify-between gap-3 border-t border-black/5 pt-3">
@@ -133,7 +137,7 @@ async function cancelInvoice() {
         <div class="hidden overflow-x-auto sm:block">
           <table class="w-full border-collapse text-sm">
             <thead><tr class="border-b border-black/10 text-right text-xs text-muted"><th class="py-3 font-700">شرح</th><th class="py-3 font-700">نوع</th><th class="py-3 text-center font-700">تعداد</th><th class="py-3 text-left font-700">قیمت واحد</th><th class="py-3 text-left font-700">مبلغ</th></tr></thead>
-            <tbody><tr v-for="line in invoice.lines" :key="line.id" class="border-b border-black/5"><td class="py-4 font-700">{{ line.descriptionSnapshot }}</td><td class="py-4 text-muted">{{ line.itemType === 'product' ? 'محصول' : 'خدمت' }}</td><td class="py-4 text-center">{{ number(line.quantity) }}</td><td class="py-4 text-left">{{ money(line.unitPrice, invoice.currency) }}</td><td class="py-4 text-left font-800">{{ money(line.total, invoice.currency) }}</td></tr></tbody>
+            <tbody><tr v-for="line in invoice.lines" :key="line.id" class="border-b border-black/5"><td class="py-4 font-700"><div class="flex items-center gap-3"><img v-if="line.itemType === 'product' && line.sourceId" :src="productImageUrl(`/catalog/products/${line.sourceId}/image`)" :alt="line.descriptionSnapshot" class="h-14 w-14 shrink-0 object-contain mix-blend-multiply"><span>{{ line.descriptionSnapshot }}</span></div></td><td class="py-4 text-muted">{{ line.itemType === 'product' ? 'محصول' : 'خدمت' }}</td><td class="py-4 text-center">{{ number(line.quantity) }}</td><td class="py-4 text-left">{{ money(line.unitPrice, invoice.currency) }}</td><td class="py-4 text-left font-800">{{ money(line.total, invoice.currency) }}</td></tr></tbody>
           </table>
         </div>
         <div class="mr-auto mt-7 max-w-sm rounded-2xl bg-brand-50 p-5">

@@ -1,5 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { access, mkdir, rename, rm, writeFile } from 'node:fs/promises';
+import { basename, join, resolve } from 'node:path';
 import { ILike, In, Repository } from 'typeorm';
 import {
   Product,
@@ -31,6 +33,10 @@ import { RecordStatus } from '../common/enums';
 
 @Injectable()
 export class CatalogService {
+  private readonly productImageDirectory = resolve(
+    process.env.PRODUCT_IMAGE_DIR ?? join(process.cwd(), 'uploads/products'),
+  );
+
   constructor(
     @InjectRepository(VehicleBrand) private readonly brands: Repository<VehicleBrand>,
     @InjectRepository(VehicleModel) private readonly models: Repository<VehicleModel>,
@@ -176,7 +182,7 @@ export class CatalogService {
       schemaVersion: type.currentSchemaVersion,
     }));
     if (dto.vehicleModelIds?.length) await this.setProductVehicleModels(product.id, dto.vehicleModelIds);
-    return product;
+    return this.presentProduct(product);
   }
 
   async updateProduct(id: string, dto: UpdateProductDto) {
@@ -199,7 +205,7 @@ export class CatalogService {
     product.displayName = this.renderTitle(type, product.name, dto.attributes, definitions);
     const result = await this.products.save(product);
     await this.setProductVehicleModels(result.id, dto.vehicleModelIds);
-    return result;
+    return this.presentProduct(result);
   }
 
   async createSuggestedProduct(name: string, details?: {
@@ -278,7 +284,7 @@ export class CatalogService {
         .addOrderBy('shopConfiguration.sortOrder', 'ASC', 'NULLS LAST');
     }
     const rows = await qb.addOrderBy('product.displayName', 'ASC').take(100).getMany();
-    if (!vehicleId || !shopId || !rows.length) return rows;
+    if (!vehicleId || !shopId || !rows.length) return rows.map((product) => this.presentProduct(product));
 
     const vehicle = await this.vehicles.findOneBy({ id: vehicleId, shopId });
     if (!vehicle) throw new NotFoundException('خودرو در این فروشگاه یافت نشد.');
@@ -292,13 +298,73 @@ export class CatalogService {
       const rule = modelRules[0];
       const status = rule ? 'compatible' : productRules.length ? 'incompatible' : 'universal';
       return {
-        ...product,
+        ...this.presentProduct(product),
         compatibility: {
           status,
           matchLevel: rule ? 'model' : undefined,
         },
       };
     }).sort((a, b) => priority[a.compatibility.status] - priority[b.compatibility.status]);
+  }
+
+  async setProductImage(productId: string, file?: { buffer?: Buffer; size?: number }) {
+    const product = await this.products.findOneBy({ id: productId });
+    if (!product) throw new NotFoundException('محصول یافت نشد.');
+    if (!file?.buffer?.length || !file.size) throw new BadRequestException('فایل تصویر ارسال نشده است.');
+    if (file.size > 3 * 1024 * 1024) throw new BadRequestException('حجم تصویر نباید بیشتر از ۳ مگابایت باشد.');
+
+    const extension = this.detectImageExtension(file.buffer);
+    if (!extension) throw new BadRequestException('فقط تصویر JPEG، PNG یا WebP قابل استفاده است.');
+
+    await mkdir(this.productImageDirectory, { recursive: true });
+    const fileName = `${product.id}-${Date.now()}.${extension}`;
+    const temporaryPath = join(this.productImageDirectory, `${fileName}.tmp`);
+    const finalPath = join(this.productImageDirectory, fileName);
+    const previousFileName = product.imageFileName;
+    let movedToFinalPath = false;
+    let saved: Product;
+    try {
+      await writeFile(temporaryPath, file.buffer, { flag: 'wx' });
+      await rename(temporaryPath, finalPath);
+      movedToFinalPath = true;
+      product.imageFileName = fileName;
+      saved = await this.products.save(product);
+    } catch (error) {
+      await rm(temporaryPath, { force: true });
+      if (movedToFinalPath) await rm(finalPath, { force: true });
+      throw error;
+    }
+    if (previousFileName) await this.removeStoredProductImage(previousFileName).catch(() => undefined);
+    return this.presentProduct(saved);
+  }
+
+  async removeProductImage(productId: string) {
+    const product = await this.products.findOneBy({ id: productId });
+    if (!product) throw new NotFoundException('محصول یافت نشد.');
+    const previousFileName = product.imageFileName;
+    product.imageFileName = undefined;
+    const saved = await this.products.save(product);
+    if (previousFileName) await this.removeStoredProductImage(previousFileName).catch(() => undefined);
+    return this.presentProduct(saved);
+  }
+
+  async getProductImage(productId: string) {
+    const product = await this.products.findOneBy({ id: productId, status: RecordStatus.ACTIVE });
+    if (!product?.imageFileName) throw new NotFoundException('تصویر محصول یافت نشد.');
+    const fileName = basename(product.imageFileName);
+    if (fileName !== product.imageFileName) throw new NotFoundException('تصویر محصول یافت نشد.');
+    const filePath = join(this.productImageDirectory, fileName);
+    try {
+      await access(filePath);
+    } catch {
+      throw new NotFoundException('تصویر محصول یافت نشد.');
+    }
+    return {
+      filePath,
+      contentType: fileName.endsWith('.png')
+        ? 'image/png'
+        : fileName.endsWith('.webp') ? 'image/webp' : 'image/jpeg',
+    };
   }
 
   listCompatibilities(productId?: string, modelId?: string) {
@@ -387,6 +453,33 @@ export class CatalogService {
       entityType: 'shop_service', entityId: result.id, before, after: { ...dto },
     }));
     return result;
+  }
+
+  private presentProduct(product: Product) {
+    const { imageFileName, ...result } = product;
+    const updatedAt = product.updatedAt instanceof Date
+      ? product.updatedAt.getTime()
+      : new Date(product.updatedAt).getTime();
+    return {
+      ...result,
+      imageUrl: imageFileName
+        ? `/catalog/products/${product.id}/image?v=${updatedAt}`
+        : undefined,
+    };
+  }
+
+  private detectImageExtension(buffer: Buffer): 'jpg' | 'png' | 'webp' | null {
+    if (buffer.length >= 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) return 'jpg';
+    if (buffer.length >= 8 && buffer.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) return 'png';
+    if (buffer.length >= 12 && buffer.subarray(0, 4).toString('ascii') === 'RIFF'
+      && buffer.subarray(8, 12).toString('ascii') === 'WEBP') return 'webp';
+    return null;
+  }
+
+  private async removeStoredProductImage(fileName: string) {
+    const safeFileName = basename(fileName);
+    if (safeFileName !== fileName) return;
+    await rm(join(this.productImageDirectory, safeFileName), { force: true });
   }
 
   private async validateAttributes(values: Record<string, unknown>, definitions: ProductAttributeDefinition[]) {

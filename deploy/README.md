@@ -61,6 +61,9 @@ publish the APK/AAB to the stores and upload `native-latest.json` to the same
 directory. The API reads both manifests automatically, so updating this folder
 does not require rebuilding the Docker images or restarting the API.
 
+Product images uploaded by administrators are stored in the persistent
+`product_images` Docker volume and survive application image replacements.
+
 ## Backup
 
 Run this command from cron every day and copy the resulting dump to storage on

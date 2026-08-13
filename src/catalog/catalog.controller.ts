@@ -1,6 +1,8 @@
-import { Body, Controller, Get, Param, Patch, Post, Put, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Header, Param, Patch, Post, Put, Query, StreamableFile, UploadedFile, UseInterceptors } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { CurrentUser, Roles } from '../auth/auth.decorators';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { createReadStream } from 'node:fs';
+import { CurrentUser, Public, Roles } from '../auth/auth.decorators';
 import type { AuthUser } from '../auth/auth.types';
 import { UserRole } from '../common/enums';
 import { CatalogService } from './catalog.service';
@@ -48,6 +50,27 @@ export class CatalogController {
   @Patch('admin/catalog/products/:id') @Roles(UserRole.SUPER_ADMIN)
   updateProduct(@Param('id') id: string, @Body() dto: UpdateProductDto) {
     return this.catalog.updateProduct(id, dto);
+  }
+  @Post('admin/catalog/products/:id/image') @Roles(UserRole.SUPER_ADMIN)
+  @UseInterceptors(FileInterceptor('image', { limits: { fileSize: 3 * 1024 * 1024, files: 1 } }))
+  setProductImage(
+    @Param('id') id: string,
+    @UploadedFile() image?: { buffer?: Buffer; size?: number },
+  ) {
+    return this.catalog.setProductImage(id, image);
+  }
+  @Delete('admin/catalog/products/:id/image') @Roles(UserRole.SUPER_ADMIN)
+  removeProductImage(@Param('id') id: string) { return this.catalog.removeProductImage(id); }
+  @Public()
+  @Get('catalog/products/:id/image')
+  @Header('Cache-Control', 'public, max-age=31536000, immutable')
+  @Header('X-Content-Type-Options', 'nosniff')
+  async productImage(@Param('id') id: string) {
+    const image = await this.catalog.getProductImage(id);
+    return new StreamableFile(createReadStream(image.filePath), {
+      type: image.contentType,
+      disposition: 'inline',
+    });
   }
   @Get('catalog/products')
   products(

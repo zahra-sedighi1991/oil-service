@@ -12,6 +12,7 @@ useHead({ title: 'ثبت سرویس جدید' })
 interface ProductLine {
   key: string
   productId?: string
+  imageUrl?: string
   description: string
   quantity: number
   unitPrice: number
@@ -50,6 +51,7 @@ interface CompletionResult {
 
 const route = useRoute()
 const api = useApi()
+const productImageUrl = useProductImageUrl()
 const config = useRuntimeConfig()
 const toast = useToast()
 const { number, money, errorMessage } = useFormat()
@@ -342,6 +344,7 @@ function addProduct(product: Product) {
   products.value.push({
     key: createRandomId(),
     productId: product.id,
+    imageUrl: product.imageUrl,
     description: product.displayName,
     quantity: 1,
     unitPrice: Number(product.shopConfiguration?.salePrice || 0),
@@ -500,7 +503,7 @@ function orderPayload() {
     vehicleId: selectedVehicle.value.id,
     odometer: odometer.value,
     note: note.value || undefined,
-    products: products.value.map(({ key, description, ...line }) => ({
+    products: products.value.map(({ key, description, imageUrl, ...line }) => ({
       ...line,
       ...(!line.productId ? { description } : {})
     })),
@@ -779,7 +782,12 @@ async function startNextService() {
         </header>
         <div v-if="products.length" class="grid gap-3">
           <div v-for="(line, index) in products" :key="line.key" class="card p-4">
-            <div class="mb-3 flex items-start justify-between gap-3"><input v-model="line.description" class="min-w-0 flex-1 border-0 bg-transparent text-sm font-800 outline-none" :readonly="Boolean(line.productId)"><button class="btn-ghost h-8 w-8 p-0 text-danger" @click="products.splice(index, 1)"><span class="i-lucide-trash-2 h-4 w-4" /></button></div>
+            <div class="mb-3 flex items-start gap-3">
+              <img v-if="line.imageUrl" :src="productImageUrl(line.imageUrl)" :alt="line.description" class="h-16 w-16 shrink-0 object-contain mix-blend-multiply">
+              <span v-else-if="line.productId" class="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-brand-50 text-brand-700"><span class="i-lucide-package h-4 w-4" /></span>
+              <input v-model="line.description" class="min-w-0 flex-1 border-0 bg-transparent text-sm font-800 outline-none" :readonly="Boolean(line.productId)">
+              <button class="btn-ghost h-8 w-8 shrink-0 p-0 text-danger" @click="products.splice(index, 1)"><span class="i-lucide-trash-2 h-4 w-4" /></button>
+            </div>
             <div class="grid grid-cols-2 gap-2 sm:grid-cols-3">
               <div><label class="label">تعداد</label><input v-model.number="line.quantity" type="number" min=".001" step=".001" class="field py-2"></div>
               <div>
@@ -986,7 +994,10 @@ async function startNextService() {
         "
         @click="toggleSelection(selectedProductIds, product.id)"
       >
-        <div class="min-w-0">
+        <div class="flex min-w-0 flex-1 items-center gap-3">
+          <img v-if="product.imageUrl" :src="productImageUrl(product.imageUrl)" :alt="product.displayName" class="h-20 w-20 shrink-0 object-contain mix-blend-multiply">
+          <div v-else class="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-black/[.04]"><span class="i-lucide-package h-4.5 w-4.5 text-ink/30" /></div>
+          <div class="min-w-0">
           <div class="flex flex-wrap items-center gap-2">
             <strong class="block text-sm">
               {{ product.displayName }}
@@ -1021,6 +1032,7 @@ async function startNextService() {
               · حجم {{ product.attributes.package_volume }}
             </template>
           </span>
+          </div>
         </div>
 
         <span

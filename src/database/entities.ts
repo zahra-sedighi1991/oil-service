@@ -111,6 +111,7 @@ export class Product extends BaseEntity {
   @ManyToOne(() => ProductType) @JoinColumn({ name: 'productTypeId' }) productType: ProductType;
   @Column({ nullable: true }) name?: string;
   @Column() displayName: string;
+  @Column({ nullable: true }) imageFileName?: string;
   @Column({ type: 'jsonb', default: {} }) attributes: Record<string, unknown>;
   @Column() schemaVersion: number;
   @Column({ type: 'enum', enum: RecordStatus, default: RecordStatus.ACTIVE }) status: RecordStatus;

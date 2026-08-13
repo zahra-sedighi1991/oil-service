@@ -18,10 +18,12 @@ interface CatalogRow {
   category?: string
   brandId?: string
   productTypeId?: string
+  imageUrl?: string
   isPopular?: boolean
   attributes?: Record<string, unknown>
 }
 const api = useApi()
+const productImageUrl = useProductImageUrl()
 const toast = useToast()
 const { errorMessage } = useFormat()
 const route = useRoute()
@@ -229,7 +231,8 @@ async function openProductEditor(product: Product) {
       productTypeId: product.productTypeId,
       name: product.name || product.displayName,
       attributes: product.attributes || {},
-      vehicleModelIds: rules.map(item => item.vehicleModelId)
+      vehicleModelIds: rules.map(item => item.vehicleModelId),
+      imageUrl: productImageUrl(product.imageUrl)
     }
     editingProduct.value = product
     productEditorMode.value = 'edit'
@@ -249,15 +252,35 @@ async function saveProduct(value: ProductEditorValue) {
   if (!productEditorMode.value) return
   savingProductEditor.value = true
   try {
+    const payload = {
+      productTypeId: value.productTypeId,
+      name: value.name,
+      attributes: value.attributes,
+      vehicleModelIds: value.vehicleModelIds,
+    }
+    let product: Product
     if (productEditorMode.value === 'create') {
-      await api.post('/admin/catalog/products', value)
+      product = await api.post<Product>('/admin/catalog/products', payload)
     } else if (editingProduct.value) {
-      await api.patch(`/admin/catalog/products/${editingProduct.value.id}`, value)
+      product = await api.patch<Product>(`/admin/catalog/products/${editingProduct.value.id}`, payload)
+    } else return
+    let imageFailed = false
+    try {
+      if (value.imageFile) {
+        const image = new FormData()
+        image.append('image', value.imageFile)
+        await api.upload(`/admin/catalog/products/${product.id}/image`, image)
+      } else if (value.removeImage) {
+        await api.delete(`/admin/catalog/products/${product.id}/image`)
+      }
+    } catch {
+      imageFailed = true
     }
     await refreshProducts()
-    toast.success(productEditorMode.value === 'create'
-      ? 'محصول ایجاد شد و اکنون برای قیمت‌گذاری فروشنده در دسترس است.'
-      : 'اطلاعات محصول با موفقیت ویرایش شد.')
+    if (imageFailed) toast.error('اطلاعات محصول ذخیره شد، اما تغییر تصویر انجام نشد. دوباره محصول را ویرایش کنید.')
+    else toast.success(productEditorMode.value === 'create'
+        ? 'محصول ایجاد شد و اکنون برای قیمت‌گذاری فروشنده در دسترس است.'
+        : 'اطلاعات محصول با موفقیت ویرایش شد.')
     productEditorMode.value = null
     editingProduct.value = null
     productEditorValue.value = {}
@@ -304,9 +327,15 @@ async function saveProduct(value: ProductEditorValue) {
     <section class="list-panel">
       <div v-if="items.length" class="scroll-container list-scroll card-stack">
         <div v-for="item in items" :key="item.id" class="card flex items-center justify-between gap-4 px-5 py-4">
-          <div class="min-w-0">
+          <div class="flex min-w-0 flex-1 items-center gap-3">
+            <div v-if="tab === 'products'" class="grid h-13 w-13 shrink-0 place-items-center overflow-hidden rounded-xl border border-black/7 bg-black/[.025]">
+              <img v-if="item.imageUrl" :src="productImageUrl(item.imageUrl)" :alt="itemTitle(item)" class="h-full w-full object-contain p-1">
+              <span v-else class="i-lucide-package h-5 w-5 text-ink/30" />
+            </div>
+            <div class="min-w-0 flex-1">
             <strong class="block truncate text-sm">{{ itemTitle(item) }}</strong>
             <span class="mt-1 block truncate text-xs text-muted">{{ itemSubtitle(item) }}</span>
+            </div>
           </div>
           <button
             v-if="tab === 'models'"
@@ -602,6 +631,7 @@ async function saveProduct(value: ProductEditorValue) {
       :description="productEditorMode === 'create' ? 'نوع، نام، مدل، حجم و خودروهای مناسب محصول را وارد کنید.' : 'نوع، نام، مدل، حجم و خودروهای مناسب محصول را ویرایش کنید.'"
       :submit-label="productEditorMode === 'create' ? 'ایجاد محصول' : 'ذخیره تغییرات'"
       :saving="savingProductEditor"
+      enable-image
       :value="productEditorValue"
       :product-types="types || []"
       :vehicle-models="models || []"

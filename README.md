@@ -222,6 +222,10 @@ Build محلی به‌تنهایی هیچ اعلانی برای کاربران �
 `DB_SYNCHRONIZE` must be disabled in production. Generate and review a TypeORM
 migration before the first production deployment.
 
+تصاویر محصولات توسط ادمین در کاتالوگ بارگذاری می‌شوند. در اجرای محلی فایل‌ها
+داخل `uploads/products` و در Docker داخل volume دائمی `product_images` نگهداری
+می‌شوند. هنگام استقرار این تغییر، migration جدید دیتابیس باید اجرا شود.
+
 ## Authentication
 
 OTP is temporarily disabled through `OTP_ENABLED=false`. Initial registration

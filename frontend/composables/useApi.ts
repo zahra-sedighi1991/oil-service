@@ -35,6 +35,8 @@ export function useApi() {
       request<T>(path, { method: 'PATCH', body }),
     put: <T>(path: string, body?: unknown) =>
       request<T>(path, { method: 'PUT', body }),
+    upload: <T>(path: string, body: FormData) =>
+      request<T>(path, { method: 'POST', body }),
     download: (path: string, query?: Record<string, unknown>) =>
       request<Blob>(path, { method: 'GET', query, responseType: 'blob' }),
     delete: <T>(path: string) =>

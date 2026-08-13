@@ -58,6 +58,7 @@ export interface Product {
   id: string
   name?: string
   displayName: string
+  imageUrl?: string
   attributes: Record<string, unknown>
   productTypeId: string
   productType?: { id: string; key: string; title: string }
@@ -155,6 +156,7 @@ export interface Invoice {
   lines: Array<{
     id: string
     itemType: 'product' | 'service'
+    sourceId?: string
     descriptionSnapshot: string
     quantity: string
     unitPrice: string
