@@ -105,13 +105,14 @@ const vehicleForm = reactive({
 })
 const customerQuery = computed(() => {
   const value = customerSearch.value.trim()
-  if (!value) return undefined
-  return { search: value }
+  return value ? { search: value } : null
 })
 
 const { data: customers, refresh: refreshCustomers } = await useAsyncData(
   'service-customer-search',
-  () => api.get<Customer[]>('/customers', customerQuery.value),
+  () => customerQuery.value
+    ? api.get<Customer[]>('/customers', customerQuery.value)
+    : Promise.resolve([]),
   { watch: [customerSearch] }
 )
 const { data: catalogProducts } = await useAsyncData(
