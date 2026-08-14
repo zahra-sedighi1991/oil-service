@@ -115,10 +115,21 @@ function itemKey(prefix: string, item: ServiceShareCardItem, index: number) {
   padding: 30px 36px 22px;
   overflow: hidden;
   flex-direction: column;
-  color: #fffdf8;
-  background: #171717;
+  color: #171717;
+  background: linear-gradient(145deg, #fffaf0 0%, #f4f4f2 48%, #ffffff 100%);
   font-family: "IRANYekan", Tahoma, Arial, sans-serif;
   isolation: isolate;
+}
+
+.service-card::before {
+  position: absolute;
+  z-index: 1;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 7px;
+  background: linear-gradient(90deg, #df9e18, #fabd32 58%, #fccd68);
+  content: '';
 }
 
 .service-card__glow {
@@ -128,19 +139,19 @@ function itemKey(prefix: string, item: ServiceShareCardItem, index: number) {
 }
 
 .service-card__glow--right {
-  top: -310px;
-  right: -210px;
-  width: 620px;
-  height: 620px;
-  background: radial-gradient(circle, rgba(250, 189, 50, .28), rgba(250, 189, 50, 0) 68%);
+  top: -270px;
+  right: -170px;
+  width: 570px;
+  height: 570px;
+  background: radial-gradient(circle, rgba(250, 189, 50, .22), rgba(250, 189, 50, 0) 70%);
 }
 
 .service-card__glow--left {
-  bottom: -390px;
-  left: -220px;
-  width: 650px;
-  height: 650px;
-  background: radial-gradient(circle, rgba(233, 169, 61, .17), rgba(233, 169, 61, 0) 68%);
+  bottom: -410px;
+  left: -260px;
+  width: 670px;
+  height: 670px;
+  background: radial-gradient(circle, rgba(23, 23, 23, .07), rgba(23, 23, 23, 0) 68%);
 }
 
 .service-card__header,
@@ -169,10 +180,11 @@ function itemKey(prefix: string, item: ServiceShareCardItem, index: number) {
   height: 54px;
   flex: 0 0 auto;
   place-items: center;
-  border: 1px solid rgba(255, 255, 255, .15);
+  border: 1px solid rgba(23, 23, 23, .92);
   border-radius: 17px;
-  color: #fccd68;
-  background: rgba(255, 255, 255, .08);
+  color: #fabd32;
+  background: #171717;
+  box-shadow: 0 8px 20px rgba(23, 23, 23, .14);
 }
 
 .service-card__mark svg {
@@ -197,16 +209,17 @@ function itemKey(prefix: string, item: ServiceShareCardItem, index: number) {
 
 .service-card__brand-copy span {
   margin-top: 1px;
-  color: rgba(255, 255, 255, .48);
+  color: rgba(23, 23, 23, .5);
   font-size: 14px;
 }
 
 .service-card__header time {
   padding: 9px 14px;
-  border: 1px solid rgba(255, 255, 255, .1);
+  border: 1px solid rgba(23, 23, 23, .08);
   border-radius: 13px;
-  color: rgba(255, 255, 255, .55);
-  background: rgba(255, 255, 255, .045);
+  color: rgba(23, 23, 23, .62);
+  background: rgba(255, 255, 255, .78);
+  box-shadow: 0 5px 15px rgba(23, 23, 23, .04);
   font-size: 14px;
   white-space: nowrap;
 }
@@ -222,14 +235,16 @@ function itemKey(prefix: string, item: ServiceShareCardItem, index: number) {
   min-width: 0;
   height: 82px;
   padding: 12px 15px;
-  border: 1px solid rgba(255, 255, 255, .09);
+  border: 1px solid rgba(23, 23, 23, .075);
   border-radius: 17px;
-  background: rgba(255, 255, 255, .05);
+  background: rgba(255, 255, 255, .88);
+  box-shadow: 0 7px 20px rgba(23, 23, 23, .045);
 }
 
 .service-card__metric--total {
-  border-color: rgba(250, 189, 50, .3);
-  background: rgba(250, 189, 50, .12);
+  border-color: rgba(223, 158, 24, .32);
+  background: linear-gradient(135deg, #feedc1, #fabd32);
+  box-shadow: 0 8px 24px rgba(223, 158, 24, .18);
 }
 
 .service-card__metric span,
@@ -242,7 +257,7 @@ function itemKey(prefix: string, item: ServiceShareCardItem, index: number) {
 }
 
 .service-card__metric span {
-  color: rgba(255, 255, 255, .46);
+  color: rgba(23, 23, 23, .5);
   font-size: 12px;
 }
 
@@ -254,7 +269,7 @@ function itemKey(prefix: string, item: ServiceShareCardItem, index: number) {
 }
 
 .service-card__metric--total strong {
-  color: #fccd68;
+  color: #171717;
   font-size: 20px;
 }
 
@@ -264,7 +279,7 @@ function itemKey(prefix: string, item: ServiceShareCardItem, index: number) {
 }
 
 .service-card__metric small {
-  color: rgba(255, 255, 255, .34);
+  color: rgba(23, 23, 23, .4);
   font-size: 10px;
 }
 
@@ -283,8 +298,9 @@ function itemKey(prefix: string, item: ServiceShareCardItem, index: number) {
   overflow: hidden;
   border-radius: 20px;
   color: #171717;
-  background: #fff;
-  box-shadow: 0 14px 40px rgba(0, 0, 0, .14);
+  border: 1px solid rgba(23, 23, 23, .07);
+  background: rgba(255, 255, 255, .94);
+  box-shadow: 0 12px 34px rgba(23, 23, 23, .07);
 }
 
 .service-card__group-header {
@@ -304,8 +320,8 @@ function itemKey(prefix: string, item: ServiceShareCardItem, index: number) {
   padding: 5px 10px;
   align-items: center;
   border-radius: 999px;
-  color: #272620;
-  background: #fff9ec;
+  color: #74500f;
+  background: #fff4d6;
   font-size: 11px;
   font-weight: 800;
   line-height: 1;
@@ -330,7 +346,7 @@ function itemKey(prefix: string, item: ServiceShareCardItem, index: number) {
   flex: 0 0 auto;
   place-items: center;
   border-radius: 8px;
-  color: #272620;
+  color: #6c490a;
   background: #feedc1;
 }
 
@@ -358,7 +374,7 @@ function itemKey(prefix: string, item: ServiceShareCardItem, index: number) {
   max-width: 145px;
   flex: 0 0 auto;
   overflow: hidden;
-  color: #39362a;
+  color: #5c451a;
   font-size: 12px;
   font-weight: 900;
   text-overflow: ellipsis;
@@ -385,7 +401,7 @@ function itemKey(prefix: string, item: ServiceShareCardItem, index: number) {
   min-height: 28px;
   justify-content: space-between;
   padding-top: 9px;
-  color: rgba(255, 255, 255, .36);
+  color: rgba(23, 23, 23, .48);
   font-size: 11px;
 }
 
@@ -397,6 +413,6 @@ function itemKey(prefix: string, item: ServiceShareCardItem, index: number) {
   width: 3px;
   height: 3px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, .3);
+  background: rgba(23, 23, 23, .28);
 }
 </style>

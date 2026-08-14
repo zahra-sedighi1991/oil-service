@@ -76,7 +76,7 @@ async function generateImage() {
       height: 600,
       scale: 1,
       type: 'image/png',
-      backgroundColor: '#171717',
+      backgroundColor: '#F4F4F2',
       font: { preferredFormat: 'woff2' }
     })
     if (currentGeneration !== generationId) return
