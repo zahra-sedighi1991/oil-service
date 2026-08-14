@@ -3,7 +3,10 @@ WORKDIR /app
 ARG NPM_REGISTRY=https://registry.npmjs.org/
 RUN npm install --global pnpm@10.15.0 --registry=$NPM_REGISTRY
 COPY package.json pnpm-lock.yaml ./
-RUN pnpm config set registry $NPM_REGISTRY && pnpm install --frozen-lockfile
+RUN --mount=type=cache,id=oil-service-frontend-pnpm,target=/pnpm/store \
+    pnpm config set store-dir /pnpm/store && \
+    pnpm config set registry $NPM_REGISTRY && \
+    pnpm install --frozen-lockfile
 COPY . .
 ENV NODE_ENV=production
 RUN pnpm build

@@ -6,8 +6,10 @@ useHead({
 })
 
 const { isAuthenticated } = useAuth()
+const config = useRuntimeConfig()
 const primaryLink = computed(() => isAuthenticated.value ? '/dashboard' : '/login?mode=register')
 const primaryLabel = computed(() => isAuthenticated.value ? 'ورود به پنل' : 'شروع رایگان')
+const apkDownloadUrl = computed(() => `${String(config.public.publicApiBase).replace(/\/$/, '')}/api/v1/app-update/android/apk`)
 
 const benefits = [
   { icon: 'i-lucide-file-plus-2', title: 'سرویس را سریع ثبت کنید', text: 'مشخصات خودرو، کیلومتر و خدمات انجام‌شده را یک‌جا ثبت کنید.' },
@@ -35,6 +37,7 @@ const benefits = [
         <p class="mx-auto mb-0 mt-4 max-w-xl text-sm leading-7 text-muted sm:text-base sm:leading-8 lg:mx-0">روغن‌یار دفتر کار دیجیتال تعویض‌روغنی شماست؛ از ثبت سرویس و فاکتور تا یادآوری موعد بعدی مشتری.</p>
         <div class="mt-5 flex flex-col gap-2.5 sm:flex-row sm:justify-center lg:justify-start">
           <NuxtLink :to="primaryLink" class="btn-primary min-h-12 px-6 no-underline"><span class="i-lucide-arrow-left h-5 w-5" />{{ primaryLabel }}</NuxtLink>
+          <a :href="apkDownloadUrl" class="btn-secondary min-h-12 px-6 no-underline"><span class="i-lucide-download h-5 w-5" />دانلود نسخه اندروید</a>
           <a href="#how-it-works" class="btn-secondary min-h-12 px-6 no-underline">ببینید چطور کار می‌کند</a>
         </div>
         <div class="mt-4 flex flex-wrap justify-center gap-x-5 gap-y-2 text-[11px] text-muted lg:justify-start">

@@ -11,6 +11,9 @@ def generatedVersionName = System.getenv('ANDROID_VERSION_NAME')
 android {
     namespace = "ir.roghanyar.app"
     compileSdk = rootProject.ext.compileSdkVersion
+    buildFeatures {
+        buildConfig = true
+    }
     defaultConfig {
         applicationId "ir.roghanyar.app"
         minSdkVersion rootProject.ext.minSdkVersion

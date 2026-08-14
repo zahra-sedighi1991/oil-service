@@ -1,6 +1,7 @@
 [CmdletBinding()]
 param(
   [string]$Version = (Get-Date -Format 'yyyyMMdd-HHmmss'),
+  [string]$NpmRegistry = 'https://registry.npmjs.org/',
   [switch]$IncludeInfrastructureImages
 )
 
@@ -34,11 +35,11 @@ try {
   $webImage = "oil-service-web:$Version"
 
   Write-Host "Building $apiImage"
-  docker build --file Dockerfile.api --tag $apiImage .
+  docker build --build-arg "NPM_REGISTRY=$NpmRegistry" --file Dockerfile.api --tag $apiImage .
   Assert-LastCommand 'API image build'
 
   Write-Host "Building $webImage"
-  docker build --file frontend/Dockerfile --tag $webImage frontend
+  docker build --build-arg "NPM_REGISTRY=$NpmRegistry" --file frontend/Dockerfile --tag $webImage frontend
   Assert-LastCommand 'Web image build'
 
   $images = @($apiImage, $webImage)
@@ -60,11 +61,11 @@ try {
   Copy-Item -LiteralPath (Join-Path $projectRoot 'deploy/backup-db.sh') -Destination $bundlePath
 
   $androidUpdatesPath = Join-Path $releaseRoot 'android-updates'
-  $hasWebUpdate = Test-Path -LiteralPath (Join-Path $androidUpdatesPath 'web-latest.json')
-  $hasNativeUpdate = Test-Path -LiteralPath (Join-Path $androidUpdatesPath 'native-latest.json')
-  if ($hasWebUpdate -or $hasNativeUpdate) {
+  $hasAndroidFiles = (Test-Path -LiteralPath $androidUpdatesPath -PathType Container) `
+    -and [bool](Get-ChildItem -LiteralPath $androidUpdatesPath -File -ErrorAction SilentlyContinue | Select-Object -First 1)
+  if ($hasAndroidFiles) {
     Copy-Item -LiteralPath $androidUpdatesPath -Destination (Join-Path $bundlePath 'android-updates') -Recurse
-    Write-Host 'Latest Android update package was included in the server release.'
+    Write-Host 'Android download and update files were included in the server release.'
   } else {
     New-Item -ItemType Directory -Path (Join-Path $bundlePath 'android-updates') -Force | Out-Null
     Write-Host 'No Android update package exists yet; an empty android-updates directory was included.'

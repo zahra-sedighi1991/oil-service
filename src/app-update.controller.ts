@@ -88,6 +88,20 @@ export class AppUpdateController {
     return response.sendFile(filePath);
   }
 
+  @Public()
+  @Get('apk')
+  downloadApk(@Res() response: Response) {
+    const filePath = join(this.updateDirectory, 'roghanyar.apk');
+    if (!existsSync(filePath)) {
+      throw new NotFoundException('نسخه اندروید هنوز برای دانلود منتشر نشده است.');
+    }
+    response.setHeader('Content-Type', 'application/vnd.android.package-archive');
+    response.setHeader('X-Content-Type-Options', 'nosniff');
+    response.setHeader('Content-Disposition', 'attachment; filename="roghanyar.apk"');
+    response.setHeader('Cache-Control', 'no-store, max-age=0');
+    return response.sendFile(filePath);
+  }
+
   private readWebManifest(): WebUpdateManifest | null {
     try {
       const value = JSON.parse(readFileSync(join(this.updateDirectory, 'web-latest.json'), 'utf8')) as Partial<WebUpdateManifest>;
