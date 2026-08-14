@@ -20,7 +20,7 @@ const registerForm = reactive({
   password: '',
   passwordConfirmation: '',
   shopName: '',
-  city: ''
+  city: 'مشهد'
 })
 
 async function login() {
@@ -139,7 +139,7 @@ function switchMode(nextMode: 'login' | 'register') {
       </button>
     </form>
 
-    <form v-else class="space-y-4" @submit.prevent="register">
+    <form v-else class="registration-form space-y-4" @submit.prevent="register">
       <div class="grid gap-4 sm:grid-cols-2">
         <div>
           <label class="label">نام مدیر</label>
@@ -166,7 +166,7 @@ function switchMode(nextMode: 'login' | 'register') {
         </div>
         <div>
           <label class="label">شهر</label>
-          <input v-model="registerForm.city" class="field" placeholder="تهران" required>
+          <input v-model="registerForm.city" class="field" placeholder="مشهد" required>
         </div>
       </div>
 
@@ -212,3 +212,25 @@ function switchMode(nextMode: 'login' | 'register') {
     </div> -->
   </section>
 </template>
+
+<style scoped>
+.registration-form .label {
+  color: rgba(23, 23, 23, .8);
+  font-weight: 800;
+}
+
+.registration-form .field {
+  border-color: rgba(23, 23, 23, .24);
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(23, 23, 23, .04), inset 0 0 0 1px rgba(23, 23, 23, .025);
+}
+
+.registration-form .field::placeholder {
+  color: rgba(23, 23, 23, .44);
+}
+
+.registration-form .field:focus {
+  border-color: #df9e18;
+  box-shadow: 0 0 0 3px rgba(250, 189, 50, .22);
+}
+</style>

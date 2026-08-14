@@ -115,6 +115,12 @@ const { data: customers, refresh: refreshCustomers } = await useAsyncData(
     : Promise.resolve([]),
   { watch: [customerSearch] }
 )
+const visibleCustomers = computed(() => {
+  const results = customers.value || []
+  const selected = selectedCustomer.value
+  if (!selected || results.some(customer => customer.id === selected.id)) return results
+  return [selected, ...results]
+})
 const { data: catalogProducts } = await useAsyncData(
   'service-product-search',
   () => api.get<Product[]>('/catalog/products', {
@@ -711,7 +717,7 @@ async function startNextService() {
           </button>
         </div>
         <div class="mt-3 max-h-80 space-y-2 overflow-y-auto">
-          <button v-for="customer in customers" :key="customer.id" class="flex w-full items-center gap-3 rounded-xl border p-3 text-right transition" :class="selectedCustomer?.id === customer.id ? 'border-brand-500 bg-brand-50' : 'border-black/6 bg-white hover:border-brand-300'" @click="selectCustomer(customer)">
+          <button v-for="customer in visibleCustomers" :key="customer.id" class="flex w-full items-center gap-3 rounded-xl border p-3 text-right transition" :class="selectedCustomer?.id === customer.id ? 'border-brand-500 bg-brand-50' : 'border-black/6 bg-white hover:border-brand-300'" @click="selectCustomer(customer)">
             <span class="grid h-9 w-9 place-items-center rounded-xl bg-black/4 text-sm font-700">{{ customer.name.slice(0, 1) }}</span>
             <div class="flex-1"><strong class="block text-sm">{{ customer.name }}</strong><span class="mt-0.5 block text-xs text-muted" dir="ltr">{{ customer.mobileDisplay }}</span></div>
             <span class="text-xs text-muted">{{ number(customer.vehicles.length) }} خودرو</span>
@@ -740,6 +746,16 @@ async function startNextService() {
           </button>
         </div>
         <div v-if="selectedCustomer" class="mt-4">
+          <div class="mb-3 flex items-center gap-3 rounded-xl border border-brand-200 bg-brand-50 px-3 py-2.5">
+            <span class="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-brand-500 text-sm font-900 text-ink">
+              {{ selectedCustomer.name.slice(0, 1) }}
+            </span>
+            <div class="min-w-0 flex-1">
+              <span class="block text-[11px] font-700 text-brand-800">مشتری انتخاب‌شده</span>
+              <strong class="mt-0.5 block truncate text-sm">{{ selectedCustomer.name }}</strong>
+            </div>
+            <span class="shrink-0 text-xs text-muted" dir="ltr">{{ selectedCustomer.mobileDisplay }}</span>
+          </div>
           <div v-if="selectedCustomer.vehicles.length" class="grid gap-2 sm:grid-cols-2">
             <button v-for="vehicle in selectedCustomer.vehicles" :key="vehicle.id" class="rounded-xl border p-3 text-right transition" :class="selectedVehicle?.id === vehicle.id ? 'border-brand-500 bg-brand-50' : 'border-black/7 bg-white hover:border-brand-300'" @click="selectedVehicle = vehicle">
               <span class="i-lucide-car-front mb-2 block h-5 w-5 text-brand-600" />
