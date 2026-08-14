@@ -63,7 +63,7 @@ services:
       DB_SYNCHRONIZE: "false"
       DB_LOGGING: "false"
       JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env.production}
-      CORS_ORIGINS: ${APP_ORIGIN:-https://${DOMAIN}}
+      CORS_ORIGINS: ${APP_ORIGIN:-https://${DOMAIN}},https://localhost
       SWAGGER_ENABLED: "false"
       OTP_ENABLED: ${OTP_ENABLED:-false}
       ADMIN_MOBILE: ${ADMIN_MOBILE:-}
