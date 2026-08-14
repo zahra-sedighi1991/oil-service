@@ -1,4 +1,4 @@
-{$SITE_ADDRESS} {
+http://{$SITE_ADDRESS} {
     encode zstd gzip
 
     @api path /api/* /public/* /health
