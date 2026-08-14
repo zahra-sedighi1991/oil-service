@@ -100,8 +100,7 @@ const success = ref<{
 } | null>(null)
 const vehicleForm = reactive({
   modelId: '',
-  plate: '',
-  lastOdometer: undefined as number | undefined
+  plate: ''
 })
 const customerQuery = computed(() => {
   const value = customerSearch.value.trim()
@@ -306,7 +305,6 @@ function openVehicleModal() {
   vehicleForm.modelId = ''
   vehicleForm.plate = ''
   plateIncomplete.value = false
-  vehicleForm.lastOdometer = odometer.value
   showVehicle.value = true
 }
 
@@ -319,15 +317,11 @@ async function createVehicle() {
     const created = await api.post<Vehicle>('/vehicles', {
       ownerCustomerId: selectedCustomer.value.id,
       modelId: vehicleForm.modelId,
-      plate: vehicleForm.plate || undefined,
-      lastOdometer: vehicleForm.lastOdometer
+      plate: vehicleForm.plate || undefined
     })
     const refreshedCustomer = await api.get<Customer>(`/customers/${selectedCustomer.value.id}`)
     selectedCustomer.value = refreshedCustomer
     selectedVehicle.value = refreshedCustomer.vehicles.find(vehicle => vehicle.id === created.id) || null
-    if (selectedVehicle.value?.lastOdometer !== undefined) {
-      odometer.value = selectedVehicle.value.lastOdometer
-    }
     showVehicle.value = false
     toast.success('خودرو ثبت و برای این سرویس انتخاب شد.')
   } catch (error) {
@@ -1197,13 +1191,6 @@ async function startNextService() {
     >
       <form class="grid gap-4 sm:grid-cols-2" @submit.prevent="createVehicle">
         <VehicleModelPicker v-model="vehicleForm.modelId" :models="vehicleModels || []" class="sm:col-span-2" />
-        <div class="sm:col-span-2">
-          <label class="label">کیلومتر فعلی</label>
-          <input v-model.number="vehicleForm.lastOdometer" type="number" min="0" class="field text-left" dir="ltr" placeholder="126500">
-          <p v-if="formattedOdometer(vehicleForm.lastOdometer)" class="mb-0 mt-1 text-xs text-muted">
-            {{ formattedOdometer(vehicleForm.lastOdometer) }}
-          </p>
-        </div>
         <div class="sm:col-span-2">
           <label class="label">پلاک خودرو <span class="font-400 text-muted">(اختیاری)</span></label>
           <IranianPlateInput v-model="vehicleForm.plate" @incomplete-change="plateIncomplete = $event" />
