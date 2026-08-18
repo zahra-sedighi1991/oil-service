@@ -46,6 +46,8 @@ const editingProduct = ref<Product | null>(null)
 const productEditorMode = ref<'create' | 'edit' | null>(null)
 const productEditorValue = ref<Partial<ProductEditorValue>>({})
 const savingProductEditor = ref(false)
+const productSearch = ref('')
+const productTypeFilter = ref('')
 
 const tabs: Array<{ key: TabKey; label: string }> = [
   { key: 'brands', label: 'برند خودرو' },
@@ -104,11 +106,29 @@ const { data: services, refresh: refreshServices } = await useAsyncData(
   () => api.get<CatalogRow[]>('/catalog/services')
 )
 
+const filteredProducts = computed<Product[]>(() => {
+  const search = productSearch.value.trim().toLocaleLowerCase('fa')
+  return (products.value || []).filter((product) => {
+    if (productTypeFilter.value && product.productTypeId !== productTypeFilter.value) return false
+    if (!search) return true
+    const type = types.value?.find(candidate => candidate.id === product.productTypeId)
+    const searchableText = [
+      product.displayName,
+      product.name,
+      type?.title,
+      ...Object.values(product.attributes || {}),
+    ].filter(value => value !== undefined && value !== null)
+      .join(' ')
+      .toLocaleLowerCase('fa')
+    return searchableText.includes(search)
+  })
+})
+
 const items = computed<CatalogRow[]>(() => {
   if (tab.value === 'brands') return brands.value || []
   if (tab.value === 'models') return models.value || []
   if (tab.value === 'types') return types.value || []
-  if (tab.value === 'products') return (products.value || []) as CatalogRow[]
+  if (tab.value === 'products') return filteredProducts.value as CatalogRow[]
   return services.value || []
 })
 
@@ -324,6 +344,35 @@ async function saveProduct(value: ProductEditorValue) {
       محصول واقعی را با نام کامل ثبت کنید و مشخص کنید برای همه خودروها یا چند مدل مشخص مناسب است.
     </div>
 
+    <div v-if="tab === 'products'" class="mb-4 grid gap-3 rounded-2xl border border-black/7 bg-white p-4 sm:grid-cols-[minmax(0,1fr)_minmax(220px,0.45fr)]">
+      <label class="relative block">
+        <span class="i-lucide-search pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
+        <input
+          v-model="productSearch"
+          type="search"
+          class="field pr-10"
+          placeholder="جست‌وجوی نام، مدل یا حجم محصول..."
+        >
+      </label>
+      <select v-model="productTypeFilter" class="field">
+        <option value="">همه انواع محصول</option>
+        <option v-for="type in types || []" :key="type.id" :value="type.id">
+          {{ type.title }}
+        </option>
+      </select>
+      <div class="flex items-center justify-between gap-3 text-xs text-muted sm:col-span-2">
+        <span>{{ filteredProducts.length }} مورد از {{ products?.length || 0 }} محصول</span>
+        <button
+          v-if="productSearch || productTypeFilter"
+          type="button"
+          class="border-0 bg-transparent p-0 font-700 text-brand-700"
+          @click="productSearch = ''; productTypeFilter = ''"
+        >
+          پاک‌کردن فیلترها
+        </button>
+      </div>
+    </div>
+
     <section class="list-panel">
       <div v-if="items.length" class="scroll-container list-scroll card-stack">
         <div v-for="item in items" :key="item.id" class="card flex items-center justify-between gap-4 px-5 py-4">
@@ -363,8 +412,8 @@ async function saveProduct(value: ProductEditorValue) {
       <AppEmptyState
         v-else
         class="card"
-        :title="tab === 'products' ? 'هنوز محصول قابل فروشی ایجاد نشده است' : 'رکوردی وجود ندارد'"
-        :description="tab === 'products' ? 'دکمه رکورد جدید را بزنید و نوع محصول، نام کالا و خودروهای مناسب را انتخاب کنید.' : undefined"
+        :title="tab === 'products' && (productSearch || productTypeFilter) ? 'محصولی با این فیلتر پیدا نشد' : tab === 'products' ? 'هنوز محصول قابل فروشی ایجاد نشده است' : 'رکوردی وجود ندارد'"
+        :description="tab === 'products' && (productSearch || productTypeFilter) ? 'عبارت جست‌وجو یا نوع محصول را تغییر دهید.' : tab === 'products' ? 'دکمه رکورد جدید را بزنید و نوع محصول، نام کالا و خودروهای مناسب را انتخاب کنید.' : undefined"
       />
     </section>
 
