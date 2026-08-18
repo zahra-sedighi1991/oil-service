@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Dashboard, Invoice } from '~/types/api'
+import type { Dashboard, Invoice, Product } from '~/types/api'
 
 definePageMeta({ middleware: 'auth' })
 useHead({ title: 'نمای کلی' })
@@ -8,6 +8,14 @@ const api = useApi()
 const { number, money, dateTime } = useFormat()
 const { data: dashboard, pending } = await useAsyncData('dashboard', () => api.get<Dashboard>('/dashboard'))
 const { data: invoices } = await useAsyncData('dashboard-invoices', () => api.get<Invoice[]>('/invoices'))
+const { data: catalogProducts } = await useAsyncData('dashboard-catalog-products', () => api.get<Product[]>('/catalog/products'))
+
+function isProductReady(product: Product) {
+  return Boolean(product.shopConfiguration?.isActive && Number(product.shopConfiguration.salePrice || 0) > 0)
+}
+
+const productsNeedingSetup = computed(() => (catalogProducts.value || []).filter(product => !isProductReady(product)))
+const readyProductCount = computed(() => (catalogProducts.value || []).length - productsNeedingSetup.value.length)
 
 const stats = computed(() => [
   { label: 'سرویس‌های امروز', value: dashboard.value?.today.services ?? 0, icon: 'i-lucide-wrench', tone: 'bg-brand-50 text-brand-700' },
@@ -26,6 +34,26 @@ const stats = computed(() => [
       </div>
       <NuxtLink to="/service-orders/new" class="btn-primary no-underline"><span class="i-lucide-plus h-5 w-5" />ثبت سرویس جدید</NuxtLink>
     </header>
+
+    <section v-if="catalogProducts?.length && productsNeedingSetup.length" class="mb-6 rounded-2xl border border-amber-300 bg-amber-50 p-4 shadow-sm sm:p-5">
+      <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div class="flex items-start gap-3">
+          <span class="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-white text-amber-700 shadow-sm"><span class="i-lucide-tags h-5.5 w-5.5" /></span>
+          <div>
+            <strong class="block text-base">کاتالوگ و قیمت‌های فروشگاه را آماده کنید</strong>
+            <p class="mb-0 mt-1 text-xs leading-6 text-ink/65">برای هر محصول ابتدا قیمت فروش را وارد کنید و سپس آن را «فعال در فروشگاه» قرار دهید.</p>
+            <div class="mt-2 flex flex-wrap gap-2 text-[11px] font-700">
+              <span class="rounded-full bg-white px-2.5 py-1 text-emerald-700">{{ readyProductCount.toLocaleString('fa-IR') }} محصول آماده</span>
+              <span class="rounded-full bg-white px-2.5 py-1 text-amber-700">{{ productsNeedingSetup.length.toLocaleString('fa-IR') }} محصول نیازمند تکمیل</span>
+            </div>
+          </div>
+        </div>
+        <NuxtLink to="/catalog?setup=1" class="btn-primary w-full shrink-0 justify-center no-underline sm:w-auto">
+          تکمیل قیمت‌ها
+          <span class="i-lucide-arrow-left h-4.5 w-4.5" />
+        </NuxtLink>
+      </div>
+    </section>
 
     <div class="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
       <article v-for="stat in stats" :key="stat.label" class="card p-2 sm:p-3">

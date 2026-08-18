@@ -3,17 +3,24 @@ const route = useRoute()
 const { user, isAdmin, restoreUser, logout } = useAuth()
 const mobileMenu = ref(false)
 
-const shopNav = [
+interface NavItem {
+  label: string
+  to: string
+  icon: string
+  mobileLabel?: string
+}
+
+const shopNav: NavItem[] = [
   { label: 'نمای کلی', to: '/dashboard', icon: 'i-lucide-layout-dashboard' },
   { label: 'ثبت سرویس', to: '/service-orders/new', icon: 'i-lucide-circle-plus' },
   { label: 'یادآوری سرویس', to: '/reminders', icon: 'i-lucide-bell-ring' },
   { label: 'مشتریان و خودروها', to: '/customers', icon: 'i-lucide-users' },
-  { label: 'کاتالوگ و قیمت‌ها', to: '/catalog', icon: 'i-lucide-package-search' },
+  { label: 'کاتالوگ و قیمت‌ها', mobileLabel: 'قیمت‌ها', to: '/catalog', icon: 'i-lucide-package-search' },
   { label: 'فاکتورها', to: '/invoices', icon: 'i-lucide-receipt-text' },
   { label: 'پیشنهادها', to: '/suggestions', icon: 'i-lucide-lightbulb' },
   { label: 'تنظیمات فروشگاه', to: '/settings', icon: 'i-lucide-settings-2' }
 ]
-const adminNav = [
+const adminNav: NavItem[] = [
   { label: 'نمای کلی سامانه', to: '/admin', icon: 'i-lucide-layout-dashboard' },
   { label: 'فروشگاه‌ها', to: '/admin/shops', icon: 'i-lucide-store' },
   { label: 'کاتالوگ سراسری', to: '/admin/catalog', icon: 'i-lucide-library-big' },
@@ -23,7 +30,7 @@ const adminNav = [
 const nav = computed(() => isAdmin.value ? adminNav : shopNav)
 const mobileNav = computed(() => isAdmin.value
   ? adminNav.filter(item => ['/admin', '/admin/shops', '/admin/catalog', '/admin/suggestions'].includes(item.to))
-  : shopNav.filter(item => ['/dashboard', '/service-orders/new', '/customers', '/reminders'].includes(item.to)))
+  : shopNav.filter(item => ['/dashboard', '/service-orders/new', '/catalog', '/customers', '/reminders'].includes(item.to)))
 
 onMounted(restoreUser)
 watch(() => route.fullPath, () => { mobileMenu.value = false })
@@ -97,12 +104,12 @@ function isNavActive(path: string) {
 
     <nav
       class="fixed inset-x-4 z-40 grid rounded-[1.35rem] border border-black/8 bg-white/92 p-1.5 shadow-[0_14px_40px_rgba(0,0,0,.14)] backdrop-blur-xl lg:hidden"
-      :class="mobileNav.length === 3 ? 'grid-cols-3' : 'grid-cols-4'"
+      :class="mobileNav.length === 3 ? 'grid-cols-3' : mobileNav.length === 5 ? 'grid-cols-5' : 'grid-cols-4'"
       style="bottom: max(1rem, env(safe-area-inset-bottom));"
     >
       <NuxtLink v-for="item in mobileNav" :key="item.to" :to="item.to" class="flex flex-col items-center gap-1 rounded-2xl px-1 py-2 text-[10px] font-800 text-ink/65 no-underline transition" :class="isNavActive(item.to) ? '!bg-brand-100 !text-brand-900 !ring-1 !ring-brand-300 !shadow-sm' : ''">
         <span class="h-5 w-5" :class="item.icon" />
-        <span class="whitespace-nowrap">{{ item.label.replace(' و خودروها', '') }}</span>
+        <span class="whitespace-nowrap">{{ item.mobileLabel || item.label.replace(' و خودروها', '') }}</span>
       </NuxtLink>
     </nav>
 
